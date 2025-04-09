@@ -1,0 +1,2 @@
+id,email,name,password_hash,role,status,employee_id,team,created_at,updated_at
+1,admin@example.com,Admin User,scrypt:32768:8:1$O461bJGB8XkSTg9s$011cbee18b6800a45f5d62bc0ba4fa480f237e3bf01aee354ca429771c2efb331395f3f738e590aa203a9ca10f2aa896fcd50eaad2d1c145fec6713164b59706,admin,active,10003,sales,2025-04-07 18:02:25.673958,2025-04-09 01:19:02.632566
