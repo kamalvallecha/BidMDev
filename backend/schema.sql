@@ -78,6 +78,7 @@ CREATE TABLE bids (
     client INTEGER REFERENCES clients(id),
     sales_contact INTEGER REFERENCES sales(id),
     vm_contact INTEGER REFERENCES vendor_managers(id),
+    project_requirement TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -220,4 +221,40 @@ VALUES (
     '$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', -- password: admin
     'PM',
     'Project Management'
-); 
+);
+
+-- Sample Clients Data
+INSERT INTO clients (client_id, client_name, contact_person, email, phone, country)
+VALUES 
+    ('CL001', 'Acme Corporation', 'John Smith', 'john.smith@acme.com', '+1-555-123-4567', 'USA'),
+    ('CL002', 'Tech Solutions Inc', 'Sarah Johnson', 'sarah.j@techsolutions.com', '+44-20-7123-4567', 'UK'),
+    ('CL003', 'Global Industries', 'Michael Chen', 'm.chen@globalind.com', '+86-10-1234-5678', 'China'),
+    ('CL004', 'Innovate Research', 'Emma Wilson', 'emma.w@innovaters.com', '+61-2-9876-5432', 'Australia'),
+    ('CL005', 'Market Insights Ltd', 'David Brown', 'd.brown@marketinsights.com', '+1-416-555-7890', 'Canada');
+
+-- Sample Sales Data
+INSERT INTO sales (sales_id, sales_person, contact_person, reporting_manager, region)
+VALUES 
+    ('S001', 'Robert Taylor', 'Robert Taylor', 'James Wilson', 'north'),
+    ('S002', 'Lisa Anderson', 'Lisa Anderson', 'James Wilson', 'south'),
+    ('S003', 'Mark Johnson', 'Mark Johnson', 'Sarah Davis', 'east'),
+    ('S004', 'Emily White', 'Emily White', 'Sarah Davis', 'west'),
+    ('S005', 'Daniel Lee', 'Daniel Lee', 'James Wilson', 'north');
+
+-- Sample Vendor Managers Data
+INSERT INTO vendor_managers (vm_id, vm_name, email, phone)
+VALUES 
+    ('VM001', 'James Wilson', 'james.w@company.com', '+1-555-234-5678'),
+    ('VM002', 'Sarah Davis', 'sarah.d@company.com', '+1-555-345-6789'),
+    ('VM003', 'Michael Brown', 'michael.b@company.com', '+1-555-456-7890'),
+    ('VM004', 'Jennifer Lee', 'jennifer.l@company.com', '+1-555-567-8901'),
+    ('VM005', 'David Miller', 'david.m@company.com', '+1-555-678-9012');
+
+-- Sample Partners Data
+INSERT INTO partners (partner_id, partner_name, contact_person, email, phone, country)
+VALUES 
+    ('P001', 'Research Partners Inc', 'Thomas Clark', 't.clark@researchpartners.com', '+1-555-789-0123', 'USA'),
+    ('P002', 'Global Research Solutions', 'Anna Schmidt', 'a.schmidt@globalresearch.com', '+49-30-1234-5678', 'Germany'),
+    ('P003', 'Asia Research Network', 'Hiroshi Tanaka', 'h.tanaka@asianetwork.com', '+81-3-1234-5678', 'Japan'),
+    ('P004', 'European Research Group', 'Maria Garcia', 'm.garcia@europeanresearch.com', '+34-91-123-4567', 'Spain'),
+    ('P005', 'Latin America Research', 'Carlos Rodriguez', 'c.rodriguez@latinresearch.com', '+55-11-1234-5678', 'Brazil'); 
