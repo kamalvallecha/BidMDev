@@ -1,0 +1,22 @@
+"id","email","name","employee_id","password_hash","role","team","created_at","updated_at"
+"1","admin@example.com","Admin User","ADMIN001","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","Administration",2025-04-09T06:58:35.608Z,2025-04-09T06:58:35.608Z
+"2","sales@example.com","Sales User","SALES001","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","sales","Sales",2025-04-09T06:58:35.848Z,2025-04-09T06:58:35.848Z
+"3","vm@example.com","VM User","VM001","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","VM","Vendor Management",2025-04-09T06:58:36.085Z,2025-04-09T06:58:36.085Z
+"4","pm@example.com","PM User","PM001","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","PM","Project Management",2025-04-09T06:58:36.320Z,2025-04-09T06:58:36.320Z
+"25","joy.mukherjee@c5i.ai","Joy Mukherjee","101640","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","POD 2",2025-04-13T03:46:40.200Z,2025-04-13T03:46:40.200Z
+"26","prashanth.chiliveri@c5i.ai","Prashanth Chiliveri","100065","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","POD 1",2025-04-13T04:38:23.332Z,2025-04-13T04:38:23.332Z
+"27","ravinder.karre@c5i.ai","Ravinder Karre","100060","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","POD 3",2025-04-14T06:46:55.267Z,2025-04-14T06:46:55.267Z
+"28","puneet.khurana@c5i.ai","Puneet Khurana","100321","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","Operations",2025-04-14T06:47:50.711Z,2025-04-14T06:47:50.711Z
+"29","ashish.das@c5i.ai","Ashish Das","100338","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","Operations",2025-04-14T06:48:18.143Z,2025-04-14T06:48:18.143Z
+"38","sumanto.dutta@c5i.ai","Sumanto Dutta","102052","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","POD 4",2025-04-14T08:43:41.388Z,2025-04-14T08:43:41.388Z
+"39","kamal.vallecha@c5i.ai","Kamal Vallecha","100015","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","admin","POD 4",2025-04-14T09:32:26.029Z,2025-04-14T09:32:26.029Z
+"41","prithvi.sharma@c5i.ai","Prithvi Sharma","101668","sha256$NvD0shoED5kNvj6u$48ed2229b415acc6fdc90f65816f2e8c1d4bc0f7a58b52c094a3e66de9ed0c6d","PM","POD 4",2025-04-14T09:40:18.947Z,2025-04-14T09:40:18.947Z
+"42","Prateek.Arya@c5i.ai","Prateek Arya","102693","sha256$3PtVLj12N678RBGA$790b801c95d3112b88c2fb256ae3e621aaff2515fe4af799acd75a29fe42fcbb","PM","POD 4",2025-04-14T09:44:23.204Z,2025-04-14T09:44:23.204Z
+"43","ruturaj.mohite@c5i.ai","Ruturaj Mohite","102424","sha256$DbPhMiWDrHXcwHiP$94cdacd43a6732eca34407c61447645a74dbf6c1f5c7b135c9517d1875d98dd2","VM","POD 4",2025-04-14T13:38:14.876Z,2025-04-14T13:38:14.876Z
+"44","vincent.soares@c5i.ai","Vincent Soares","100575","sha256$DAZwLCxAFTHjAaGE$5f98ef970499ce255a758cddb060ab6664783b5338cb23a2614d5e8298d6473f","VM","POD 1",2025-04-15T04:00:27.416Z,2025-04-15T04:00:27.416Z
+"45","ankit.jain@c5i.ai","Ankit Jain","102282","sha256$07m0xgjBEGioOHUm$fae3d1ff56823cd8ca530056ba33ea9c1af54c0c8c58e6fedc44f6f1c349d43c","VM","POD 1",2025-04-15T04:00:50.724Z,2025-04-15T04:00:50.724Z
+"46","mukilan.k@c5i.ai","Mukilan A K","102954","sha256$KxWVHwaKslgebfwX$ce7de247b978d3eb13c24c62155b89355f5c48443bc5a7a036297dcccc48cd39","VM","POD 1",2025-04-15T04:01:45.951Z,2025-04-15T04:01:45.951Z
+"47","sagar.gohil@c5i.ai","Sagar Mahendra Gohil","102020","sha256$lk7VrsjuwnkUaLMJ$af2ee7d2fc1278b8c59cdab1bfe552698a059d45e345825886807d98c4764942","VM","POD 1",2025-04-15T04:02:45.836Z,2025-04-15T04:02:45.836Z
+"48","Kanika@c5i.ai","Kanika","103137","sha256$0HuXXpL2rKP2aVi7$f25bbf65da551657139d3e6e95ceab52b97bba9ef4d2ee932317fc7e3361eecf","VM","POD 2",2025-04-16T08:02:52.732Z,2025-04-16T08:02:52.732Z
+"49","Bhavi1.Bhavsaar@c5i.ai","Bhavi Atul Bhavsaar","103136","sha256$SMZIJloK1V1XyNjf$54348565d2c05338c8777c2f0ccc53138a9c00e1d3105999f2077daa5060eab7","VM","POD 2",2025-04-16T08:03:43.383Z,2025-04-16T08:03:43.383Z
+"50","Sandeep.Gill@c5i.ai","Sandeep Gill","102726","sha256$o12yeOl4w9Qw3r4X$1a8358c26ed2318dc8235c30e7c65045fd8c552caf384bc78d025960d89b3d1b","VM","POD 2",2025-04-16T08:09:19.472Z,2025-04-16T08:09:19.472Z

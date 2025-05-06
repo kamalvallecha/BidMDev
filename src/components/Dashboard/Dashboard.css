@@ -1,0 +1,58 @@
+.dashboard-container {
+    padding: 24px;
+}
+
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.dashboard-card {
+    height: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.card-icon {
+    font-size: 24px;
+    padding: 16px;
+    border-radius: 8px;
+    background-color: #f0f2f5;
+}
+
+.card-info {
+    flex-grow: 1;
+}
+
+.card-info h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.card-info p {
+    margin: 4px 0;
+    color: #8c8c8c;
+}
+
+.percentage-change {
+    font-size: 12px;
+    display: block;
+    margin-top: 4px;
+}
+
+.percentage-change.positive {
+    color: #52c41a;
+}
+
+.percentage-change.negative {
+    color: #ff4d4f;
+} 
