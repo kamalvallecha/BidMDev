@@ -4225,33 +4225,41 @@ def login():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Get user from database
-        cur.execute("SELECT id, email, name, role, password_hash FROM users WHERE email = %s", (email,))
-        user = cur.fetchone()
-        
-        if not user:
-            print(f"User not found: {email}")
+        try:
+            # Get user from database
+            cur.execute("SELECT id, email, name, role, password_hash FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
+            
+            if not user:
+                print(f"User not found: {email}")
+                return jsonify({'error': 'Invalid email or password'}), 401
+                
+            password_hash = user['password_hash']
+            if not password_hash:
+                print(f"No password hash for user: {email}")
+                return jsonify({'error': 'Invalid email or password'}), 401
+
+            is_authenticated = check_password_hash(password_hash, password)
+            
+            if is_authenticated:
+                # Get permissions for the user's role
+                permissions = ROLES_AND_PERMISSIONS.get(user['role'], {})
+                
+                user_data = {
+                    'id': user['id'],
+                    'email': user['email'],
+                    'name': user['name'],
+                    'role': user['role'],
+                    'permissions': permissions
+                }
+                print(f"Login successful for {email}")
+                return jsonify({'token': 'sample-jwt-token', 'user': user_data})
+            
+            print(f"Login failed for email: {email}")
             return jsonify({'error': 'Invalid email or password'}), 401
-            
-        password_hash = user['password_hash']
-        is_authenticated = check_password_hash(password_hash, password)
-        
-        if is_authenticated:
-            # Get permissions for the user's role
-            permissions = ROLES_AND_PERMISSIONS.get(user['role'], {})
-            
-            user_data = {
-                'id': user['id'],
-                'email': user['email'],
-                'name': user['name'],
-                'role': user['role'],
-                'permissions': permissions
-            }
-            print(f"Login successful for {email}")
-            return jsonify({'token': 'sample-jwt-token', 'user': user_data})
-        
-        print(f"Login failed for email: {email}")
-        return jsonify({'error': 'Invalid email or password'}), 401
+        finally:
+            cur.close()
+            conn.close()
             
     except Exception as e:
         print(f"Login error: {str(e)}")
