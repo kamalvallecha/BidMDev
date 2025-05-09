@@ -273,6 +273,7 @@ const Users = () => {
                         >
                             <Select>
                                 <Option value="admin">Admin</Option>
+                                <Option value="Sales">Sales</Option>
                                 <Option value="PM">PM</Option>
                                 <Option value="VM">VM</Option>
                             </Select>
@@ -288,6 +289,7 @@ const Users = () => {
                                 <Option value="POD 2">POD 2</Option>
                                 <Option value="POD 3">POD 3</Option>
                                 <Option value="POD 4">POD 4</Option>
+                                <Option value="Sales">Sales</Option>
                                 <Option value="Operations">Operations</Option>
                             </Select>
                         </Form.Item>
@@ -355,6 +357,7 @@ const Users = () => {
                         >
                             <Select>
                                 <Option value="admin">Admin</Option>
+                                <Option value="Sales">Sales</Option>
                                 <Option value="PM">PM</Option>
                                 <Option value="VM">VM</Option>
                             </Select>
@@ -370,6 +373,7 @@ const Users = () => {
                                 <Option value="POD 2">POD 2</Option>
                                 <Option value="POD 3">POD 3</Option>
                                 <Option value="POD 4">POD 4</Option>
+                                <Option value="Sales">Sales</Option>
                                 <Option value="Operations">Operations</Option>
                             </Select>
                         </Form.Item>

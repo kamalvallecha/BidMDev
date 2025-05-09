@@ -20,10 +20,15 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import BlockIcon from '@mui/icons-material/Block';
 import RestoreIcon from '@mui/icons-material/Restore';
+import GroupIcon from '@mui/icons-material/Group';
+import LinkIcon from '@mui/icons-material/Link';
+import DescriptionIcon from '@mui/icons-material/Description';
 import axios from '../../api/axios';
 import './Bids.css';
 import PONumberDialog from './PONumberDialog';
 import RejectBidDialog from './RejectBidDialog';
+import PartnerResponseSummaryDialog from './PartnerResponseSummaryDialog';
+import PartnerLinkDialog from './PartnerLinkDialog';
 
 function BidList() {
   const [bids, setBids] = useState([]);
@@ -34,6 +39,10 @@ function BidList() {
   const [selectedBidId, setSelectedBidId] = useState(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [bidToReject, setBidToReject] = useState(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkDialogBid, setLinkDialogBid] = useState(null);
 
   useEffect(() => {
     fetchBids();
@@ -135,10 +144,24 @@ function BidList() {
     }
   };
 
+  const handleShowPartnerSummary = (bid) => {
+    setSelectedBid(bid);
+    setSummaryOpen(true);
+  };
+
+  const handleShowPartnerLinks = (bid) => {
+    setLinkDialogBid(bid);
+    setLinkDialogOpen(true);
+  };
+
+  const handleCreateProposal = (bid) => {
+    navigate(`/proposals/${bid.id}`);
+  };
+
   const filteredBids = bids.filter(bid => 
-    bid.bid_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bid.study_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bid.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+    (bid.bid_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (bid.study_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (bid.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const renderActions = (bid) => {
@@ -199,6 +222,21 @@ function BidList() {
             </IconButton>
           </Tooltip>
         )}
+        <Tooltip title="Partner Response Summary">
+          <IconButton color="info" onClick={() => handleShowPartnerSummary(bid)}>
+            <GroupIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Generate Partner Link">
+          <IconButton color="primary" onClick={() => handleShowPartnerLinks(bid)}>
+            <LinkIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Create Proposal">
+          <IconButton color="primary" onClick={() => handleCreateProposal(bid)}>
+            <DescriptionIcon />
+          </IconButton>
+        </Tooltip>
       </Stack>
     );
   };
@@ -276,6 +314,16 @@ function BidList() {
         }}
         bidNumber={bidToReject?.bid_number}
         onSubmit={handleRejectSubmit}
+      />
+      <PartnerResponseSummaryDialog
+        open={summaryOpen}
+        onClose={() => setSummaryOpen(false)}
+        bidId={selectedBid?.id}
+      />
+      <PartnerLinkDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        bidId={linkDialogBid?.id}
       />
     </>
   );

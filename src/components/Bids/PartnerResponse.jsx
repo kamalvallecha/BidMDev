@@ -20,6 +20,9 @@ import {
 } from '@mui/material';
 import axios from '../../api/axios';
 import './Bids.css';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
 
 function PartnerResponse() {
   const navigate = useNavigate();
@@ -35,6 +38,10 @@ function PartnerResponse() {
   const [partnerSettings, setPartnerSettings] = useState({});
   const [error, setError] = useState(null);
   const [responsesInitialized, setResponsesInitialized] = useState(false);
+  const [linkData, setLinkData] = useState({});
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkError, setLinkError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const currentPartner = partners[selectedPartner];
 
@@ -312,6 +319,37 @@ function PartnerResponse() {
     });
   };
 
+  const handleGenerateLink = async () => {
+    setLinkLoading(true);
+    setLinkError('');
+    try {
+      const res = await axios.post(`/api/bids/${bidId}/partners/${currentPartner.id}/generate-link`);
+      setLinkData(prev => ({
+        ...prev,
+        [currentPartner.id]: { link: res.data.link, expiresAt: res.data.expires_at }
+      }));
+    } catch (err) {
+      setLinkError('Failed to generate link');
+    }
+    setLinkLoading(false);
+  };
+
+  // Helper to format time remaining
+  const getTimeRemaining = (expiresAt) => {
+    if (!expiresAt) return '';
+    const expiry = new Date(expiresAt);
+    const now = new Date();
+    const diffMs = expiry - now;
+    if (diffMs <= 0) return 'Expired';
+    const diffMins = Math.floor(diffMs / 60000) % 60;
+    const diffHrs = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffHrs / 24);
+    const hrs = diffHrs % 24;
+    if (diffDays > 0) return `${diffDays}d ${hrs}h ${diffMins}m left`;
+    if (hrs > 0) return `${hrs}h ${diffMins}m left`;
+    return `${diffMins}m left`;
+  };
+
   if (loading) {
     return (
       <div className="partner-response-container">
@@ -387,6 +425,33 @@ function PartnerResponse() {
 
               {currentPartner && (
                 <div className="partner-tab-content">
+                  <div style={{ marginBottom: 16 }}>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={handleGenerateLink}
+                      disabled={linkLoading}
+                    >
+                      {linkLoading ? 'Generating...' : 'Generate Link'}
+                    </Button>
+                    {linkData[currentPartner.id] && (
+                      <div>
+                        <strong>Link:</strong> <a href={linkData[currentPartner.id].link} target="_blank" rel="noopener noreferrer">{linkData[currentPartner.id].link}</a>
+                        <Tooltip title={copied ? 'Copied!' : 'Copy link'} open={copied} onClose={() => setCopied(false)}>
+                          <IconButton size="small" onClick={() => {
+                            navigator.clipboard.writeText(linkData[currentPartner.id].link);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1200);
+                          }}>
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <br />
+                        <strong>Expires At:</strong> {getTimeRemaining(linkData[currentPartner.id].expiresAt)}
+                      </div>
+                    )}
+                    {linkError && <div style={{ color: 'red' }}>{linkError}</div>}
+                  </div>
                   <div className="partner-settings">
                     <FormControl className="currency-select">
                       <Select

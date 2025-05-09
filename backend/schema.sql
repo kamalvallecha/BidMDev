@@ -188,6 +188,16 @@ CREATE TABLE partner_audience_responses (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Proposals Table
+CREATE TABLE proposals (
+    id SERIAL PRIMARY KEY,
+    bid_id INTEGER REFERENCES bids(id) ON DELETE CASCADE,
+    data JSONB NOT NULL, -- stores all allocation, margin, summary, etc.
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes
 CREATE INDEX idx_bids_client ON bids(client);
 CREATE INDEX idx_bids_sales_contact ON bids(sales_contact);

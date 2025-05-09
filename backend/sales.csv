@@ -1,5 +1,2 @@
-"id","sales_id","sales_person","contact_person","reporting_manager","region","created_at","updated_at"
-"1","100036","Shrikant Sunchu","shrikant.sunchu@c5i.ai","Varun Vig","north",2025-04-07T13:22:42.383Z,2025-04-08T20:13:29.359Z
-"3","100042","Sameer Mahadik","Sameer.Mahadik@c5i.ai","Varun Vig","west",2025-04-15T14:17:53.006Z,2025-04-15T14:17:53.006Z
-"4","101054","Disha Batheja","Disha.Batheja@c5i.ai","Varun Vig","west",2025-04-15T14:18:37.610Z,2025-04-15T14:18:37.610Z
-"5","102205","Nagmani Gadkari","Nagmani.Gadkari@c5i.ai","Varun Vig","west",2025-04-15T14:19:22.452Z,2025-04-15T14:19:22.452Z
+id,sales_id,sales_person,contact_person,reporting_manager,region,created_at,updated_at
+1,100036,Shrikant Sunchu,shrikant.sunchu@c5i.ai,Varun Vig,north,2025-04-07 18:52:42.383336,2025-04-09 01:43:29.359355

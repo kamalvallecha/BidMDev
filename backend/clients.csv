@@ -1,24 +1,2 @@
-"id","client_id","client_name","contact_person","email","phone","country","created_at","updated_at"
-"1","C5i_1","Vritual Causway","Bill","bill@vc.com","88888881","USA",2025-04-07T13:23:17.296Z,2025-04-08T20:10:11.017Z
-"6","C5i_2","Landor-Singapore","Monica Zhu ","monica.zhu@landor.com","NA","Singapore",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"7","C5i_3","Landor-Japan","Mitz Dehari","mitz.dehari@landor.com","NA","Japan",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"8","C5i_4","Landor-Dubai","Himanshu Pal ","Himanshu.pal@landor.com","NA","Dubai",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"9","C5i_5","Landor-UK","Julio Garriga","julio.garriga@landor.com","NA","UK",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"10","C5i_6","Landor-USA","Anthony Riva ","anthony.riva@landor.com","NA","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"11","C5i_7","BCG","Arora, Ranjan","Arora.Ranjan@bcg.com","NA","India",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"12","C5i_8","Intuit","Amit Phatak","amit.phatak@intuit-research.com","NA","Singapore",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"13","C5i_9","FleishmanHillard","Ben Levine ","Ben.Levine@trueglobalintelligence.com","NA","UK",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"14","C5i_10","ARW","Hilary Ellis","Hilary.ellis@adelphigroup.com ","NA","UK",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"15","C5i_11","Luminate","Noah Elwell","nelwell@luminatedata.com","NA","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"16","C5i_12","Factworks-India","Medha Sarkar","sarkar@factworks.com","NA","India",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"17","C5i_13","Factworks-USA","Anchal Chabra","chhabra@factworks.com","NA","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"18","C5i_14","Factworks-Berlin","Adrian Becker","becker@factworks.com","NA","Berlin",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"19","C5i_15","Monigle","Zack Bruggeman","zbruggeman@monigle.com","937-269-6602","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"20","C5i_16","Vision Research","Albert Fitzgerald","al.fitzgerald@visionsresearch.com","(858) 204-5628  ","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"21","C5i_17","2CV","Karine Pepin","Karine.Pepin@2cv.com","1 415 632 6788","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"22","C5i_18","Shake shack","Charles Frankievich","CFrankievich@shakeshack.com","NA","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"23","C5i_19","Erdos Media research","Paul Di Lillo","pdilillo@erdosmedia.com","NA","USA",2025-04-15T14:57:25.996Z,2025-04-15T14:57:25.996Z
-"24","C5i_20","Advertiser Perceptions","Katie Jurina","katie.jurina@advertiserperceptions.com","NA","USA",2025-04-15T15:02:50.997Z,2025-04-15T15:02:50.997Z
-"25","C5i_21","Lupiani Insights","Lupiani Insights","abc@lupianiinsights.com","NA","USA",2025-04-16T13:16:43.671Z,2025-04-16T13:16:43.671Z
-"26","C5i_22","Imagine If Research & Insights","Imagine If Research & Insights","abc@imagineifresearchinsights.com","NA","USA",2025-04-16T13:17:40.705Z,2025-04-16T13:17:40.705Z
-"27","C5i_23","Edelman","Edelman","abc@edelman.com","NA","USA",2025-04-16T13:21:29.762Z,2025-04-16T13:21:29.762Z
+id,client_id,client_name,contact_person,email,phone,country,created_at,updated_at
+1,C5i_1,Vritual Causway,Bill,bill@vc.com,88888881,USA,2025-04-07 18:53:17.29629,2025-04-09 01:40:11.017104
