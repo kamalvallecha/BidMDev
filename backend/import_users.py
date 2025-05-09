@@ -27,7 +27,7 @@ def import_users():
 
         # Insert default admin user
         default_password = "admin"
-        hashed_password = generate_password_hash(default_password, method='pbkdf2:sha256')
+        hashed_password = generate_password_hash(default_password, method='pbkdf2:sha256:200000')
 
         # Check if admin user exists
         cur.execute("SELECT id FROM users WHERE email = 'admin@example.com'")
