@@ -4211,8 +4211,14 @@ def serve_react(path):
 def login():
     try:
         data = request.json
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+            
         email = data.get('email')
         password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
         
         print(f"Login attempt with email: {email}")
         
