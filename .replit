@@ -12,23 +12,6 @@ run = ["sh", "-c", "npm run dev"]
 runButton = "Full Stack"
 
 [[workflows.workflow]]
-name = "Backend Dev"
-author = 38348679
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd backend"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pip install -r requirements.txt"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
 name = "Full Stack"
 author = 38348679
 mode = "parallel"
