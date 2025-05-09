@@ -4188,20 +4188,17 @@ def favicon():
 @app.route('/<path:path>')
 def serve_react(path):
     try:
+        if path.startswith('api/'):
+            return {"error": "Not found"}, 404
+            
         dist_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist')
         
-        # For non-empty paths, try to serve the specific file
-        if path:
-            file_path = os.path.join(dist_dir, path)
-            if os.path.exists(file_path) and os.path.isfile(file_path):
-                return send_from_directory(dist_dir, path)
-        
         # For root path or if specific file not found, serve index.html
-        index_path = os.path.join(dist_dir, 'index.html')
-        if os.path.exists(index_path):
+        if not path or not os.path.exists(os.path.join(dist_dir, path)):
             return send_from_directory(dist_dir, 'index.html')
-            
-        return "React app not built. Please run 'npm run build' first.", 404
+        
+        # For other paths, try to serve the file
+        return send_from_directory(dist_dir, path)
         
     except Exception as e:
         print(f"Error serving file: {str(e)}")
