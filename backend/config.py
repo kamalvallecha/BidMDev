@@ -6,7 +6,7 @@ load_dotenv()
 
 class Config:
     # Database configuration
-    DATABASE_URL = os.getenv('DATABASE_URL', "postgresql://postgres:root123@localhost:5432/BidM")
+    DATABASE_URL = os.getenv('DATABASE_URL')
 
     # JWT configuration
     SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key')
