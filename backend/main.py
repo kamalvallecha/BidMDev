@@ -4228,14 +4228,7 @@ def login():
             return jsonify({'error': 'Invalid email or password'}), 401
             
         password_hash = user['password_hash']
-        is_authenticated = False
-        
-        try:
-            # Try Werkzeug's check_password_hash first
-            is_authenticated = check_password_hash(password_hash, password)
-        except Exception as e:
-            print(f"Password verification error: {str(e)}")
-            is_authenticated = False
+        is_authenticated = check_password_hash(password_hash, password)
         
         if is_authenticated:
             # Get permissions for the user's role
