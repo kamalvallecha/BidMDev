@@ -4888,11 +4888,7 @@ def get_proposal(proposal_id):
 # Move app.run to the end after all routes are defined
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    if os.environ.get('FLASK_ENV') == 'production' or os.environ.get('REPLIT_DEPLOYMENT'):
-        from waitress import serve
-        serve(app, host='0.0.0.0', port=port, url_scheme='https')
-    else:
-        app.run(host='0.0.0.0', port=port, debug=Config.DEBUG)
+    app.run(host='0.0.0.0', port=port, debug=True)
 
 @app.before_first_request
 def create_tables():
