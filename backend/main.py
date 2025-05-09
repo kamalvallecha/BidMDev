@@ -4222,10 +4222,12 @@ def login():
         
         print(f"Login attempt with email: {email}")
         
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
+        conn = None
+        cur = None
         try:
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            
             # Get user from database
             cur.execute("SELECT id, email, name, role, password_hash FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
@@ -4257,9 +4259,16 @@ def login():
             
             print(f"Login failed for email: {email}")
             return jsonify({'error': 'Invalid email or password'}), 401
+        
+        except Exception as e:
+            print(f"Database error: {str(e)}")
+            raise
+            
         finally:
-            cur.close()
-            conn.close()
+            if cur:
+                cur.close()
+            if conn:
+                conn.close()
             
     except Exception as e:
         print(f"Login error: {str(e)}")
