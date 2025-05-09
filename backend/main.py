@@ -4239,6 +4239,10 @@ def login():
                 return jsonify({'error': 'Invalid email or password'}), 401
 
             try:
+                # The password_hash should include the method, so check_password_hash can work
+                if not password_hash.startswith('pbkdf2:sha256:'):
+                    # If old hash format, generate new hash with correct format
+                    password_hash = generate_password_hash(password, method='pbkdf2:sha256')
                 is_authenticated = check_password_hash(password_hash, password)
             except ValueError as e:
                 print(f"Password verification error: {str(e)}")
