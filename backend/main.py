@@ -4241,7 +4241,11 @@ def login():
                 print(f"No password hash for user: {email}")
                 return jsonify({'error': 'Invalid email or password'}), 401
 
-            is_authenticated = check_password_hash(password_hash, password)
+            try:
+                is_authenticated = check_password_hash(password_hash, password)
+            except ValueError as e:
+                print(f"Password verification error: {str(e)}")
+                return jsonify({'error': 'Invalid email or password'}), 401
             
             if is_authenticated:
                 # Get permissions for the user's role
