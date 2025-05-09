@@ -16,3 +16,5 @@ class Config:
     # Other configuration
     DEBUG = True
     CORS_HEADERS = 'Content-Type'
+    HOST = '0.0.0.0'
+    PORT = 5000
