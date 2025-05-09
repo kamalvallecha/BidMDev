@@ -4908,8 +4908,19 @@ def get_proposal(proposal_id):
 # Move app.run to the end after all routes are defined
 if __name__ == '__main__':
     port = 5000
-    print(f"Starting Flask server on port {port}")
-    app.run(host='0.0.0.0', port=port, debug=True)
+    max_retries = 3
+    
+    for retry in range(max_retries):
+        try:
+            print(f"Starting Flask server on port {port}")
+            app.run(host='0.0.0.0', port=port, debug=True)
+            break
+        except OSError as e:
+            if e.errno == 98:  # Address already in use
+                print(f"Port {port} is in use, retrying on port {port + 1}")
+                port += 1
+            else:
+                raise e
 
 @app.before_first_request
 def create_tables():
