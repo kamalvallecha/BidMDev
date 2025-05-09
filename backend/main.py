@@ -182,7 +182,7 @@ def handle_users():
 
         elif request.method == 'POST':
             data = request.json
-            password_hash = generate_password_hash(data['password'], method='pbkdf2:sha256')
+            password_hash = generate_password_hash(data['password'], method='pbkdf2:sha256:200000')
 
             # Validate required fields
             required_fields = ['email', 'name', 'password', 'role', 'team']
