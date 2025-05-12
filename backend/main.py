@@ -4642,19 +4642,9 @@ def get_partner_responses_summary(bid_id):
         cur.execute("SELECT id, audience_name FROM bid_target_audiences WHERE bid_id = %s", (bid_id,))
         audiences = cur.fetchall()
 
-        # Get all countries for each audience, including is_best_efforts
-        cur.execute("SELECT audience_id, country, is_best_efforts FROM bid_audience_countries WHERE bid_id = %s", (bid_id,))
-        country_rows = cur.fetchall()
-        audience_countries = {}
-        for row in country_rows:
-            audience_countries.setdefault(row['audience_id'], []).append({
-                'country': row['country'],
-                'is_best_efforts': row['is_best_efforts']
-            })
-
-        # Get all partner audience responses for this bid
+        # Get all partner audience responses for this bid (with is_best_efforts and commitment_type)
         cur.execute("""
-            SELECT pr.partner_id, pr.loi, par.audience_id, par.country, par.commitment, par.cpi, pr.status, pr.updated_at
+            SELECT pr.partner_id, pr.loi, par.audience_id, par.country, par.commitment, par.cpi, pr.status, pr.updated_at, par.is_best_efforts, par.commitment_type
             FROM partner_responses pr
             LEFT JOIN partner_audience_responses par ON pr.id = par.partner_response_id
             WHERE pr.bid_id = %s
@@ -4672,6 +4662,8 @@ def get_partner_responses_summary(bid_id):
             cpi = row['cpi']
             status = row['status']
             updated_at = row['updated_at']
+            is_best_efforts = row['is_best_efforts']
+            commitment_type = row['commitment_type']
             if partner_id is None or loi is None:
                 continue
             partner_loi_map.setdefault(partner_id, {})
@@ -4686,13 +4678,8 @@ def get_partner_responses_summary(bid_id):
             })
             if audience_id is not None and country is not None:
                 aud = partner_loi_map[partner_id][loi]['audiences'].setdefault(audience_id, {'countries': []})
-                # Find is_best_efforts for this country
-                is_be = False
-                for c in audience_countries.get(audience_id, []):
-                    if c['country'] == country:
-                        is_be = c['is_best_efforts']
-                        break
-                c_type = 'be_max' if is_be else 'commitment'
+                # Use is_best_efforts and commitment_type from partner response
+                c_type = 'be_max' if (commitment_type == 'be_max' or is_best_efforts) else 'commitment'
                 # For BE/Max, count as complete if cpi is not None and cpi > 0 (ignore commitment)
                 # For Commitment, count as complete if commitment > 0 AND cpi is not None and cpi > 0
                 if c_type == 'be_max':
@@ -4740,17 +4727,9 @@ def get_partner_responses_summary(bid_id):
                             'audience_name': aud['audience_name'],
                             'countries': []
                         }
-                        for c in audience_countries.get(aud_id, []):
-                            # Find status/type for this country
-                            c_status = 'missing'
-                            c_type = 'be_max' if c['is_best_efforts'] else 'commitment'
-                            if aud_id in loi_data['audiences']:
-                                for cc in loi_data['audiences'][aud_id]['countries']:
-                                    if cc['name'] == c['country']:
-                                        c_status = cc['status']
-                                        c_type = cc['type']
-                                        break
-                            aud_obj['countries'].append({'name': c['country'], 'status': c_status, 'type': c_type})
+                        if aud_id in loi_data['audiences']:
+                            for cc in loi_data['audiences'][aud_id]['countries']:
+                                aud_obj['countries'].append(cc)
                         loi_obj['audiences'].append(aud_obj)
                     # Compute status
                     if loi_obj['total_count'] > 0 and loi_obj['complete_count'] == loi_obj['total_count']:
@@ -4765,7 +4744,7 @@ def get_partner_responses_summary(bid_id):
                         aud_id = aud['id']
                         aud_obj = {
                             'audience_name': aud['audience_name'],
-                            'countries': [{'name': c['country'], 'status': 'missing', 'type': 'be_max' if c['is_best_efforts'] else 'commitment'} for c in audience_countries.get(aud_id, [])]
+                            'countries': []
                         }
                         loi_obj['audiences'].append(aud_obj)
                 lois_arr.append(loi_obj)
