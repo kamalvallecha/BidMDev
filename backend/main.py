@@ -4290,6 +4290,18 @@ def generate_partner_link(bid_id, partner_id):
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Validate bid and partner exist
+        cur.execute("""
+            SELECT b.id as bid_id, p.id as partner_id, p.email
+            FROM bids b 
+            JOIN partners p ON p.id = %s
+            WHERE b.id = %s
+        """, (partner_id, bid_id))
+        
+        validation = cur.fetchone()
+        if not validation:
+            return jsonify({"error": "Invalid bid or partner ID"}), 404
         
         # Check if a valid link already exists
         cur.execute("""
@@ -4319,6 +4331,28 @@ def generate_partner_link(bid_id, partner_id):
         
         new_link = cur.fetchone()
         conn.commit()
+
+        # Send email notification to partner if email is available
+        if validation['email']:
+            try:
+                msg = Message(
+                    'Partner Response Link Generated',
+                    sender=app.config['MAIL_DEFAULT_SENDER'],
+                    recipients=[validation['email']]
+                )
+                
+                msg.body = f"""
+                A new response link has been generated for your bid.
+                
+                Link: {request.host_url}partner-response/{new_link['token']}
+                Expires: {expires_at.strftime('%Y-%m-%d %H:%M:%S')}
+                
+                Please complete your response before the link expires.
+                """
+                
+                mail.send(msg)
+            except Exception as email_error:
+                print(f"Error sending email notification: {str(email_error)}")
         
         return jsonify({
             'link': f"{request.host_url}partner-response/{new_link['token']}",
