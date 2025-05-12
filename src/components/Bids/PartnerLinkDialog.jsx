@@ -40,9 +40,9 @@ function PartnerLinkDialog({ open, onClose, bidId }) {
   const fetchPartners = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/bids/${bidId}/partners`);
-      const partners = res.data.partners || [];
-      setPartners(partners.filter(p => p && p.id));
+      const res = await axios.get('/api/partners');
+      const partners = res.data || [];
+      setPartners(partners.filter(p => p));
     } catch (e) {
       setError('Failed to fetch partners');
       setPartners([]);
@@ -175,4 +175,4 @@ function PartnerLinkDialog({ open, onClose, bidId }) {
   );
 }
 
-export default PartnerLinkDialog; 
+export default PartnerLinkDialog;
