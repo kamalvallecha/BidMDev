@@ -9,7 +9,41 @@ packages = ["glibcLocales"]
 run = ["sh", "-c", "npm run dev"]
 
 [workflows]
-runButton = "Full Stack"
+runButton = "Backend"
+
+[[workflows.workflow]]
+name = "Frontend Dev"
+author = 38348679
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd ."
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Backend Dev"
+author = 38348679
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[workflows.workflow]]
 name = "Full Stack"
@@ -19,6 +53,23 @@ mode = "parallel"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd backend && pip install -r requirements.txt && python main.py & cd . && npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Backend"
+author = 38348679
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
 
 [[ports]]
 localPort = 3000
