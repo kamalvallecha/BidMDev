@@ -670,11 +670,12 @@ def get_bids():
 def create_bid():
     try:
         data = request.json
-        print("Received sales data:", data)
+        print("Received bid data:", data)
 
         required_fields = [
-            'sales_id', 'sales_person', 'contact_person', 'reporting_manager',
-            'region'
+            'bid_number', 'bid_date', 'study_name', 'methodology',
+            'sales_contact', 'vm_contact', 'client', 'project_requirement',
+            'countries', 'target_audiences'
         ]
         for field in required_fields:
             if field not in data:
@@ -683,50 +684,97 @@ def create_bid():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Check if sales ID already exists
-        cur.execute('SELECT id FROM sales WHERE sales_id = %s', (data['sales_id'], ))
-        if cur.fetchone():
-            return jsonify({"error": "Sales ID already exists"}), 400
-
-        # Create region enum if it doesn't exist
-        cur.execute('''
-            DO $$ 
-            BEGIN
-                IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'region') THEN
-                    CREATE TYPE region AS ENUM ('north', 'south', 'east', 'west');
-                END IF;
-            END $$;
-        ''')
-
-        # Insert new sales record
+        # Insert new bid record
         cur.execute(
             '''
-            INSERT INTO sales (
-                sales_id, 
-                sales_person, 
-                contact_person, 
-                reporting_manager, 
-                region, 
-                created_at, 
+            INSERT INTO bids (
+                bid_number,
+                bid_date,
+                study_name,
+                methodology,
+                sales_contact,
+                vm_contact,
+                client,
+                project_requirement,
+                status,
+                created_at,
                 updated_at
             )
-            VALUES (%s, %s, %s, %s, %s::region, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'draft', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING id
-        ''', (data['sales_id'], data['sales_person'], data['contact_person'],
-              data['reporting_manager'], data['region'].lower()))
+        ''', (
+            data['bid_number'],
+            data['bid_date'],
+            data['study_name'],
+            data['methodology'],
+            data['sales_contact'],
+            data['vm_contact'],
+            data['client'],
+            data['project_requirement']
+        ))
 
-        new_id = cur.fetchone()[0]
+        bid_id = cur.fetchone()[0]
+
+        # Insert target audiences
+        for audience in data['target_audiences']:
+            cur.execute(
+                '''
+                INSERT INTO bid_target_audiences (
+                    bid_id,
+                    audience_name,
+                    ta_category,
+                    broader_category,
+                    exact_ta_definition,
+                    mode,
+                    sample_required,
+                    ir,
+                    comments,
+                    is_best_efforts
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            ''', (
+                bid_id,
+                audience['name'],
+                audience['ta_category'],
+                audience['broader_category'],
+                audience['exact_ta_definition'],
+                audience['mode'],
+                audience['sample_required'],
+                audience['ir'],
+                audience.get('comments', ''),
+                audience.get('is_best_efforts', False)
+            ))
+            audience_id = cur.fetchone()[0]
+
+            # Insert country samples for this audience
+            for country, sample_data in audience.get('country_samples', {}).items():
+                cur.execute(
+                    '''
+                    INSERT INTO bid_audience_countries (
+                        bid_id,
+                        audience_id,
+                        country,
+                        sample_size,
+                        is_best_efforts
+                    ) VALUES (%s, %s, %s, %s, %s)
+                ''', (
+                    bid_id,
+                    audience_id,
+                    country,
+                    sample_data['sample_size'],
+                    sample_data['is_best_efforts']
+                ))
+
         conn.commit()
-        cur.close()
-        conn.close()
-
         return jsonify({
-            'id': new_id,
-            'message': 'Sales record created successfully'
+            'bid_id': bid_id,
+            'message': 'Bid created successfully'
         }), 201
 
     except Exception as e:
-        print(f"Error in create_sale: {str(e)}")
+        if 'conn' in locals():
+            conn.rollback()
+        print(f"Error in create_bid: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals():
