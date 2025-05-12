@@ -40,10 +40,9 @@ function PartnerLinkDialog({ open, onClose, bidId }) {
   const fetchPartners = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/partners`); // Get all partners
-      setPartners(res.data.filter(p => p));
-      // Optionally, fetch existing links for each partner
-      // We'll fetch on demand when user clicks generate
+      const res = await axios.get(`/api/bids/${bidId}/partners-lois`);
+      const partners = res.data.partners || [];
+      setPartners(partners.filter(p => p));
     } catch (e) {
       setError('Failed to fetch partners');
       setPartners([]);
