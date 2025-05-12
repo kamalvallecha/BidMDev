@@ -2256,8 +2256,7 @@ def get_partner_loi_data(bid_id):
         cur = conn.cursor()
 
         # Get bid id from bid_number
-        cur.execute("SELECT id FROM bids WHERE bid_number = %s",
-                    (str(bid_id), ))
+        cur.execute("SELECT id FROM bids WHERE bid_number = %s", (str(bid_id), ))
         bid = cur.fetchone()
         if not bid:
             return jsonify({"error": f"Bid {bid_id} not found"}), 404
@@ -2296,16 +2295,37 @@ def get_partner_loi_data(bid_id):
             )
         """, (actual_bid_id, ))
 
-        # Create a map of partner_name+loi to invoice details
         invoice_details_map = {}
-        for row in cur.fetchall():
-            key = f"{row[0]}_{row[1]}"  # partner_name_loi as key
+        partner_invoice_fields = {}
+        invoice_rows = cur.fetchall()
+        for row in invoice_rows:
+            partner_name = row[0]
+            loi = row[1]
+            key = f"{partner_name}_{loi}"
+            invoice_date = row[2].strftime('%Y-%m-%d') if row[2] else ''
+            invoice_sent = row[3].strftime('%Y-%m-%d') if row[3] else ''
+            invoice_serial = row[4] or ''
+            invoice_number = row[5] or ''
+            invoice_amount = str(row[6]) if row[6] else '0.00'
+
+            # Save the first non-empty invoice fields for this partner
+            if partner_name not in partner_invoice_fields or (
+                not partner_invoice_fields[partner_name]['invoice_date'] and invoice_date
+            ):
+                partner_invoice_fields[partner_name] = {
+                    'invoice_date': invoice_date,
+                    'invoice_sent': invoice_sent,
+                    'invoice_serial': invoice_serial,
+                    'invoice_number': invoice_number,
+                    'invoice_amount': invoice_amount
+                }
+
             invoice_details_map[key] = {
-                'invoice_date': row[2].strftime('%Y-%m-%d') if row[2] else '',
-                'invoice_sent': row[3].strftime('%Y-%m-%d') if row[3] else '',
-                'invoice_serial': row[4] or '',
-                'invoice_number': row[5] or '',
-                'invoice_amount': str(row[6]) if row[6] else '0.00'
+                'invoice_date': invoice_date,
+                'invoice_sent': invoice_sent,
+                'invoice_serial': invoice_serial,
+                'invoice_number': invoice_number,
+                'invoice_amount': invoice_amount
             }
 
         # Get deliverables data
@@ -2356,8 +2376,7 @@ def get_partner_loi_data(bid_id):
 
         results = cur.fetchall()
         if not results:
-            return jsonify({"error":
-                            "No partner data found for this bid"}), 404
+            return jsonify({"error": "No partner data found for this bid"}), 404
 
         # Group deliverables by partner and LOI
         deliverables_by_partner = {}
@@ -2370,46 +2389,33 @@ def get_partner_loi_data(bid_id):
                 deliverables_by_partner[key] = []
 
             deliverables_by_partner[key].append({
-                "partner_name":
-                partner_name,
-                "loi":
-                loi,
-                "audience_id":
-                row[7],
-                "country":
-                row[8],
-                "allocation":
-                row[9],
-                "n_delivered":
-                row[10] if row[10] is not None else 0,
-                "initial_cpi":
-                float(row[11]) if row[11] is not None else 0.0,
-                "final_cpi":
-                float(row[12]) if row[12] is not None else 0.0,
-                "initial_cost":
-                float(row[13]) if row[13] is not None else 0.0,
-                "final_cost":
-                float(row[14]) if row[14] is not None else 0.0,
-                "savings":
-                float(row[13] - row[14])
-                if row[13] is not None and row[14] is not None else 0.0
+                "partner_name": partner_name,
+                "loi": loi,
+                "audience_id": row[7],
+                "country": row[8],
+                "allocation": row[9],
+                "n_delivered": row[10] if row[10] is not None else 0,
+                "initial_cpi": float(row[11]) if row[11] is not None else 0.0,
+                "final_cpi": float(row[12]) if row[12] is not None else 0.0,
+                "initial_cost": float(row[13]) if row[13] is not None else 0.0,
+                "final_cost": float(row[14]) if row[14] is not None else 0.0,
+                "savings": float(row[13] - row[14]) if row[13] is not None and row[14] is not None else 0.0
             })
 
+        # Build response, always use the partner's default invoice fields if this LOI's are empty
         response_data = {
             "po_number": po_number,
             "partner_data": {
                 key: {
-                    **invoice_details_map.get(
-                        key, {
-                            'invoice_date': '',
-                            'invoice_sent': '',
-                            'invoice_serial': '',
-                            'invoice_number': '',
-                            'invoice_amount': '0.00'
-                        }), "deliverables":
-                    deliverables
+                    'invoice_date': invoice_details_map[key]['invoice_date'] or partner_invoice_fields[partner_name]['invoice_date'],
+                    'invoice_sent': invoice_details_map[key]['invoice_sent'] or partner_invoice_fields[partner_name]['invoice_sent'],
+                    'invoice_serial': invoice_details_map[key]['invoice_serial'] or partner_invoice_fields[partner_name]['invoice_serial'],
+                    'invoice_number': invoice_details_map[key]['invoice_number'] or partner_invoice_fields[partner_name]['invoice_number'],
+                    'invoice_amount': invoice_details_map[key]['invoice_amount'] or partner_invoice_fields[partner_name]['invoice_amount'],
+                    "deliverables": deliverables
                 }
                 for key, deliverables in deliverables_by_partner.items()
+                for partner_name in [key.split('_')[0]]
             }
         }
 
