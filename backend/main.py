@@ -72,7 +72,7 @@ def check_expiring_links():
         
         # Find links expiring in the next 3 days
         cur.execute("""
-            SELECT pl.*, p.email, p.partner_name, b.bid_number, b.study_name
+            SELECT pl.*, p.contact_email, p.partner_name, b.bid_number, b.study_name
             FROM partner_links pl
             JOIN partners p ON p.id = pl.partner_id
             JOIN bids b ON b.id = pl.bid_id
@@ -88,7 +88,7 @@ def check_expiring_links():
                 msg = Message(
                     'Your Partner Response Link is Expiring Soon',
                     sender=app.config['MAIL_DEFAULT_SENDER'],
-                    recipients=[link['email']]
+                    recipients=[link['contact_email']]
                 )
                 
                 msg.body = f"""
@@ -4189,6 +4189,7 @@ def favicon():
                              'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 # Serve React App
+<<<<<<< HEAD
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react(path):
@@ -4208,6 +4209,9 @@ def serve_react(path):
     except Exception as e:
         print(f"Error serving file: {str(e)}")
         return f"Error serving file: {str(e)}", 500
+=======
+
+>>>>>>> c95855b9949cd2a7eaec73054fac98d05a0b07bc
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -4945,6 +4949,29 @@ def get_proposal(proposal_id):
         return jsonify({'error': 'Proposal not found'}), 404
     return jsonify(proposal)
 
+
+@app.route('/api/bids/<int:bid_id>/partners', methods=['GET'])
+def get_bid_partners(bid_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT DISTINCT p.id, p.partner_name
+            FROM partners p
+            JOIN partner_responses pr ON pr.partner_id = p.id
+            WHERE pr.bid_id = %s
+            ORDER BY p.partner_name
+        """, (bid_id,))
+        partners = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify(partners)
+    except Exception as e:
+        print(f"Error fetching partners for bid: {str(e)}")
+        return jsonify([]), 500
+    
+
+
 # Move app.run to the end after all routes are defined
 if __name__ == '__main__':
     print("Starting Flask server on port 5000")
@@ -4984,3 +5011,40 @@ def create_tables():
     conn.commit()
     cur.close()
     conn.close()
+
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react(path):
+    try:
+        dist_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'dist')
+        
+        # For non-empty paths, try to serve the specific file
+        if path:
+            file_path = os.path.join(dist_dir, path)
+            if os.path.exists(file_path) and os.path.isfile(file_path):
+                return send_from_directory(dist_dir, path)
+        
+        # For root path or if specific file not found, serve index.html
+        index_path = os.path.join(dist_dir, 'index.html')
+        if os.path.exists(index_path):
+            return send_from_directory(dist_dir, 'index.html')
+            
+        return "React app not built. Please run 'npm run build' first.", 404
+        
+    except Exception as e:
+        print(f"Error serving file: {str(e)}")
+        return f"Error serving file: {str(e)}", 500    
+    
+
+@app.route('/debug/routes', methods=['GET'])
+def debug_routes():
+    routes = []
+    for rule in app.url_map.iter_rules():
+        routes.append({
+            'endpoint': rule.endpoint,
+            'methods': list(rule.methods),
+            'path': str(rule)
+        })
+    return jsonify(routes)

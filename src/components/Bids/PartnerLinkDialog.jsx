@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
   Dialog,
@@ -40,10 +41,11 @@ function PartnerLinkDialog({ open, onClose, bidId }) {
   const fetchPartners = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/bids/${bidId}/partners`);
-      setPartners(res.data.filter((p) => p));
+      const res = await axios.get('/api/partners');
+      setPartners(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
-      setError("Failed to fetch partners");
+      console.error('Error fetching partners:', e);
+      setError('Failed to fetch partners');
       setPartners([]);
     }
     setLoading(false);
@@ -116,9 +118,9 @@ function PartnerLinkDialog({ open, onClose, bidId }) {
           </Alert>
         )}
         {loading ? (
-          <Stack alignItems="center" py={4}>
-            <CircularProgress />
-          </Stack>
+          <Stack alignItems="center" py={4}><CircularProgress /></Stack>
+        ) : !Array.isArray(partners) || partners.length === 0 ? (
+          <Typography>No partners available for this bid</Typography>
         ) : (
           <TableContainer>
             <Table size="small">
