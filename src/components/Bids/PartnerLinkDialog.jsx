@@ -40,11 +40,10 @@ function PartnerLinkDialog({ open, onClose, bidId }) {
   const fetchPartners = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/partners`); // Get all partners
-      setPartners(res.data.filter(p => p));
-      // Optionally, fetch existing links for each partner
-      // We'll fetch on demand when user clicks generate
+      const res = await axios.get(`/api/bids/${bidId}/partners`);
+      setPartners(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
+      console.error('Error fetching partners:', e);
       setError('Failed to fetch partners');
       setPartners([]);
     }
@@ -92,6 +91,8 @@ function PartnerLinkDialog({ open, onClose, bidId }) {
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         {loading ? (
           <Stack alignItems="center" py={4}><CircularProgress /></Stack>
+        ) : !Array.isArray(partners) || partners.length === 0 ? (
+          <Typography>No partners available for this bid</Typography>
         ) : (
           <TableContainer>
             <Table size="small">
