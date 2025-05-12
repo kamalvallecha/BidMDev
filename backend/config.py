@@ -7,7 +7,7 @@ load_dotenv()
 
 class Config:
     # Database configuration
-    DATABASE_URL = os.getenv('DATABASE_URL')
+    DATABASE_URL = os.getenv('DATABASE_URL', 'postgres://postgres:admin123@ep-royal-math-a4zavfz2.us-east-1.aws.neon.tech:5432/BidM?sslmode=require')
 
     # JWT configuration 
     SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key')
