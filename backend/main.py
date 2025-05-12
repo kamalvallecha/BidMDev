@@ -637,6 +637,8 @@ def delete_client(client_id):
 
 @app.route('/api/bids', methods=['GET'])
 def get_bids():
+    conn = None
+    cur = None
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -648,22 +650,25 @@ def get_bids():
                 b.bid_date,
                 b.status,
                 c.client_name AS client_name,
-                b.project_requirement
+                b.project_requirement,
+                b.methodology
             FROM bids b
             LEFT JOIN clients c ON b.client = c.id
             ORDER BY b.id DESC
         ''')
         bids = cur.fetchall()
-        cur.close()
-        conn.close()
+        # Convert date objects to strings
+        for bid in bids:
+            if bid['bid_date']:
+                bid['bid_date'] = bid['bid_date'].strftime('%Y-%m-%d')
         return jsonify(bids)
     except Exception as e:
         print(f"Error in get_bids: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
-        if 'cur' in locals():
+        if cur:
             cur.close()
-        if 'conn' in locals():
+        if conn:
             conn.close()
 
 @app.route('/api/bids', methods=['POST'])
