@@ -4293,7 +4293,7 @@ def generate_partner_link(bid_id, partner_id):
 
         # Validate bid and partner exist
         cur.execute("""
-            SELECT b.id as bid_id, p.id as partner_id, p.email
+            SELECT b.id as bid_id, p.id as partner_id, p.contact_email as email
             FROM bids b 
             JOIN partners p ON p.id = %s
             WHERE b.id = %s
