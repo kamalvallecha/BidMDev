@@ -5080,7 +5080,7 @@ if __name__ == '__main__':
     else:
         host_url = "http://0.0.0.0:5000"
     app.config['SERVER_NAME'] = host_url
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
 
 
 @app.before_first_request
