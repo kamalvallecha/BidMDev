@@ -4238,6 +4238,13 @@ def login():
         return jsonify({'error': 'An error occurred during login'}), 500
 
 
+def get_public_host_url():
+    forwarded_host = request.headers.get('X-Forwarded-Host')
+    if forwarded_host:
+        scheme = request.headers.get('X-Forwarded-Proto', 'https')
+        return f"{scheme}://{forwarded_host}/"
+    return request.host_url
+
 @app.route('/api/bids/<int:bid_id>/partners/<int:partner_id>/generate-link', methods=['POST'])
 def generate_partner_link(bid_id, partner_id):
     try:
@@ -4256,7 +4263,7 @@ def generate_partner_link(bid_id, partner_id):
         
         if existing_link:
             return jsonify({
-                'link': f"{request.host_url}partner-response/{existing_link['token']}",
+                'link': f"{get_public_host_url()}partner-response/{existing_link['token']}",
                 'expires_at': existing_link['expires_at'].isoformat()
             })
         
@@ -4274,7 +4281,7 @@ def generate_partner_link(bid_id, partner_id):
         conn.commit()
         
         return jsonify({
-            'link': f"{request.host_url}partner-response/{new_link['token']}",
+            'link': f"{get_public_host_url()}partner-response/{new_link['token']}",
             'expires_at': new_link['expires_at'].isoformat()
         })
     except Exception as e:
@@ -4334,14 +4341,14 @@ def extend_partner_link(bid_id, partner_id):
                     partner_info['partner_name'],
                     partner_info['bid_number'],
                     partner_info['study_name'],
-                    f"{request.host_url}partner-response/{updated_link['token']}",
+                    f"{get_public_host_url()}partner-response/{updated_link['token']}",
                     updated_link['expires_at']
                 )
         except Exception as email_error:
             print(f"Error sending extension email: {str(email_error)}")
         
         return jsonify({
-            'link': f"{request.host_url}partner-response/{updated_link['token']}",
+            'link': f"{get_public_host_url()}partner-response/{updated_link['token']}",
             'expires_at': updated_link['expires_at'].isoformat()
         })
     except Exception as e:
@@ -4580,7 +4587,7 @@ def submit_partner_link_response(token):
                 )
                 msg.body = f"""
                 Partner {partner_id} updated their response for Bid {bid_id}.
-                Link: {request.host_url}partner-response/{token}
+                Link: {get_public_host_url()}partner-response/{token}
                 """
                 mail.send(msg)
             except Exception as e:
