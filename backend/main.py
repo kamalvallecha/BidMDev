@@ -50,6 +50,15 @@ CORS(app,
          }
      })
 
+# Add middleware to set X-Forwarded headers
+@app.before_request
+def before_request():
+    if not request.headers.get('X-Forwarded-Host'):
+        # Set X-Forwarded headers for Replit environment
+        replit_domain = os.environ.get('REPL_SLUG', '') + '.' + os.environ.get('REPL_OWNER', '') + '.repl.co'
+        request.environ['HTTP_X_FORWARDED_HOST'] = replit_domain
+        request.environ['HTTP_X_FORWARDED_PROTO'] = 'https'
+
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Or your SMTP server
 app.config['MAIL_PORT'] = 587
