@@ -5074,13 +5074,7 @@ def get_bid_partners(bid_id):
 # Move app.run to the end after all routes are defined
 if __name__ == '__main__':
     print("Starting Flask server on port 5000")
-    # Use Replit's host URL in production
-    if os.getenv('REPL_SLUG') and os.getenv('REPL_OWNER'):
-        host_url = f"https://{os.getenv('REPL_SLUG')}.{os.getenv('REPL_OWNER')}.repl.co"
-    else:
-        host_url = "http://0.0.0.0:5000"
-    app.config['SERVER_NAME'] = host_url
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 
 @app.before_first_request
