@@ -4415,6 +4415,9 @@ def generate_partner_link(bid_id, partner_id):
         new_link = cur.fetchone()
         conn.commit()
 
+        # Use the host URL from the request
+        link_url = f"{request.host_url}partner-response/{new_link['token']}"
+
         # Send email notification to partner if email is available
         if validation['email']:
             try:
@@ -4436,7 +4439,7 @@ def generate_partner_link(bid_id, partner_id):
                 print(f"Error sending email notification: {str(email_error)}")
 
         return jsonify({
-            'link': f"{request.host_url}partner-response/{new_link['token']}",
+            'link': link_url,
             'expires_at': new_link['expires_at'].isoformat()
         })
     except Exception as e:
