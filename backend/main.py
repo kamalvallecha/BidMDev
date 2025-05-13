@@ -4372,20 +4372,12 @@ def login():
 
 
 def get_public_host_url():
-    # Use Replit's domain format
-    repl_id = os.environ.get('REPL_ID', '')
-    repl_owner = os.environ.get('REPL_OWNER', '')
+    # Always use the replit.dev domain for development
     repl_slug = os.environ.get('REPL_SLUG', '')
-
-    if repl_owner and repl_slug:
-        return f"https://{repl_slug}.{repl_owner}.repl.co/"
+    if repl_slug:
+        return f"https://{repl_slug}.replit.dev/"
     
     # Fallback to request host
-    forwarded_host = request.headers.get('X-Forwarded-Host')
-    if forwarded_host:
-        scheme = request.headers.get('X-Forwarded-Proto', 'https')
-        return f"{scheme}://{forwarded_host}/"
-        
     return request.host_url
 
 
