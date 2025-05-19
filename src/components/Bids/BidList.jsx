@@ -11,15 +11,24 @@ import {
   TextField,
   IconButton,
   Typography,
-  Stack
+  Stack,
+  Tooltip
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import BlockIcon from '@mui/icons-material/Block';
+import RestoreIcon from '@mui/icons-material/Restore';
+import GroupIcon from '@mui/icons-material/Group';
+import LinkIcon from '@mui/icons-material/Link';
+import DescriptionIcon from '@mui/icons-material/Description';
 import axios from '../../api/axios';
 import './Bids.css';
 import PONumberDialog from './PONumberDialog';
+import RejectBidDialog from './RejectBidDialog';
+import PartnerResponseSummaryDialog from './PartnerResponseSummaryDialog';
+import PartnerLinkDialog from './PartnerLinkDialog';
 
 function BidList() {
   const [bids, setBids] = useState([]);
@@ -28,6 +37,12 @@ function BidList() {
   const navigate = useNavigate();
   const [poDialogOpen, setPoDialogOpen] = useState(false);
   const [selectedBidId, setSelectedBidId] = useState(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [bidToReject, setBidToReject] = useState(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkDialogBid, setLinkDialogBid] = useState(null);
 
   useEffect(() => {
     fetchBids();
@@ -96,20 +111,69 @@ function BidList() {
     }
   };
 
+  const handleRejectClick = (bid) => {
+    setBidToReject(bid);
+    setRejectDialogOpen(true);
+  };
+
+  const handleRejectSubmit = async ({ reason, comments }) => {
+    try {
+      await axios.post(`/api/bids/${bidToReject.id}/status`, {
+        status: 'rejected',
+        rejection_reason: reason,
+        rejection_comments: comments
+      });
+      setRejectDialogOpen(false);
+      setBidToReject(null);
+      fetchBids();
+    } catch (error) {
+      console.error('Error rejecting bid:', error);
+      alert('Failed to reject bid');
+    }
+  };
+
+  const handleReactivateBid = async (bidId) => {
+    try {
+      await axios.post(`/api/bids/${bidId}/status`, {
+        status: 'draft'
+      });
+      fetchBids(); // Refresh the list
+    } catch (error) {
+      console.error('Error reactivating bid:', error);
+      alert('Failed to reactivate bid');
+    }
+  };
+
+  const handleShowPartnerSummary = (bid) => {
+    setSelectedBid(bid);
+    setSummaryOpen(true);
+  };
+
+  const handleShowPartnerLinks = (bid) => {
+    setLinkDialogBid(bid);
+    setLinkDialogOpen(true);
+  };
+
+  const handleCreateProposal = (bid) => {
+    navigate(`/proposals/${bid.id}`);
+  };
+
   const filteredBids = bids.filter(bid => 
-    bid.bid_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bid.study_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bid.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+    (bid.bid_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (bid.study_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (bid.client_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const renderActions = (bid) => {
     const isMoveable = bid.status === 'draft'; // Only enable move button for draft status
+    const isRejected = bid.status === 'rejected';
 
     return (
       <Stack direction="row" spacing={1}>
         <IconButton 
           color="primary" 
           onClick={() => handleEdit(bid)}
+          disabled={isRejected}
         >
           <EditIcon />
         </IconButton>
@@ -122,16 +186,57 @@ function BidList() {
         <IconButton 
           color="primary"
           onClick={() => handleMoveToInField(bid.id)}
-          disabled={!isMoveable}  // Disable if not in draft status
+          disabled={!isMoveable}
           sx={{ 
-            opacity: isMoveable ? 1 : 0.5,  // Visual feedback for disabled state
+            opacity: isMoveable ? 1 : 0.5,
             '&.Mui-disabled': {
-              color: 'grey.400'  // Light grey when disabled
+              color: 'grey.400'
             }
           }}
         >
           <PlayArrowIcon />
         </IconButton>
+        {!isRejected ? (
+          <Tooltip title="Reject Bid">
+            <IconButton 
+              color="error"
+              onClick={() => handleRejectClick(bid)}
+              disabled={bid.status !== 'draft'}
+              sx={{ 
+                opacity: bid.status === 'draft' ? 1 : 0.5,
+                '&.Mui-disabled': {
+                  color: 'grey.400'
+                }
+              }}
+            >
+              <BlockIcon />
+            </IconButton>
+          </Tooltip>
+        ) : (
+          <Tooltip title="Reactivate Bid">
+            <IconButton 
+              color="success"
+              onClick={() => handleReactivateBid(bid.id)}
+            >
+              <RestoreIcon />
+            </IconButton>
+          </Tooltip>
+        )}
+        <Tooltip title="Partner Response Summary">
+          <IconButton color="info" onClick={() => handleShowPartnerSummary(bid)}>
+            <GroupIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Generate Partner Link">
+          <IconButton color="primary" onClick={() => handleShowPartnerLinks(bid)}>
+            <LinkIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Create Proposal">
+          <IconButton color="primary" onClick={() => handleCreateProposal(bid)}>
+            <DescriptionIcon />
+          </IconButton>
+        </Tooltip>
       </Stack>
     );
   };
@@ -200,6 +305,25 @@ function BidList() {
         open={poDialogOpen}
         onClose={() => setPoDialogOpen(false)}
         onSubmit={handlePoSubmit}
+      />
+      <RejectBidDialog
+        open={rejectDialogOpen}
+        onClose={() => {
+          setRejectDialogOpen(false);
+          setBidToReject(null);
+        }}
+        bidNumber={bidToReject?.bid_number}
+        onSubmit={handleRejectSubmit}
+      />
+      <PartnerResponseSummaryDialog
+        open={summaryOpen}
+        onClose={() => setSummaryOpen(false)}
+        bidId={selectedBid?.id}
+      />
+      <PartnerLinkDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        bidId={linkDialogBid?.id}
       />
     </>
   );

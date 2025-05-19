@@ -1,11 +1,11 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ConfigProvider, App as AntApp } from 'antd';
 import Login from './components/Login';
 import Layout from './components/Layout';
-import Users from './components/Users/Users';
+import Users from './components/users/Users';
 import VMs from './components/VMs/VMs';
 import Sales from './components/Sales/Sales';
 import Partners from './components/Partners/Partners';
@@ -20,9 +20,13 @@ import ClosureEdit from './components/Bids/ClosureEdit';
 import ReadyForInvoiceBids from './components/Bids/ReadyForInvoiceBids';
 import InvoiceEdit from './components/InvoiceEdit';
 import Home from './components/Home';
+import PartnerPublicForm from './components/PartnerPublicForm';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import PrivateRoute from './components/common/PrivateRoute';
 import Unauthorized from './components/common/Unauthorized';
+import PartnerResponseSuccess from './components/PartnerResponseSuccess';
+import ProposalList from './components/Proposals/ProposalList';
+import ProposalForm from './components/Proposals/ProposalForm';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -35,10 +39,11 @@ function App() {
     <ConfigProvider>
       <AntApp>
         <AuthProvider>
-          <BrowserRouter>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <Routes>
                 <Route path="/login" element={<Login />} />
+              <Route path="/partner-response/:token" element={<PartnerPublicForm />} />
+              <Route path="/partner-response/success" element={<PartnerResponseSuccess />} />
                 <Route
                   path="/home"
                   element={
@@ -143,10 +148,24 @@ function App() {
                   } />
                   
                   <Route path="unauthorized" element={<Unauthorized />} />
+                  <Route path="proposals" element={
+                    <PrivateRoute>
+                      <ProposalList />
+                    </PrivateRoute>
+                  } />
+                  <Route path="proposals/new" element={
+                    <PrivateRoute>
+                      <ProposalForm />
+                    </PrivateRoute>
+                  } />
+                  <Route path="proposals/:proposalId" element={
+                    <PrivateRoute>
+                      <ProposalForm />
+                    </PrivateRoute>
+                  } />
                 </Route>
               </Routes>
             </LocalizationProvider>
-          </BrowserRouter>
         </AuthProvider>
       </AntApp>
     </ConfigProvider>

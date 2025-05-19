@@ -1,0 +1,223 @@
+"id","bid_number","bid_date","study_name","status","client","sales_contact","vm_contact","created_at","updated_at","project_requirement","methodology"
+"17","40002",2025-04-13T18:30:00.000Z,"2 new quotes","draft","1","1","1",2025-04-15T14:09:00.832Z,2025-04-15T14:17:14.551Z,"1.	Business Leaders :
+10-minute online survey among senior business leaders in the US (SVP and executive level leaders only) across industries 
+Please provide costs for 
+•	n=500 business leaders 
+•	programming/hosting
+•	weighting/processing of data
+","quant"
+"18","40003",2025-04-13T18:30:00.000Z,"2 new quotes","draft","1","1","1",2025-04-15T14:09:01.406Z,2025-04-15T14:09:01.406Z,"1.	Business Leaders :
+10-minute online survey among senior business leaders in the US (SVP and executive level leaders only) across industries 
+Please provide costs for 
+•	n=500 business leaders 
+•	programming/hosting
+•	weighting/processing of data
+","quant"
+"20","40004",2025-04-13T18:30:00.000Z,"2 new quotes","draft","1","1","1",2025-04-15T14:09:02.183Z,2025-04-15T14:09:02.183Z,"1.	Business Leaders :
+10-minute online survey among senior business leaders in the US (SVP and executive level leaders only) across industries 
+Please provide costs for 
+•	n=500 business leaders 
+•	programming/hosting
+•	weighting/processing of data
+","quant"
+"21","40005",2025-04-13T18:30:00.000Z,"Assessing SASE Progress and Best Practices - US/CA","infield","1","1","1",2025-04-15T14:22:51.567Z,2025-04-22T10:59:24.283Z,"Target organizations will be: 
+Midmarket (defined as organizations with 100 to 999 employees) and enterprise organizations (defined as organizations with 1,000 or more employees)
+","quant"
+"22","40006",2025-04-13T18:30:00.000Z,"Assessing SASE Progress and Best Practices - US/CA","infield","1","1","1",2025-04-15T14:22:53.400Z,2025-04-22T10:59:41.702Z,"Target organizations will be: 
+Midmarket (defined as organizations with 100 to 999 employees) and enterprise organizations (defined as organizations with 1,000 or more employees)
+","quant"
+"182","33164",2025-01-08T18:30:00.000Z,"Telecom Project - US (FS)","draft","1","1","1",2025-01-20T09:12:25.539Z,2025-04-22T10:38:36.286Z,"Standard ITDMs…Need $18 CPI to win this…","quant"
+"183","33170",2025-01-12T18:30:00.000Z,"Mafia - Global (SO)","draft","1","1","7",2025-01-21T01:48:40.115Z,2025-01-21T01:48:40.115Z,"Company owners, finance managers, managing directors of small, medium and big companies ","quant"
+"184","33171",2025-01-12T18:30:00.000Z,"Virgin Money - UK","draft","1","1","1",2025-01-21T02:00:51.975Z,2025-01-21T02:00:51.975Z,"Representative of businesses, with a natural fallout of small-medium businesses, Commercial businesses and Corporate / specialist businesses","quant"
+"185","33174",2025-01-13T18:30:00.000Z,"New Study Opportunity - US (FS)","draft","1","1","1",2025-01-21T02:14:31.085Z,2025-01-21T02:14:31.085Z,"New Study Opportunity - US (FS)","quant"
+"186","33175",2025-01-13T18:30:00.000Z,"Construction Traders - UK (SO)","draft","1","1","1",2025-01-21T02:24:43.527Z,2025-01-21T02:24:43.527Z,"M/F 18 65yo Full range of traders ranging from builders, carpenters, joiners, plumbers, landscapers, demolitionists, electricians and all tool users","quant"
+"187","33176",2025-01-13T18:30:00.000Z,"Assessing the State of API Orchestration - US (SO)","draft","1","1","7",2025-01-21T02:39:47.748Z,2025-01-21T02:39:47.748Z,"●	Research target is 150 completed online surveys with software engineering leaders and practitioners and IT leaders familiar with their organization’s API technology and processes. ","quant"
+"188","33177",2025-01-13T18:30:00.000Z,"Cloud App Rebuild Sentiment Study - Global (SO)","draft","1","1","7",2025-01-21T03:03:11.732Z,2025-01-21T03:03:11.732Z,"Translated languages include German and French","quant"
+"189","33178",2025-01-14T18:30:00.000Z,"Prospettive Future - Italy (SO)","draft","1","1","7",2025-01-21T03:22:06.859Z,2025-01-21T03:22:06.859Z,"M/F 18 65yo age*gender, province, education, occupation","quant"
+"190","33179",2025-01-13T18:30:00.000Z,"Lumi - UK (SO)","draft","1","1","1",2025-01-21T03:31:29.292Z,2025-01-21T03:31:29.292Z,"CPO’s/HR Directors/L&D leads/Influential people leads","quant"
+"191","33180",2025-01-13T18:30:00.000Z,"Telkom Procurement - S. Africa (SO)","draft","1","1","7",2025-01-21T03:42:43.618Z,2025-01-21T03:42:43.618Z,"The target group is the same in each option, only the LOI/IR/N differs.","quant"
+"192","33181",2025-01-14T18:30:00.000Z,"WWT - Global","draft","1","1","7",2025-01-21T04:09:37.554Z,2025-01-21T04:09:37.554Z,"Target is Managers, Directors, and VPs decision Makers of: App Development, IT infrastructure, storage, networking, automation, and AI","quant"
+"193","33184",2025-01-15T18:30:00.000Z,"B2B Cloud Users - Global (SO)","draft","1","1","7",2025-01-21T05:28:30.550Z,2025-01-21T05:28:30.550Z,"For public sector we understand the challenges and we would like to know what is feasible from your side.","quant"
+"194","33185",2025-01-15T18:30:00.000Z,"Another RFP for Banking - US (FS)","draft","1","1","7",2025-01-21T05:34:03.081Z,2025-01-21T05:34:03.081Z,"Business Owners of companies with $5m-$50m revenue, AND","quant"
+"195","33189",2025-01-16T18:30:00.000Z,"Nice Connecting with you.","draft","25","4","1",2025-01-21T06:49:41.767Z,2025-01-21T06:53:39.179Z,"Nice Connecting with you.","quant"
+"196","33190",2025-01-15T18:30:00.000Z,"Nash Squared Digi - Global (SO)","draft","1","1","7",2025-01-21T07:10:17.597Z,2025-01-21T07:10:17.597Z,"We want to target Decision Makers & IT Software recommenders (so they must have a purchase role in their company and must be working in the IT sphere).","quant"
+"197","33191",2025-01-15T18:30:00.000Z,"CYL_25_0015 - US (SO)","draft","1","1","7",2025-01-21T07:28:02.171Z,2025-01-21T07:28:02.171Z,"estimate MAX feasibility, IR, CPI and FW duration.","quant"
+"198","33192",2025-01-16T18:30:00.000Z,"2024 Small Business Owners - US (SO)","draft","1","1","7",2025-01-21T07:35:50.992Z,2025-01-21T07:35:50.992Z,,"quant"
+"199","33193",2025-01-16T18:30:00.000Z,"Amazon Seller Segmentation - US/Canada (SO)","draft","1","1","1",2025-01-21T07:43:52.454Z,2025-01-21T07:43:52.454Z,"Amazon Seller Segmentation ","quant"
+"200","33194",2025-01-18T18:30:00.000Z,"UK Energy Pulse - UK (SO)","draft","1","1","1",2025-01-24T08:07:07.906Z,2025-01-24T08:07:07.906Z,"Decision Makers in Small (10-49) and Medium (50-249) enterprises with the below roles","quant"
+"201","33197",2025-01-20T18:30:00.000Z,"Calendar Study - US/Canada (SO)","draft","1","1","7",2025-01-24T08:17:46.491Z,2025-01-24T08:17:46.491Z,"o	Please let me know based on the profile breakdown below what you would anticipate IR would be for your panel","quant"
+"202","33199",2025-01-20T18:30:00.000Z,"Venmo/Zelle - US (FS)","draft","1","1","7",2025-01-24T08:27:10.421Z,2025-01-24T08:27:10.421Z,"consider sole proprietor and quote at 40-60% IR.","quant"
+"203","33202",2025-01-21T18:30:00.000Z,"MSFT Audience Campaigns Test - US (SO)","draft","1","1","7",2025-01-29T01:26:18.772Z,2025-01-29T01:26:18.772Z,"Creative|Spark  ","quant"
+"204","33203",2025-01-22T18:30:00.000Z,"Daily Information Needs - Global","draft","1","1","7",2025-01-29T01:45:01.918Z,2025-01-29T01:45:01.918Z,"It will be n=500 per month per country. This study will run for 6 months, hence n=3,000 per country over the course of the entire tracker. ","quant"
+"205","33204",2025-01-22T18:30:00.000Z,"DFW Consumer - US (SO)","draft","1","1","7",2025-01-29T02:12:02.550Z,2025-01-29T02:12:02.550Z,"Purchased a new construction home in Dallas/Ft. Worth in the past 5 years, OR are actively looking at new home construction in Dallas/Ft. Worth","quant"
+"206","33207",2025-01-22T18:30:00.000Z,"US Education - US (SO)","draft","1","1","8",2025-01-29T02:25:25.491Z,2025-01-29T02:25:25.491Z,"IR: 70%+","quant"
+"207","33210",2025-01-25T18:30:00.000Z,"DMs in F&B Manufacturing - UK (SO)","draft","1","1","7",2025-01-29T03:26:11.880Z,2025-01-29T03:26:11.880Z,"Quotas will be on job title and sector, then 250 in each defined vertical depending on size of org","quant"
+"208","33211",2025-01-25T18:30:00.000Z,"Field Service Workers","draft","13","1","1",2025-02-07T05:00:49.683Z,2025-02-07T05:00:49.683Z,"Field service workers","quant"
+"209","33212",2025-01-26T18:30:00.000Z,"Video decision makers","draft","24","4","1",2025-02-07T05:21:27.442Z,2025-02-07T05:21:27.442Z,"Manager+ Marketing/Advertisement DMs ","quant"
+"210","33213",2025-01-26T18:30:00.000Z,"German, AUS, France - Global (SO)","draft","1","1","7",2025-02-07T05:41:23.528Z,2025-02-07T05:41:23.528Z,"Sales and Marketing DM's","quant"
+"211","33215",2025-01-26T18:30:00.000Z,"Process - Impact of AI","draft","1","1","7",2025-02-10T23:10:47.484Z,2025-02-10T23:10:47.484Z,"Decision Makers (C-Suite, Department Heads, Control Engineers and Directors) who work in following industries: Oil & Gas, Petrochem, chemicals, manufacturing, pharmaceuticals, energy, cement making - process economy","quant"
+"212","33216",2025-01-26T18:30:00.000Z,"Global Influentials","draft","1","1","7",2025-02-10T23:38:05.872Z,2025-02-10T23:38:05.872Z,"Genpop and Senior manager and above","quant"
+"213","33219",2025-01-27T18:30:00.000Z,"BID REQUEST - Publicity Survey","draft","13","1","1",2025-03-31T02:47:49.591Z,2025-03-31T02:47:49.591Z,"Manager+ IT/Engineering in given sectors ","quant"
+"214","33220",2025-01-27T18:30:00.000Z,"MSFT ABTS - US","draft","1","1","7",2025-02-07T06:03:41.602Z,2025-02-07T06:03:41.602Z,"ITDM'S","quant"
+"215","33225",2025-01-29T18:30:00.000Z,"Bid request - digital media decision makers in the US, India, Germany","draft","24","4","1",2025-04-01T07:21:13.964Z,2025-04-01T07:21:13.964Z,"BDMs/Marketing DMs in General ","quant"
+"216","33228",2025-01-31T18:30:00.000Z,"2023CS350_TUBI_UK_W1","draft","24","4","7",2025-02-07T06:27:38.452Z,2025-02-07T06:27:38.452Z,"Ad DM's","quant"
+"217","33229",2025-02-01T18:30:00.000Z,"Esperieze Digital","draft","1","1","1",2025-02-10T03:20:39.111Z,2025-02-10T03:20:39.111Z,"IT/ICT strategy managers and decision makers","quant"
+"218","33231",2025-02-01T18:30:00.000Z,"Tour de France","draft","1","1","7",2025-02-13T01:20:58.080Z,2025-02-13T01:20:58.080Z,"genpop","quant"
+"219","33232",2025-02-01T18:30:00.000Z,"US Enterprise XR - US","draft","1","1","1",2025-02-10T03:32:38.282Z,2025-02-10T03:32:38.282Z,": All XR (VR, MR, AR, ER) headset users in enterprises, rather than limiting it to IT decision-makers","quant"
+"220","33234",2025-02-02T18:30:00.000Z,"Tech Leadership","draft","1","1","7",2025-02-10T03:56:53.504Z,2025-02-10T03:56:53.504Z,"Dir. + Industry: IT, Software, Technology, Info. Services, Data Centers, AI
+","quant"
+"221","33237",2025-02-03T18:30:00.000Z,"PayPal opp","draft","1","1","7",2025-02-10T04:19:03.322Z,2025-02-10T04:19:03.322Z,"o	Must be involved in payment decision making and have a role in final decision ","quant"
+"222","33238",2025-02-03T18:30:00.000Z,"Freelance Workers","draft","1","1","7",2025-02-10T04:50:15.851Z,2025-02-10T04:50:15.851Z,"freelance/gig/contract workers","quant"
+"223","33239",2025-02-03T18:30:00.000Z,"Post Test Voorsprongtraject","draft","1","1","1",2025-02-10T05:02:49.480Z,2025-02-10T05:02:49.480Z,"people owning a company responsible for HR / trainings and/or HR / Talent responsible in bigger company.","quant"
+"224","33240",2025-02-03T18:30:00.000Z,"Akzo Nobel Big Trade","draft","1","1","7",2025-02-10T02:53:55.109Z,2025-02-10T02:53:55.109Z,"Responsible for buying paint or influence the purchase decision","quant"
+"225","33241",2025-02-03T18:30:00.000Z,"BT Credit Agricole 2025","draft","1","1","1",2025-02-13T00:47:33.423Z,2025-02-13T00:47:33.423Z,"BDM","quant"
+"226","33244",2025-02-04T18:30:00.000Z,"Food Service Operators - US","draft","1","1","7",2025-02-09T23:43:45.050Z,2025-02-09T23:43:45.050Z,"Food Service Operators ","quant"
+"227","33245",2025-02-04T18:30:00.000Z,"US Only Business Exec Audience","draft","13","1","1",2025-02-10T05:25:31.290Z,2025-02-10T05:25:31.290Z,"•	Seniority: VP+ or Director+
+•	Company size: 1,000+ employees or 500+ employees
+","quant"
+"228","33247",2025-02-04T18:30:00.000Z,"Gemini","draft","1","1","1",2025-02-09T23:30:23.426Z,2025-02-09T23:30:23.426Z,"Knowledge Workers 18+ M/F","quant"
+"229","33248",2025-02-04T18:30:00.000Z,"Epson Idea Test","draft","1","1","7",2025-02-09T22:30:06.366Z,2025-02-09T22:30:06.366Z,"300","quant"
+"230","33249",2025-02-04T18:30:00.000Z,"33249 : Payouts","draft","1","1","7",2025-02-12T23:54:46.325Z,2025-02-12T23:54:46.325Z,"Manager+ in, Banking & Finance, IT, Education, insurance, Electronics industries along with Revenue, Laptop & Desktop Device agnostic ","quant"
+"231","33251",2025-02-05T18:30:00.000Z,"Media decision makers and market researchers in the US and UK","draft","24","4","1",2025-02-11T02:42:09.563Z,2025-02-11T02:42:09.563Z,"o	Segment 1: Marketers or Researchers at Consumer Brands
+o	Segment 2: Boutique Market Research Agencies
+Media Agency Decision-makers
+Media Agency ‘Champions’ (Decision influencers) ","quant"
+"232","33252",2025-02-06T18:30:00.000Z,"B2B eshops","draft","1","1","7",2025-02-11T02:56:49.139Z,2025-02-11T02:56:49.139Z,"General management / Business decision makers in companies with 50-250 employees or 10-50 million Euro turnover","quant"
+"233","33253",2025-02-06T18:30:00.000Z,"AI Integration - Global","draft","1","1","1",2025-03-28T08:14:57.476Z,2025-03-28T08:14:57.476Z,"employment type – 50%/50% Employed (permanent, full-time) / Employed (fixed term contract, full-time)","quant"
+"234","33256",2025-02-09T18:30:00.000Z,"FTEs Study - Global","draft","1","1","7",2025-02-13T02:47:49.671Z,2025-02-13T02:47:49.671Z,"•	Who work in companies with more than $500k in Revenue and have 10 to 5,000 employees 
+•	With title of manager+
+","quant"
+"235","33258",2025-02-10T18:30:00.000Z,"Understanding the Impact of Public Cloud Infrastructure on Company Valuations and M&A Outcomes","draft","1","1","7",2025-02-18T22:52:44.708Z,2025-02-18T22:52:44.708Z,"Manager/Director-level executives who are technology purchasers, influencers, and/or decision-makers for cloud services within their organizations","quant"
+"236","33260",2025-02-10T18:30:00.000Z,"State of Marketing","draft","1","1","1",2025-03-28T09:09:19.633Z,2025-03-28T09:09:19.633Z,"We’d like to see 20- and 25-min CPIs as the clients are considering expanding the surveys they are deploying. Other specs are in the attached excel file. ","quant"
+"237","33263_1",2025-02-11T18:30:00.000Z,"Sample Estimates_33263_1","draft","27","3","1",2025-04-04T01:58:58.295Z,2025-04-04T01:58:58.295Z,"genpon in Institutional Investors","quant"
+"238","33263_2",2025-02-11T18:30:00.000Z,"Sample Estimates_33263_2","draft","27","1","1",2025-04-04T02:43:14.280Z,2025-04-04T02:44:35.357Z,"Gen Pop Consumers","quant"
+"239","33263_3",2025-02-11T18:30:00.000Z,"Sample Estimates_33263_3","draft","27","3","1",2025-04-04T02:55:32.270Z,2025-04-04T02:55:32.270Z,"Gen pop","quant"
+"240","33263_4",2025-02-11T18:30:00.000Z,"Sample Estimates_33263_4","draft","27","3","1",2025-04-04T02:58:04.553Z,2025-04-04T02:58:04.553Z,"Genpop","quant"
+"241","33263_5",2025-03-11T18:30:00.000Z,"Sample Estimates_33263_5","draft","27","3","1",2025-04-04T03:02:41.714Z,2025-04-04T03:02:41.714Z,"Washington Gen Pop","quant"
+"242","33263_6",2025-02-11T18:30:00.000Z,"Sample Estimates_33263_6","draft","27","3","1",2025-04-04T03:09:22.661Z,2025-04-04T03:09:22.661Z,"Cofee drinker","quant"
+"243","33263_7",2025-02-11T18:30:00.000Z,"Sample Estimates_33263_7","draft","27","3","1",2025-04-04T03:19:25.809Z,2025-04-04T03:20:47.001Z,"Genpop","quant"
+"244","33265",2025-02-13T18:30:00.000Z,"Bid request - marketers in the US, UK and China","draft","24","4","1",2025-04-04T04:15:54.012Z,2025-04-04T04:15:54.012Z,"o	Client-side/brand-side marketing/advertising professionals currently working with external advertising agencies","quant"
+"245","33266",2025-03-13T18:30:00.000Z,"Print DMs and Employees - Global","draft","1","1","7",2025-04-04T07:58:25.392Z,2025-04-04T07:58:25.392Z,"Print DMs and Employees - Global ","quant"
+"246","33267",2025-02-15T18:30:00.000Z,"33267 : Digital Managers","draft","1","1","1",2025-03-17T22:23:03.538Z,2025-03-17T22:23:03.538Z,"M/F 18 65 yo managers representative of companies where digital technology is being used for work to at least a certain degree. Decision makers across a wide range of industries and quota on company sizes","quant"
+"247","33269",2025-02-17T18:30:00.000Z,"LinkedIn Corporate Messaging","draft","1","3","7",2025-03-16T23:25:55.223Z,2025-03-16T23:25:55.223Z,"Marketing DM's","quant"
+"248","33280",2025-02-23T18:30:00.000Z,"Creator/influencer marketing decision-makers US/DEIN/UK AU","draft","24","4","7",2025-02-24T22:06:15.271Z,2025-02-24T22:06:15.271Z,"Creator/Influencer marketing ","quant"
+"249","33281",2025-02-22T18:30:00.000Z,"Brand Tracker - USA 2025CS125","draft","24","4","7",2025-02-25T22:56:44.882Z,2025-02-25T22:56:44.882Z,"●	Decision-making involvement/influence in digital media partner selection
+●	Digital retail advertising involvement
+","quant"
+"250","33282",2025-02-23T18:30:00.000Z,"FROG_BEV","draft","1","1","7",2025-02-27T02:45:50.440Z,2025-03-05T23:03:12.570Z,"1.	EV owners: HEV/PHEV/BEV all segments ","quant"
+"251","33283",2025-02-23T18:30:00.000Z,"Starbucks Coffee Drinkers - Global","draft","1","1","7",2025-02-28T02:02:23.967Z,2025-02-28T02:02:23.967Z,"We have received more information for this study. The client is using 70% IR amongst Gen Pop to assess pricing, so please provide us quotes for 70% amongst Gen Pop. ","quant"
+"252","33288",2025-02-25T18:30:00.000Z,"Experienced Recruits - Japan","draft","1","1","1",2025-03-06T00:03:16.010Z,2025-03-06T00:03:16.010Z,"Full Time Employed -Working full time for 1+ years -Role is Assistant or Associate, Manager, Director, VP, C Level Working in one of the following industries: Accounting, Banking/Financial Services, Computer Hardware, Computer Services, Computer Software, Consulting, Insurance, Legal Services, Security Products & Services, Technology/IT Services, Telecommunications Equipment, Telecommunications Services -Company 100+ Employees","quant"
+"253","33289",2025-02-26T18:30:00.000Z,"2025CS200_CMX POS","draft","24","4","7",2025-03-06T00:18:05.350Z,2025-03-06T00:18:05.350Z,"Advertising and Marketing DM's","quant"
+"254","33292",2025-03-01T18:30:00.000Z,"2025SS115_ Industries","draft","24","4","7",2025-03-12T22:35:30.103Z,2025-03-12T22:35:30.103Z,"Advertising/Marketing DM's","quant"
+"255","33303",2025-03-05T18:30:00.000Z,"202429445 Cloud Pulse Q1 2025","draft","1","1","7",2025-04-07T03:28:19.225Z,2025-04-07T03:28:19.225Z," Cloud Pulse Q1 2025","quant"
+"256","33304",2025-03-05T18:30:00.000Z,"Air Cargo - US (SO)","draft","1","1","7",2025-03-16T22:41:37.927Z,2025-03-16T22:41:37.927Z,"Transport and Logistics DM's","quant"
+"257","33305",2025-03-06T18:30:00.000Z,"33305 : AI Security Perception - US","draft","1","1","1",2025-03-18T22:06:50.045Z,2025-03-18T22:06:50.045Z,"ITDM's","quant"
+"258","33307",2025-03-08T18:30:00.000Z,"33307 : Global Survey","draft","24","4","1",2025-03-18T22:32:04.821Z,2025-03-18T22:32:04.821Z,"●	Employed (S1a)
+●	Involved in Advertising/Marketing (S5/1)
+●	Qualifying Agency/Marketer (S10)
+●	Involved in ad decision-making (S15)
+●	Qualifying annual ad spend (S20)
+o	UK = 1,000,000 Pounds
+o	France & Germany = 500,000 Euros
+o	Brazil = 2,500,000 Brazilian Real
+o	Japan = 65,000,000 Yen
+","quant"
+"259","33309",2025-03-08T18:30:00.000Z,"33309 : eCommerce Solutions","draft","1","1","1",2025-03-24T00:45:36.053Z,2025-03-24T00:45:36.053Z,"Leaders and stakeholders involved in the strategy, decision-making, and implementation process when selecting e-commerce solutions, such as order management systems. Client assumes this will be a broad mix of technical and line-of-business personas.","quant"
+"260","33315",2025-03-11T18:30:00.000Z,"33315 : AI Agents - US","draft","1","1","7",2025-03-24T00:57:32.906Z,2025-03-24T00:57:32.906Z,"•	All industries will qualify: 
+o	Financial industry – min 15% - max 20% quota
+o	Healthcare - min 15% - max 20% quota
+o	Manufacturing - min 15% - max 20% quota
+o	Retail - min 15% - max 20% quota
+o	Technology - min 15% - max 20% quota
+","quant"
+"261","33316",2025-03-12T18:30:00.000Z,"33316 : Bathroom Utilities - Australia","draft","1","1","1",2025-03-24T22:45:16.533Z,2025-03-24T22:45:16.533Z,"Architects, Designers who work directly with home owner
+2. Design Consultants who work with developers
+3. Decision Marker on Purchasing Bathroom Utilities
+","quant"
+"262","33317",2025-03-15T18:30:00.000Z,"33317 : Feasibility in Canada for quick turnaround study","draft","24","4","7",2025-03-25T01:18:51.693Z,2025-03-25T01:18:51.693Z,"o	75 Agencies: media directors and buyers
+o	75 Marketers: CMO, CRO (senior level who oversee advertising)
+o	$1MM+ annual programmatic spend (Canadian)
+","quant"
+"263","33325",2025-03-16T18:30:00.000Z,"33325 : Bid request - US digital video advertisers buying regional/local ads","draft","24","4","1",2025-03-25T01:45:02.788Z,2025-03-25T01:45:02.788Z,"Group 1: $500M - $1B revenue","quant"
+"264","33326",2025-03-16T18:30:00.000Z,"33326 : Hybrid Cloud - US","draft","1","1","1",2025-03-25T22:35:24.245Z,2025-03-25T22:35:24.245Z,"IT professionals evaluating, purchasing, managing, and building application infrastructure and responsible for/involved with data center infrastructure and cloud technologies. ","quant"
+"265","33328",2025-03-17T18:30:00.000Z,"33328 : VC Workers","draft","1","1","1",2025-03-27T23:00:43.836Z,2025-03-27T23:00:43.836Z,"Assume VC to be Venture Capital but could any investment type firm such as venture capital, private equity, family office, etc.","quant"
+"266","33336",2025-03-18T18:30:00.000Z,"33336 : Quick Ballpark Estimate - UK","draft","1","1","7",2025-03-27T23:08:00.016Z,2025-03-27T23:08:00.016Z,"target Manager+ FDMs in Retail sector at assumed IR of 30% IR and 15 Mins LOI. involved in decision of what payment options they provide to customers.  The business must have an online retail presence.","quant"
+"267","33342",2025-04-20T18:30:00.000Z,"33342 : Retail Media and CTV Survey","draft","1","1","1",2025-04-03T21:53:33.533Z,2025-04-03T21:53:33.533Z,"a.	Chief Strategy, Product Management, and/or Marketing Officers or Departmental Executives
+b.	Chief Revenue, Monetization and/or Advertising Officers or Departmental Executives
+(Just to be clear – many departmental executives are at the Director or VP levels, especially with respect to Retail Media – so it might not be as senior as perceived at first glance.  There is a secondary factor that we also were looking at which includes consulting services and agency operators acting on behalf of departmental executives – which (if qualified) can round out the seniority issue.  However, the universe is still not that huge.)
+","quant"
+"268","33346",2025-03-23T18:30:00.000Z,"Quote - Washington State Healthcare 2025 Quote","draft","25","3","1",2025-04-07T03:46:44.198Z,2025-04-07T03:46:44.198Z,"3.	Survey programming, hosting, etc. needed
+4.	Fielding in late-May, possibly early June
+5.	Data processing (weighting, databooks, topline) needed
+6.	Charting will be needed, template exists and will be provided
+","quant"
+"269","33351",2025-03-25T18:30:00.000Z,"Third Party Risk - Global (FS)","draft","1","1","7",2025-04-07T04:01:33.507Z,2025-04-07T04:01:33.507Z,"•	Respondent profile/requirements: Manager+ seniority employed in a cybersecurity function (~50% of respondents) or a within a GRC, supply chain, or procurement/finance team (~50%) and screened for having oversight/responsibility into understanding/managing third-party risk.","quant"
+"270","33354",2025-03-29T18:30:00.000Z,"Enterprise Storage for AI - US/CA (SO)","draft","1","1","1",2025-04-07T04:55:19.322Z,2025-04-07T04:55:53.639Z,"•	Research target: IT professionals involved with purchase and deployment decisions for enterprise storage 
+o	Age 23-67 
+","quant"
+"271","33356",2025-03-30T18:30:00.000Z,"New Bid - Backpack study","draft","26","3","1",2025-04-07T05:02:01.812Z,2025-04-07T05:02:01.812Z,"1.	Adult men and women, 18+
+2.	Have and currently use a backpack  (for any reason, travel, work/commute, hiking/trekking, etc.)
+3.	Have personally bought one in the last 5 years
+4.	Mix of backpack prices (e.g., regular, premium, smart, etc.)
+5.	We may need to boost some age or gender groups.
+6.	Expected incidence 60%+
+","quant"
+"272","33359",2025-04-01T18:30:00.000Z,"Industry AI and Cloud Path - Global (FS)","draft","1","1","1",2025-04-07T07:17:02.460Z,2025-04-07T07:17:02.460Z,"Aerospace & Defense
+Automotive
+Industrial Products and Equipment
+High tech (Equipment, Components)
+Consumer Packaged Goods
+Chemicals, Paper Mills, Metals & Materials
+","quant"
+"273","33368",2025-04-05T18:30:00.000Z,"Tech Company Execs - Global","draft","1","1","1",2025-04-08T01:19:33.674Z,2025-04-08T01:19:33.674Z,"Senior-level executives representing different functions, such as HR, Finance, Procurement, Supply Chain, etc.","quant"
+"274","33374",2025-04-08T18:30:00.000Z,"Continuous Threat and Exposure Management - US/CA","draft","1","1","7",2025-04-11T01:17:35.873Z,2025-04-11T01:17:35.873Z,"•	Research target: Cybersecurity and IT professionals involved with discovering and reducing threats and vulnerabilities in their organization ","quant"
+"275","332638",2025-04-20T18:30:00.000Z,"Dog and cat owner","draft","9","3","4",2025-04-21T06:16:26.635Z,2025-04-21T06:16:26.635Z,"Kindly share the competitive quote in respective IRS","quant"
+"279","332639",2025-04-20T18:30:00.000Z,"Dog and cat owner","draft","9","3","4",2025-04-21T06:16:27.674Z,2025-04-21T06:22:26.127Z,"Kindly share the competitive quote in respective IRS","quant"
+"283","332640",2025-04-16T18:30:00.000Z,"Bid request - US consumers ages 18 - 60","draft","24","3","1",2025-04-21T12:31:26.853Z,2025-04-21T12:31:26.853Z,"They are exploring a potential client study that would survey both advertisers targeting Gen Z audiences and Gen Z, Millennial and Gen X consumers. Could you share partner feasibility/costs for the below consumer segments","quant"
+"284","332641",2025-04-16T18:30:00.000Z,"Bid request - US consumers ages - 33382 ","draft","24","3","1",2025-04-22T11:26:33.347Z,2025-04-22T11:27:34.975Z,"study that would survey both advertisers targeting Gen Z audiences and Gen Z, Millennial and Gen X consumers. ","quant"
+"286","332642",2025-04-23T18:30:00.000Z,"Auto Study Middle East","draft","6","3","5",2025-04-24T04:10:50.433Z,2025-04-24T04:10:50.433Z,"Option 1: Quant LOI 15 minutes
+n=200
+UAE (Dubai, Sharjah)
+Car owners & intenders (intend to buy new cars in the next year), open explorers who are more open to new brands (let’s say 30% incidence) 
+
+
+Option 2: Qualitative FGDs
+4 FGDs, 6 participants each FGD
+UAE (Dubai, Sharjah)
+Car owners (past 1 year car buyer), open explorers who are more open to new brands (let’s say 30% incidence) ","both"
+"287","332643",2025-04-23T18:30:00.000Z,"Auto Study Middle East","draft","6","3","5",2025-04-24T04:10:52.887Z,2025-04-24T04:10:52.887Z,"Option 1: Quant LOI 15 minutes
+n=200
+UAE (Dubai, Sharjah)
+Car owners & intenders (intend to buy new cars in the next year), open explorers who are more open to new brands (let’s say 30% incidence) 
+
+
+Option 2: Qualitative FGDs
+4 FGDs, 6 participants each FGD
+UAE (Dubai, Sharjah)
+Car owners (past 1 year car buyer), open explorers who are more open to new brands (let’s say 30% incidence) ","both"
+"288","332644",2025-04-23T18:30:00.000Z,"33395 :2025SS305 IDENTITY UK - Bid request","draft","24","4","7",2025-04-25T10:32:31.830Z,2025-04-28T14:46:29.282Z,"LOI – 15 minutes
+
+Employed in the UK 
+●      Manager+ Job Title 
+●      Advertising/Marketing involvement 
+●      Agency/Marketer 
+○      Target: 50/50 split
+●      Involved in digital advertising
+","quant"
+"289","332645",2025-04-27T18:30:00.000Z,"33396 : Finance, IT, and General Business Decision-Makers in Healthcare - US (SO)","draft","1","1","7",2025-04-28T14:35:34.074Z,2025-04-28T14:35:34.074Z,"Description:
+DMs:
+Finance, IT, and General Business Decision-Makers in Healthcare Organizations. Ideally VP+
+HCPs:
+Doctors - mix of primary care and multiple specialties (any specialty)
+","quant"
+"291","332646",2025-04-27T18:30:00.000Z,"33398 : LOB Priorities - Global (SO)","draft","1","1","7",2025-04-28T14:52:48.712Z,2025-04-28T14:52:48.712Z,"Sample size: 1,000
+Method: 15-min CAWI  
+Target respondents: business & IT decision makers (e.g., business development managers, sales, finance, IT, etc.). Manager-lever or higher (manager, director, head of business unit, VP, C-level). Respondents should be knowledgeable about their line of business/department’s needs, priorities, around IT and IT procurement, including cloud solutions.
+","quant"
+"292","332647",2025-04-27T18:30:00.000Z,"33402 : 2025CS180_DIRECTV - New custom study","draft","24","4","1",2025-04-28T15:09:01.773Z,2025-04-28T15:09:01.773Z,"Loi – 15 mins
+Market – USA
+●	50/50 Agency/Marketer
+●	Linear TV and/or CTV decision-makers
+●	Lapsed/Never users of DIRECTV
+●	$10M+ Annual media spend (mid/large advertisers)
+","quant"

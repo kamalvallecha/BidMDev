@@ -53,19 +53,35 @@ function FieldAllocation() {
       }
 
       setPartners(response.data.partners);
-      setAudiences(response.data.audiences || []);
+      
+      // Ensure audiences are unique by ID
+      const uniqueAudiences = response.data.audiences.reduce((acc, curr) => {
+        if (!acc.find(a => a.id === curr.id)) {
+          // Ensure countries are unique within each audience
+          curr.countries = curr.countries.filter((country, index, self) =>
+            index === self.findIndex(c => c.country === country.country)
+          );
+          acc.push(curr);
+        }
+        return acc;
+      }, []);
+      
+      setAudiences(uniqueAudiences);
       
       if (response.data.loi_options && response.data.loi_options.length > 0) {
         setSelectedLOI(response.data.loi_options[0].loi);
         setLoiOptions(response.data.loi_options);
       }
 
-      // Format responses
+      // Format responses with deduplication
       const formattedResponses = {};
       if (response.data.responses) {
         response.data.responses.forEach(resp => {
           const key = `${resp.partner_id}-${resp.audience_id}-${resp.country}-${resp.loi}`;
-          formattedResponses[key] = resp;
+          // Only update if the key doesn't exist or if the existing allocation is less than the new one
+          if (!formattedResponses[key] || formattedResponses[key].allocation < resp.allocation) {
+            formattedResponses[key] = resp;
+          }
         });
       }
       setResponses(formattedResponses);
@@ -157,11 +173,8 @@ function FieldAllocation() {
 
         {audiences.map((audience, index) => (
           <div key={audience.id} className="audience-section">
-            <Typography variant="h6" className="audience-title">
-              {`Audience ${index + 1}: ${audience.audience_name}`}
-            </Typography>
-            <Typography variant="subtitle1" className="audience-category">
-              {audience.ta_category}
+            <Typography variant="h6" className="audience-title" sx={{ fontWeight: 'bold' }}>
+              Audience: {audience.ta_category} - {audience.broader_category} - {audience.mode} - IR {audience.ir}%
             </Typography>
 
             <TableContainer>
@@ -183,8 +196,14 @@ function FieldAllocation() {
                     return (
                       <TableRow key={countryData.country}>
                         <TableCell>{countryData.country}</TableCell>
-                        <TableCell>{countryData.sample_size}</TableCell>
-                        <TableCell>{response.commitment || '-'}</TableCell>
+                        <TableCell>
+                          {countryData.is_best_efforts ? 'BE/Max' : countryData.sample_size}
+                        </TableCell>
+                        <TableCell>
+                          {response.commitment_type === 'be_max'
+                            ? 'BE/Max'
+                            : (response.commitment !== undefined && response.commitment !== null && response.commitment !== '' ? response.commitment : '-')}
+                        </TableCell>
                         <TableCell>{response.cpi || '-'}</TableCell>
                         <TableCell>
                           <TextField

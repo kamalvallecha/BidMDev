@@ -1,11 +1,12 @@
+
 const development = {
-    API_URL: 'http://localhost:5000'
+    API_URL: ''  // Empty string for relative URLs
 };
 
 const production = {
-    API_URL: import.meta.env.VITE_API_URL || 'https://api.example.com' // This will be replaced with your actual production URL
+    API_URL: ''  // Empty string for relative URLs
 };
 
 const config = import.meta.env.MODE === 'production' ? production : development;
 
-export default config; 
+export default config;

@@ -59,6 +59,7 @@ function InField() {
       if (moveResponse.data.message) {
         alert('Bid moved to closure successfully');
         fetchInFieldBids();
+        navigate('/closure');
       }
     } catch (error) {
       console.error('Error moving bid to closure:', error);

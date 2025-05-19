@@ -57,7 +57,7 @@ function ClosureEdit() {
     const fetchAudienceData = async () => {
       if (selectedPartner && selectedLOI) {
         try {
-          const response = await axios.get(`http://localhost:5000/api/bids/${bidId}/audiences`, {
+          const response = await axios.get(`/api/bids/${bidId}/audiences`, {
             params: { partner: selectedPartner, loi: selectedLOI }
           });
           
@@ -129,7 +129,7 @@ function ClosureEdit() {
   const fetchBidDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:5000/api/bids/closure/${bidId}`);
+      const response = await axios.get(`/api/bids/closure/${bidId}`);
       setBidData(response.data);
       
       // Set initial partner and LOI
@@ -184,7 +184,7 @@ function ClosureEdit() {
       console.log('Selected Partner:', selectedPartner);
       console.log('Selected LOI:', selectedLOI);
       
-      const response = await axios.put(`http://localhost:5000/api/bids/${bidId}/closure`, {
+      const response = await axios.put(`/api/bids/${bidId}/closure`, {
         partner: selectedPartner,
         loi: selectedLOI,
         data: formData,
@@ -299,11 +299,8 @@ function ClosureEdit() {
       {/* Audience Details */}
       {audienceData.map((audience, index) => (
         <Box key={audience.id} sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Audience - {index + 1} Details
-          </Typography>
-          <Typography variant="subtitle2" gutterBottom>
-            {audience.category}
+          <Typography variant="h6" className="audience-title" sx={{ fontWeight: 'bold' }}>
+            Audience: {audience.ta_category} - {audience.broader_category} - {audience.mode} - IR {audience.ir}%
           </Typography>
 
           {/* Add Field Close Date here */}

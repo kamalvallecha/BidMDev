@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -17,18 +17,18 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button
-} from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+  Button,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const ReadyForInvoiceBids = () => {
   const navigate = useNavigate();
   const [bids, setBids] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchBids();
@@ -36,14 +36,10 @@ const ReadyForInvoiceBids = () => {
 
   const fetchBids = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/bids/ready-for-invoice');
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      setBids(data);
+      const response = await axios.get("/api/bids/ready-for-invoice");
+      setBids(response.data);
     } catch (error) {
-      console.error('Error fetching bids:', error);
+      console.error("Error fetching bids:", error);
     }
   };
 
@@ -56,17 +52,20 @@ const ReadyForInvoiceBids = () => {
   const handleMoveToClosureClick = async (bidNumber) => {
     try {
       console.log("Moving bid to closure:", bidNumber);
-      const moveResponse = await axios.post(`http://localhost:5000/api/bids/${bidNumber}/move-to-closure`);
+      const moveResponse = await axios.post(
+        `/api/bids/${bidNumber}/move-to-closure`,
+      );
       if (moveResponse.data.message) {
-        alert('Bid moved to closure successfully');
+        alert("Bid moved to closure successfully");
         fetchBids();
+        navigate('/closure');
       }
     } catch (error) {
-      console.error('Error moving bid to closure:', error);
+      console.error("Error moving bid to closure:", error);
       if (error.response?.status === 404) {
-        alert('Bid not found. Please refresh the page and try again.');
+        alert("Bid not found. Please refresh the page and try again.");
       } else {
-        alert('Error moving bid to closure. Please try again.');
+        alert("Error moving bid to closure. Please try again.");
       }
     }
   };
@@ -74,28 +73,33 @@ const ReadyForInvoiceBids = () => {
   const handleMoveToInfield = async (bidNumber, poNumber) => {
     try {
       console.log("Moving bid to infield:", bidNumber);
-      const moveResponse = await axios.post(`http://localhost:5000/api/bids/${bidNumber}/move-to-infield`, {
-        po_number: poNumber
-      });
-      
+      const moveResponse = await axios.post(
+        `/api/bids/${bidNumber}/move-to-infield`,
+        {
+          po_number: poNumber,
+        },
+      );
+
       if (moveResponse.data.message) {
-        alert('Bid moved to infield successfully');
+        alert("Bid moved to infield successfully");
         fetchBids();
+        navigate('/infield');
       }
     } catch (error) {
-      console.error('Error moving bid to infield:', error);
+      console.error("Error moving bid to infield:", error);
       if (error.response?.status === 404) {
-        alert('Bid not found. Please refresh the page and try again.');
+        alert("Bid not found. Please refresh the page and try again.");
       } else {
-        alert('Error moving bid to infield. Please try again.');
+        alert("Error moving bid to infield. Please try again.");
       }
     }
   };
 
-  const filteredBids = bids.filter(bid =>
-    bid.bid_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bid.study_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    bid.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredBids = bids.filter(
+    (bid) =>
+      bid.bid_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bid.study_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      bid.client_name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -105,29 +109,35 @@ const ReadyForInvoiceBids = () => {
       </Typography>
 
       <TextField
-        fullWidth
         variant="outlined"
         placeholder="Search bids..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ mb: 2 }}
+        sx={{ 
+          mb: 2,
+          width: '300px',
+        }}
       />
 
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
-            <TableRow sx={{ backgroundColor: 'primary.main' }}>
-              <TableCell sx={{ color: 'white' }}>PO Number</TableCell>
-              <TableCell sx={{ color: 'white' }}>Bid Number</TableCell>
-              <TableCell sx={{ color: 'white' }}>Study Name</TableCell>
-              <TableCell sx={{ color: 'white' }}>Client</TableCell>
-              <TableCell sx={{ color: 'white' }}>N-Delivered</TableCell>
-              <TableCell sx={{ color: 'white' }}>Avg. Final LOI</TableCell>
-              <TableCell sx={{ color: 'white' }}>Avg. Initial Vendor CPI</TableCell>
-              <TableCell sx={{ color: 'white' }}>Avg. Final Vendor CPI</TableCell>
-              <TableCell sx={{ color: 'white' }}>Invoice Amount</TableCell>
-              <TableCell sx={{ color: 'white' }}>Status</TableCell>
-              <TableCell sx={{ color: 'white' }}>Actions</TableCell>
+            <TableRow sx={{ backgroundColor: "primary.main" }}>
+              <TableCell sx={{ color: "white" }}>PO Number</TableCell>
+              <TableCell sx={{ color: "white" }}>Bid Number</TableCell>
+              <TableCell sx={{ color: "white" }}>Study Name</TableCell>
+              <TableCell sx={{ color: "white" }}>Client</TableCell>
+              <TableCell sx={{ color: "white" }}>N-Delivered</TableCell>
+              <TableCell sx={{ color: "white" }}>Avg. Final LOI</TableCell>
+              <TableCell sx={{ color: "white" }}>
+                Avg. Initial Vendor CPI
+              </TableCell>
+              <TableCell sx={{ color: "white" }}>
+                Avg. Final Vendor CPI
+              </TableCell>
+              <TableCell sx={{ color: "white" }}>Invoice Amount</TableCell>
+              <TableCell sx={{ color: "white" }}>Status</TableCell>
+              <TableCell sx={{ color: "white" }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -146,7 +156,7 @@ const ReadyForInvoiceBids = () => {
                 <TableCell>
                   <Stack direction="row" spacing={1}>
                     <Tooltip title="Edit">
-                      <IconButton 
+                      <IconButton
                         onClick={() => handleEditClick(bid.bid_number)}
                         color="primary"
                         size="small"
@@ -165,7 +175,9 @@ const ReadyForInvoiceBids = () => {
                     </Tooltip>
                     <Tooltip title="Move to Infield">
                       <IconButton
-                        onClick={() => handleMoveToInfield(bid.bid_number, bid.po_number)}
+                        onClick={() =>
+                          handleMoveToInfield(bid.bid_number, bid.po_number)
+                        }
                         color="info"
                         size="small"
                       >
@@ -183,4 +195,4 @@ const ReadyForInvoiceBids = () => {
   );
 };
 
-export default ReadyForInvoiceBids; 
+export default ReadyForInvoiceBids;

@@ -1,0 +1,12 @@
+Metadata-Version: 2.4
+Name: repl-nix-workspace
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Requires-Dist: flask>=3.1.0
+Requires-Dist: flask-cors>=5.0.1
+Requires-Dist: pandas>=2.2.3
+Requires-Dist: passlib>=1.7.4
+Requires-Dist: psycopg2-binary>=2.9.10
+Requires-Dist: sqlalchemy>=2.0.40
+Requires-Dist: waitress>=3.0.2
