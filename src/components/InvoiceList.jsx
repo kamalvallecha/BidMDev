@@ -35,7 +35,7 @@ const InvoiceList = () => {
   };
 
   const handleEdit = (bidId) => {
-    navigate(`/invoice/${bidId}/edit`);
+    navigate(`/invoice/edit/${bidId}`);
   };
 
   return (

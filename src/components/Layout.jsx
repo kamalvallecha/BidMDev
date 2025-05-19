@@ -57,6 +57,13 @@ const Layout = () => {
       visible: role === 'admin'
     },
     {
+      id: 8,
+      icon: <MdDescription />,
+      label: 'Proposal',
+      path: '/proposals',
+      visible: role === 'admin' || role === 'VM' || role === 'Sales'
+    },
+    {
       id: 7,
       icon: <FaUsers />,
       label: 'All Users',

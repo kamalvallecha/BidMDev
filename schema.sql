@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 17.2
--- Dumped by pg_dump version 17.2
+-- Dumped from database version 17.4
+-- Dumped by pg_dump version 17.4
 
--- Started on 2025-03-26 17:36:00
+-- Started on 2025-04-30 16:47:04
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -19,12 +19,55 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+CREATE TYPE public.bid_status AS ENUM (
+    'draft',
+    'submitted',
+    'infield',
+    'closure',
+    'ready_for_invoice',
+    'invoiced',
+    'rejected'
+);
+
+
+ALTER TYPE public.bid_status OWNER TO postgres;
+
+--
+-- TOC entry 875 (class 1247 OID 16412)
+-- Name: methodology; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.methodology AS ENUM (
+    'online',
+    'offline',
+    'mixed',
+    'quant'
+);
+
+
+ALTER TYPE public.methodology OWNER TO postgres;
+
+--
+-- TOC entry 869 (class 1247 OID 16388)
+-- Name: region; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.region AS ENUM (
+    'north',
+    'south',
+    'east',
+    'west'
+);
+
+
+ALTER TYPE public.region OWNER TO postgres;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- TOC entry 242 (class 1259 OID 32861)
+-- TOC entry 232 (class 1259 OID 16538)
 -- Name: bid_audience_countries; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -32,16 +75,17 @@ CREATE TABLE public.bid_audience_countries (
     id integer NOT NULL,
     bid_id integer,
     audience_id integer,
-    country text NOT NULL,
+    country character varying(100) NOT NULL,
     sample_size integer DEFAULT 0 NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    is_best_efforts boolean DEFAULT false
 );
 
 
 ALTER TABLE public.bid_audience_countries OWNER TO postgres;
 
 --
--- TOC entry 241 (class 1259 OID 32860)
+-- TOC entry 231 (class 1259 OID 16537)
 -- Name: bid_audience_countries_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -57,8 +101,8 @@ CREATE SEQUENCE public.bid_audience_countries_id_seq
 ALTER SEQUENCE public.bid_audience_countries_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5057 (class 0 OID 0)
--- Dependencies: 241
+-- TOC entry 5093 (class 0 OID 0)
+-- Dependencies: 231
 -- Name: bid_audience_countries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -66,104 +110,7 @@ ALTER SEQUENCE public.bid_audience_countries_id_seq OWNED BY public.bid_audience
 
 
 --
--- TOC entry 251 (class 1259 OID 41044)
--- Name: bid_countries; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.bid_countries (
-    id integer NOT NULL,
-    bid_id integer,
-    country character varying(100) NOT NULL,
-    sample_size integer DEFAULT 0,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-
-ALTER TABLE public.bid_countries OWNER TO postgres;
-
---
--- TOC entry 250 (class 1259 OID 41043)
--- Name: bid_countries_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.bid_countries_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.bid_countries_id_seq OWNER TO postgres;
-
---
--- TOC entry 5058 (class 0 OID 0)
--- Dependencies: 250
--- Name: bid_countries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.bid_countries_id_seq OWNED BY public.bid_countries.id;
-
-
---
--- TOC entry 240 (class 1259 OID 32832)
--- Name: bid_loi; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.bid_loi (
-    id integer NOT NULL,
-    bid_id integer,
-    loi integer NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-
-ALTER TABLE public.bid_loi OWNER TO postgres;
-
---
--- TOC entry 239 (class 1259 OID 32831)
--- Name: bid_loi_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.bid_loi_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.bid_loi_id_seq OWNER TO postgres;
-
---
--- TOC entry 5059 (class 0 OID 0)
--- Dependencies: 239
--- Name: bid_loi_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.bid_loi_id_seq OWNED BY public.bid_loi.id;
-
-
---
--- TOC entry 249 (class 1259 OID 41042)
--- Name: bid_number_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.bid_number_seq
-    START WITH 40000
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.bid_number_seq OWNER TO postgres;
-
---
--- TOC entry 238 (class 1259 OID 32814)
+-- TOC entry 234 (class 1259 OID 16559)
 -- Name: bid_partners; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -172,15 +119,14 @@ CREATE TABLE public.bid_partners (
     bid_id integer,
     partner_id integer,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    pmf numeric(10,2),
-    currency character varying(10)
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
 ALTER TABLE public.bid_partners OWNER TO postgres;
 
 --
--- TOC entry 237 (class 1259 OID 32813)
+-- TOC entry 233 (class 1259 OID 16558)
 -- Name: bid_partners_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -196,8 +142,8 @@ CREATE SEQUENCE public.bid_partners_id_seq
 ALTER SEQUENCE public.bid_partners_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5060 (class 0 OID 0)
--- Dependencies: 237
+-- TOC entry 5094 (class 0 OID 0)
+-- Dependencies: 233
 -- Name: bid_partners_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -205,7 +151,7 @@ ALTER SEQUENCE public.bid_partners_id_seq OWNED BY public.bid_partners.id;
 
 
 --
--- TOC entry 248 (class 1259 OID 34690)
+-- TOC entry 236 (class 1259 OID 16580)
 -- Name: bid_po_numbers; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -221,7 +167,7 @@ CREATE TABLE public.bid_po_numbers (
 ALTER TABLE public.bid_po_numbers OWNER TO postgres;
 
 --
--- TOC entry 247 (class 1259 OID 34689)
+-- TOC entry 235 (class 1259 OID 16579)
 -- Name: bid_po_numbers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -237,8 +183,8 @@ CREATE SEQUENCE public.bid_po_numbers_id_seq
 ALTER SEQUENCE public.bid_po_numbers_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5061 (class 0 OID 0)
--- Dependencies: 247
+-- TOC entry 5095 (class 0 OID 0)
+-- Dependencies: 235
 -- Name: bid_po_numbers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -246,31 +192,31 @@ ALTER SEQUENCE public.bid_po_numbers_id_seq OWNED BY public.bid_po_numbers.id;
 
 
 --
--- TOC entry 236 (class 1259 OID 32798)
+-- TOC entry 230 (class 1259 OID 16522)
 -- Name: bid_target_audiences; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.bid_target_audiences (
     id integer NOT NULL,
     bid_id integer,
-    audience_name text NOT NULL,
-    ta_category public.ta_category NOT NULL,
-    broader_category text NOT NULL,
-    exact_ta_definition text NOT NULL,
-    mode public.mode_type NOT NULL,
-    sample_required integer NOT NULL,
-    ir integer NOT NULL,
+    audience_name character varying(255) NOT NULL,
+    ta_category character varying(100),
+    broader_category character varying(100),
+    exact_ta_definition text,
+    mode character varying(50),
+    sample_required integer,
+    ir numeric(5,2),
     comments text,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    country_samples jsonb DEFAULT '{}'::jsonb
+    is_best_efforts boolean DEFAULT false
 );
 
 
 ALTER TABLE public.bid_target_audiences OWNER TO postgres;
 
 --
--- TOC entry 235 (class 1259 OID 32797)
+-- TOC entry 229 (class 1259 OID 16521)
 -- Name: bid_target_audiences_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -286,8 +232,8 @@ CREATE SEQUENCE public.bid_target_audiences_id_seq
 ALTER SEQUENCE public.bid_target_audiences_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5062 (class 0 OID 0)
--- Dependencies: 235
+-- TOC entry 5096 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: bid_target_audiences_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -295,7 +241,7 @@ ALTER SEQUENCE public.bid_target_audiences_id_seq OWNED BY public.bid_target_aud
 
 
 --
--- TOC entry 234 (class 1259 OID 32769)
+-- TOC entry 228 (class 1259 OID 16493)
 -- Name: bids; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -305,21 +251,22 @@ CREATE TABLE public.bids (
     bid_date date NOT NULL,
     study_name character varying(255) NOT NULL,
     methodology public.methodology NOT NULL,
+    status public.bid_status DEFAULT 'draft'::public.bid_status,
+    client integer,
     sales_contact integer,
     vm_contact integer,
-    client integer,
-    project_requirement text NOT NULL,
-    comments text,
-    status character varying(50) DEFAULT 'draft'::character varying,
+    project_requirement text,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    rejection_reason character varying(100),
+    rejection_comments text
 );
 
 
 ALTER TABLE public.bids OWNER TO postgres;
 
 --
--- TOC entry 233 (class 1259 OID 32768)
+-- TOC entry 227 (class 1259 OID 16492)
 -- Name: bids_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -335,8 +282,8 @@ CREATE SEQUENCE public.bids_id_seq
 ALTER SEQUENCE public.bids_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5063 (class 0 OID 0)
--- Dependencies: 233
+-- TOC entry 5097 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: bids_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -344,17 +291,17 @@ ALTER SEQUENCE public.bids_id_seq OWNED BY public.bids.id;
 
 
 --
--- TOC entry 230 (class 1259 OID 30257)
+-- TOC entry 220 (class 1259 OID 16435)
 -- Name: clients; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.clients (
     id integer NOT NULL,
     client_id character varying(50) NOT NULL,
-    client_name character varying(100) NOT NULL,
-    contact_person character varying(100) NOT NULL,
+    client_name character varying(255) NOT NULL,
+    contact_person character varying(255) NOT NULL,
     email character varying(255) NOT NULL,
-    phone character varying(20) NOT NULL,
+    phone character varying(50) NOT NULL,
     country character varying(100) NOT NULL,
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
@@ -364,7 +311,7 @@ CREATE TABLE public.clients (
 ALTER TABLE public.clients OWNER TO postgres;
 
 --
--- TOC entry 229 (class 1259 OID 30256)
+-- TOC entry 219 (class 1259 OID 16434)
 -- Name: clients_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -380,8 +327,8 @@ CREATE SEQUENCE public.clients_id_seq
 ALTER SEQUENCE public.clients_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5064 (class 0 OID 0)
--- Dependencies: 229
+-- TOC entry 5098 (class 0 OID 0)
+-- Dependencies: 219
 -- Name: clients_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -389,46 +336,47 @@ ALTER SEQUENCE public.clients_id_seq OWNED BY public.clients.id;
 
 
 --
--- TOC entry 246 (class 1259 OID 34525)
+-- TOC entry 240 (class 1259 OID 16622)
 -- Name: partner_audience_responses; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.partner_audience_responses (
     id integer NOT NULL,
-    partner_response_id integer,
     bid_id integer,
+    partner_response_id integer,
     audience_id integer,
-    country text NOT NULL,
-    commitment integer NOT NULL,
-    cpi numeric(10,2) NOT NULL,
-    timeline_days integer DEFAULT 0 NOT NULL,
-    comments text,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    allocation integer DEFAULT 0,
-    quality_reject boolean DEFAULT false,
-    field_close_date date,
-    ir numeric(5,2),
+    country character varying(100) NOT NULL,
+    allocation integer DEFAULT 0 NOT NULL,
+    commitment integer DEFAULT 0,
+    cpi numeric(10,2) DEFAULT 0,
+    timeline_days integer DEFAULT 0,
+    comments text DEFAULT ''::text,
     n_delivered integer DEFAULT 0,
-    final_loi integer,
+    quality_rejects integer DEFAULT 0,
+    final_loi numeric(5,2),
     final_ir numeric(5,2),
     final_timeline integer,
-    quality_rejects integer,
-    communication_rating integer,
-    engagement_rating integer,
-    problem_solving_rating integer,
-    additional_feedback text,
     final_cpi numeric(10,2),
-    initial_cost numeric(10,2),
-    final_cost numeric(10,2),
-    savings numeric(10,2)
+    field_close_date date,
+    initial_cost numeric(10,2) DEFAULT 0,
+    final_cost numeric(10,2) DEFAULT 0,
+    savings numeric(10,2) DEFAULT 0,
+    communication text,
+    engagement text,
+    problem_solving text,
+    additional_feedback text,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    is_best_efforts boolean DEFAULT false,
+    commitment_type character varying(10) DEFAULT 'fixed'::character varying,
+    CONSTRAINT partner_audience_responses_commitment_type_check CHECK (((commitment_type)::text = ANY ((ARRAY['fixed'::character varying, 'be_max'::character varying])::text[])))
 );
 
 
 ALTER TABLE public.partner_audience_responses OWNER TO postgres;
 
 --
--- TOC entry 245 (class 1259 OID 34524)
+-- TOC entry 239 (class 1259 OID 16621)
 -- Name: partner_audience_responses_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -444,8 +392,8 @@ CREATE SEQUENCE public.partner_audience_responses_id_seq
 ALTER SEQUENCE public.partner_audience_responses_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5065 (class 0 OID 0)
--- Dependencies: 245
+-- TOC entry 5099 (class 0 OID 0)
+-- Dependencies: 239
 -- Name: partner_audience_responses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -453,50 +401,7 @@ ALTER SEQUENCE public.partner_audience_responses_id_seq OWNED BY public.partner_
 
 
 --
--- TOC entry 244 (class 1259 OID 32904)
--- Name: partner_response_countries; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.partner_response_countries (
-    id integer NOT NULL,
-    response_id integer,
-    audience_id integer,
-    country text NOT NULL,
-    commitment integer NOT NULL,
-    cpi numeric(10,2) NOT NULL,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-
-ALTER TABLE public.partner_response_countries OWNER TO postgres;
-
---
--- TOC entry 243 (class 1259 OID 32903)
--- Name: partner_response_countries_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
---
-
-CREATE SEQUENCE public.partner_response_countries_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE public.partner_response_countries_id_seq OWNER TO postgres;
-
---
--- TOC entry 5066 (class 0 OID 0)
--- Dependencies: 243
--- Name: partner_response_countries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
---
-
-ALTER SEQUENCE public.partner_response_countries_id_seq OWNED BY public.partner_response_countries.id;
-
-
---
--- TOC entry 232 (class 1259 OID 31348)
+-- TOC entry 238 (class 1259 OID 16594)
 -- Name: partner_responses; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -504,35 +409,26 @@ CREATE TABLE public.partner_responses (
     id integer NOT NULL,
     bid_id integer,
     partner_id integer,
-    loi integer NOT NULL,
-    currency character varying(3) NOT NULL,
-    pmf numeric(10,2),
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    loi integer DEFAULT 0 NOT NULL,
     status character varying(20) DEFAULT 'draft'::character varying,
-    quality_rejects integer DEFAULT 0,
-    communication_rating integer DEFAULT 0,
-    engagement_rating integer DEFAULT 0,
-    problem_solving_rating integer DEFAULT 0,
-    additional_feedback text DEFAULT ''::text,
+    currency character varying(3) DEFAULT 'USD'::character varying,
+    pmf numeric(5,2) DEFAULT 0,
     timeline integer DEFAULT 0,
-    final_loi integer,
-    final_ir numeric(5,2),
-    final_timeline integer,
     invoice_date date,
     invoice_sent date,
     invoice_serial character varying(50),
     invoice_number character varying(50),
-    invoice_amount numeric(10,2),
-    timeline_days integer DEFAULT 0,
-    ir numeric(5,2) DEFAULT 0
+    invoice_amount numeric(10,2) DEFAULT 0,
+    response_date timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
 ALTER TABLE public.partner_responses OWNER TO postgres;
 
 --
--- TOC entry 231 (class 1259 OID 31347)
+-- TOC entry 237 (class 1259 OID 16593)
 -- Name: partner_responses_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -548,8 +444,8 @@ CREATE SEQUENCE public.partner_responses_id_seq
 ALTER SEQUENCE public.partner_responses_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5067 (class 0 OID 0)
--- Dependencies: 231
+-- TOC entry 5100 (class 0 OID 0)
+-- Dependencies: 237
 -- Name: partner_responses_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -557,21 +453,21 @@ ALTER SEQUENCE public.partner_responses_id_seq OWNED BY public.partner_responses
 
 
 --
--- TOC entry 253 (class 1259 OID 41068)
+-- TOC entry 226 (class 1259 OID 16476)
 -- Name: partners; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.partners (
     id integer NOT NULL,
-    partner_id character varying(50) NOT NULL,
-    partner_name character varying(100) NOT NULL,
-    contact_person character varying(100) NOT NULL,
-    contact_email character varying(100) NOT NULL,
-    contact_phone character varying(20) NOT NULL,
-    website character varying(200),
-    company_address text NOT NULL,
-    specialized text[] NOT NULL,
-    geographic_coverage text[] NOT NULL,
+    partner_id character varying(100) NOT NULL,
+    partner_name character varying(255) NOT NULL,
+    contact_person character varying(255) NOT NULL,
+    contact_email character varying(255) NOT NULL,
+    contact_phone character varying(100) DEFAULT 'NA'::character varying,
+    website character varying(255),
+    company_address text DEFAULT 'NA'::text,
+    specialized text[],
+    geographic_coverage text[],
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
@@ -580,7 +476,7 @@ CREATE TABLE public.partners (
 ALTER TABLE public.partners OWNER TO postgres;
 
 --
--- TOC entry 252 (class 1259 OID 41067)
+-- TOC entry 225 (class 1259 OID 16475)
 -- Name: partners_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -596,8 +492,8 @@ CREATE SEQUENCE public.partners_id_seq
 ALTER SEQUENCE public.partners_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5068 (class 0 OID 0)
--- Dependencies: 252
+-- TOC entry 5101 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: partners_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -605,26 +501,26 @@ ALTER SEQUENCE public.partners_id_seq OWNED BY public.partners.id;
 
 
 --
--- TOC entry 226 (class 1259 OID 29845)
+-- TOC entry 222 (class 1259 OID 16450)
 -- Name: sales; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.sales (
     id integer NOT NULL,
-    sales_id character varying,
-    sales_person character varying,
-    contact_person character varying,
-    reporting_manager character varying,
-    region character varying,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone
+    sales_id character varying(50) NOT NULL,
+    sales_person character varying(255) NOT NULL,
+    contact_person character varying(255) NOT NULL,
+    reporting_manager character varying(255) NOT NULL,
+    region public.region NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
 ALTER TABLE public.sales OWNER TO postgres;
 
 --
--- TOC entry 225 (class 1259 OID 29844)
+-- TOC entry 221 (class 1259 OID 16449)
 -- Name: sales_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -640,8 +536,8 @@ CREATE SEQUENCE public.sales_id_seq
 ALTER SEQUENCE public.sales_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5069 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 5102 (class 0 OID 0)
+-- Dependencies: 221
 -- Name: sales_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -649,27 +545,27 @@ ALTER SEQUENCE public.sales_id_seq OWNED BY public.sales.id;
 
 
 --
--- TOC entry 255 (class 1259 OID 49729)
+-- TOC entry 218 (class 1259 OID 16420)
 -- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.users (
     id integer NOT NULL,
-    email character varying(100) NOT NULL,
-    name character varying(100) NOT NULL,
+    email character varying(255) NOT NULL,
+    name character varying(255) NOT NULL,
+    employee_id character varying(50),
     password_hash character varying(255) NOT NULL,
     role character varying(50) NOT NULL,
+    team character varying(100),
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    employee_id character varying(50),
-    team character varying(50) DEFAULT 'Operations'::character varying NOT NULL
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
 ALTER TABLE public.users OWNER TO postgres;
 
 --
--- TOC entry 254 (class 1259 OID 49728)
+-- TOC entry 217 (class 1259 OID 16419)
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -685,8 +581,8 @@ CREATE SEQUENCE public.users_id_seq
 ALTER SEQUENCE public.users_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5070 (class 0 OID 0)
--- Dependencies: 254
+-- TOC entry 5103 (class 0 OID 0)
+-- Dependencies: 217
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -694,26 +590,26 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
 
 --
--- TOC entry 228 (class 1259 OID 29857)
+-- TOC entry 224 (class 1259 OID 16463)
 -- Name: vendor_managers; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.vendor_managers (
     id integer NOT NULL,
-    vm_id character varying,
-    vm_name character varying,
-    contact_person character varying,
-    team character varying,
-    created_at timestamp without time zone,
-    updated_at timestamp without time zone,
-    reporting_manager character varying(100)
+    vm_id character varying(50) NOT NULL,
+    vm_name character varying(255) NOT NULL,
+    contact_person character varying(255),
+    reporting_manager character varying(255),
+    team character varying(100),
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
 ALTER TABLE public.vendor_managers OWNER TO postgres;
 
 --
--- TOC entry 227 (class 1259 OID 29856)
+-- TOC entry 223 (class 1259 OID 16462)
 -- Name: vendor_managers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -729,8 +625,8 @@ CREATE SEQUENCE public.vendor_managers_id_seq
 ALTER SEQUENCE public.vendor_managers_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5071 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 5104 (class 0 OID 0)
+-- Dependencies: 223
 -- Name: vendor_managers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -738,7 +634,7 @@ ALTER SEQUENCE public.vendor_managers_id_seq OWNED BY public.vendor_managers.id;
 
 
 --
--- TOC entry 4804 (class 2604 OID 32864)
+-- TOC entry 4831 (class 2604 OID 16541)
 -- Name: bid_audience_countries id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -746,23 +642,7 @@ ALTER TABLE ONLY public.bid_audience_countries ALTER COLUMN id SET DEFAULT nextv
 
 
 --
--- TOC entry 4819 (class 2604 OID 41047)
--- Name: bid_countries id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.bid_countries ALTER COLUMN id SET DEFAULT nextval('public.bid_countries_id_seq'::regclass);
-
-
---
--- TOC entry 4802 (class 2604 OID 32835)
--- Name: bid_loi id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.bid_loi ALTER COLUMN id SET DEFAULT nextval('public.bid_loi_id_seq'::regclass);
-
-
---
--- TOC entry 4800 (class 2604 OID 32817)
+-- TOC entry 4835 (class 2604 OID 16562)
 -- Name: bid_partners id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -770,7 +650,7 @@ ALTER TABLE ONLY public.bid_partners ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 4816 (class 2604 OID 34693)
+-- TOC entry 4838 (class 2604 OID 16583)
 -- Name: bid_po_numbers id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -778,7 +658,7 @@ ALTER TABLE ONLY public.bid_po_numbers ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4796 (class 2604 OID 32801)
+-- TOC entry 4827 (class 2604 OID 16525)
 -- Name: bid_target_audiences id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -786,7 +666,7 @@ ALTER TABLE ONLY public.bid_target_audiences ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 4792 (class 2604 OID 32772)
+-- TOC entry 4823 (class 2604 OID 16496)
 -- Name: bids id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -794,7 +674,7 @@ ALTER TABLE ONLY public.bids ALTER COLUMN id SET DEFAULT nextval('public.bids_id
 
 
 --
--- TOC entry 4777 (class 2604 OID 30260)
+-- TOC entry 4809 (class 2604 OID 16438)
 -- Name: clients id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -802,7 +682,7 @@ ALTER TABLE ONLY public.clients ALTER COLUMN id SET DEFAULT nextval('public.clie
 
 
 --
--- TOC entry 4809 (class 2604 OID 34528)
+-- TOC entry 4851 (class 2604 OID 16625)
 -- Name: partner_audience_responses id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -810,15 +690,7 @@ ALTER TABLE ONLY public.partner_audience_responses ALTER COLUMN id SET DEFAULT n
 
 
 --
--- TOC entry 4807 (class 2604 OID 32907)
--- Name: partner_response_countries id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.partner_response_countries ALTER COLUMN id SET DEFAULT nextval('public.partner_response_countries_id_seq'::regclass);
-
-
---
--- TOC entry 4780 (class 2604 OID 31351)
+-- TOC entry 4841 (class 2604 OID 16597)
 -- Name: partner_responses id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -826,7 +698,7 @@ ALTER TABLE ONLY public.partner_responses ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- TOC entry 4823 (class 2604 OID 41071)
+-- TOC entry 4818 (class 2604 OID 16479)
 -- Name: partners id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -834,7 +706,7 @@ ALTER TABLE ONLY public.partners ALTER COLUMN id SET DEFAULT nextval('public.par
 
 
 --
--- TOC entry 4775 (class 2604 OID 29848)
+-- TOC entry 4812 (class 2604 OID 16453)
 -- Name: sales id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -842,7 +714,7 @@ ALTER TABLE ONLY public.sales ALTER COLUMN id SET DEFAULT nextval('public.sales_
 
 
 --
--- TOC entry 4826 (class 2604 OID 49732)
+-- TOC entry 4806 (class 2604 OID 16423)
 -- Name: users id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -850,7 +722,7 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- TOC entry 4776 (class 2604 OID 29860)
+-- TOC entry 4815 (class 2604 OID 16466)
 -- Name: vendor_managers id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -858,7 +730,16 @@ ALTER TABLE ONLY public.vendor_managers ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- TOC entry 4863 (class 2606 OID 32870)
+-- TOC entry 4904 (class 2606 OID 16547)
+-- Name: bid_audience_countries bid_audience_countries_bid_id_audience_id_country_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.bid_audience_countries
+    ADD CONSTRAINT bid_audience_countries_bid_id_audience_id_country_key UNIQUE (bid_id, audience_id, country);
+
+
+--
+-- TOC entry 4906 (class 2606 OID 16545)
 -- Name: bid_audience_countries bid_audience_countries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -867,43 +748,16 @@ ALTER TABLE ONLY public.bid_audience_countries
 
 
 --
--- TOC entry 4865 (class 2606 OID 38125)
--- Name: bid_audience_countries bid_audience_countries_unique_constraint; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- TOC entry 4910 (class 2606 OID 16568)
+-- Name: bid_partners bid_partners_bid_id_partner_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.bid_audience_countries
-    ADD CONSTRAINT bid_audience_countries_unique_constraint UNIQUE (bid_id, audience_id, country);
-
-
---
--- TOC entry 4877 (class 2606 OID 41054)
--- Name: bid_countries bid_countries_bid_id_country_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.bid_countries
-    ADD CONSTRAINT bid_countries_bid_id_country_key UNIQUE (bid_id, country);
+ALTER TABLE ONLY public.bid_partners
+    ADD CONSTRAINT bid_partners_bid_id_partner_id_key UNIQUE (bid_id, partner_id);
 
 
 --
--- TOC entry 4879 (class 2606 OID 41052)
--- Name: bid_countries bid_countries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.bid_countries
-    ADD CONSTRAINT bid_countries_pkey PRIMARY KEY (id);
-
-
---
--- TOC entry 4861 (class 2606 OID 32838)
--- Name: bid_loi bid_loi_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.bid_loi
-    ADD CONSTRAINT bid_loi_pkey PRIMARY KEY (id);
-
-
---
--- TOC entry 4859 (class 2606 OID 32820)
+-- TOC entry 4912 (class 2606 OID 16566)
 -- Name: bid_partners bid_partners_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -912,7 +766,7 @@ ALTER TABLE ONLY public.bid_partners
 
 
 --
--- TOC entry 4875 (class 2606 OID 34697)
+-- TOC entry 4916 (class 2606 OID 16587)
 -- Name: bid_po_numbers bid_po_numbers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -921,7 +775,7 @@ ALTER TABLE ONLY public.bid_po_numbers
 
 
 --
--- TOC entry 4857 (class 2606 OID 32807)
+-- TOC entry 4901 (class 2606 OID 16531)
 -- Name: bid_target_audiences bid_target_audiences_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -930,7 +784,7 @@ ALTER TABLE ONLY public.bid_target_audiences
 
 
 --
--- TOC entry 4853 (class 2606 OID 32781)
+-- TOC entry 4894 (class 2606 OID 16505)
 -- Name: bids bids_bid_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -939,7 +793,7 @@ ALTER TABLE ONLY public.bids
 
 
 --
--- TOC entry 4855 (class 2606 OID 32779)
+-- TOC entry 4896 (class 2606 OID 16503)
 -- Name: bids bids_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -948,7 +802,7 @@ ALTER TABLE ONLY public.bids
 
 
 --
--- TOC entry 4841 (class 2606 OID 30268)
+-- TOC entry 4874 (class 2606 OID 16446)
 -- Name: clients clients_client_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -957,7 +811,7 @@ ALTER TABLE ONLY public.clients
 
 
 --
--- TOC entry 4843 (class 2606 OID 30270)
+-- TOC entry 4876 (class 2606 OID 16448)
 -- Name: clients clients_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -966,7 +820,7 @@ ALTER TABLE ONLY public.clients
 
 
 --
--- TOC entry 4845 (class 2606 OID 30266)
+-- TOC entry 4878 (class 2606 OID 16444)
 -- Name: clients clients_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -975,7 +829,7 @@ ALTER TABLE ONLY public.clients
 
 
 --
--- TOC entry 4869 (class 2606 OID 34534)
+-- TOC entry 4927 (class 2606 OID 16641)
 -- Name: partner_audience_responses partner_audience_responses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -984,34 +838,7 @@ ALTER TABLE ONLY public.partner_audience_responses
 
 
 --
--- TOC entry 4871 (class 2606 OID 36339)
--- Name: partner_audience_responses partner_audience_responses_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.partner_audience_responses
-    ADD CONSTRAINT partner_audience_responses_unique UNIQUE (partner_response_id, audience_id, country);
-
-
---
--- TOC entry 4873 (class 2606 OID 38430)
--- Name: partner_audience_responses partner_audience_responses_unique_constraint; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.partner_audience_responses
-    ADD CONSTRAINT partner_audience_responses_unique_constraint UNIQUE (bid_id, partner_response_id, audience_id, country);
-
-
---
--- TOC entry 4867 (class 2606 OID 32912)
--- Name: partner_response_countries partner_response_countries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.partner_response_countries
-    ADD CONSTRAINT partner_response_countries_pkey PRIMARY KEY (id);
-
-
---
--- TOC entry 4847 (class 2606 OID 31358)
+-- TOC entry 4920 (class 2606 OID 16610)
 -- Name: partner_responses partner_responses_bid_id_partner_id_loi_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1020,16 +847,7 @@ ALTER TABLE ONLY public.partner_responses
 
 
 --
--- TOC entry 4849 (class 2606 OID 36249)
--- Name: partner_responses partner_responses_bid_partner_loi_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.partner_responses
-    ADD CONSTRAINT partner_responses_bid_partner_loi_unique UNIQUE (bid_id, partner_id, loi);
-
-
---
--- TOC entry 4851 (class 2606 OID 31356)
+-- TOC entry 4922 (class 2606 OID 16608)
 -- Name: partner_responses partner_responses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1038,7 +856,7 @@ ALTER TABLE ONLY public.partner_responses
 
 
 --
--- TOC entry 4881 (class 2606 OID 41081)
+-- TOC entry 4888 (class 2606 OID 16491)
 -- Name: partners partners_contact_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1047,7 +865,7 @@ ALTER TABLE ONLY public.partners
 
 
 --
--- TOC entry 4883 (class 2606 OID 41079)
+-- TOC entry 4890 (class 2606 OID 16489)
 -- Name: partners partners_partner_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1056,7 +874,7 @@ ALTER TABLE ONLY public.partners
 
 
 --
--- TOC entry 4885 (class 2606 OID 41077)
+-- TOC entry 4892 (class 2606 OID 16487)
 -- Name: partners partners_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1065,7 +883,7 @@ ALTER TABLE ONLY public.partners
 
 
 --
--- TOC entry 4834 (class 2606 OID 29852)
+-- TOC entry 4880 (class 2606 OID 16459)
 -- Name: sales sales_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1074,7 +892,16 @@ ALTER TABLE ONLY public.sales
 
 
 --
--- TOC entry 4887 (class 2606 OID 49740)
+-- TOC entry 4882 (class 2606 OID 16461)
+-- Name: sales sales_sales_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.sales
+    ADD CONSTRAINT sales_sales_id_key UNIQUE (sales_id);
+
+
+--
+-- TOC entry 4868 (class 2606 OID 16431)
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1083,7 +910,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4889 (class 2606 OID 49742)
+-- TOC entry 4870 (class 2606 OID 16433)
 -- Name: users users_employee_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1092,7 +919,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4891 (class 2606 OID 49738)
+-- TOC entry 4872 (class 2606 OID 16429)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1101,7 +928,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4839 (class 2606 OID 29864)
+-- TOC entry 4884 (class 2606 OID 16472)
 -- Name: vendor_managers vendor_managers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1110,55 +937,120 @@ ALTER TABLE ONLY public.vendor_managers
 
 
 --
--- TOC entry 4830 (class 1259 OID 29853)
--- Name: ix_sales_id; Type: INDEX; Schema: public; Owner: postgres
+-- TOC entry 4886 (class 2606 OID 16474)
+-- Name: vendor_managers vendor_managers_vm_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ix_sales_id ON public.sales USING btree (id);
-
-
---
--- TOC entry 4831 (class 1259 OID 29854)
--- Name: ix_sales_sales_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX ix_sales_sales_id ON public.sales USING btree (sales_id);
+ALTER TABLE ONLY public.vendor_managers
+    ADD CONSTRAINT vendor_managers_vm_id_key UNIQUE (vm_id);
 
 
 --
--- TOC entry 4832 (class 1259 OID 29855)
--- Name: ix_sales_sales_person; Type: INDEX; Schema: public; Owner: postgres
+-- TOC entry 4907 (class 1259 OID 16662)
+-- Name: idx_bid_audience_countries_audience_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX ix_sales_sales_person ON public.sales USING btree (sales_person);
-
-
---
--- TOC entry 4835 (class 1259 OID 29866)
--- Name: ix_vendor_managers_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX ix_vendor_managers_id ON public.vendor_managers USING btree (id);
+CREATE INDEX idx_bid_audience_countries_audience_id ON public.bid_audience_countries USING btree (audience_id);
 
 
 --
--- TOC entry 4836 (class 1259 OID 29867)
--- Name: ix_vendor_managers_vm_id; Type: INDEX; Schema: public; Owner: postgres
+-- TOC entry 4908 (class 1259 OID 16661)
+-- Name: idx_bid_audience_countries_bid_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE UNIQUE INDEX ix_vendor_managers_vm_id ON public.vendor_managers USING btree (vm_id);
-
-
---
--- TOC entry 4837 (class 1259 OID 29865)
--- Name: ix_vendor_managers_vm_name; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX ix_vendor_managers_vm_name ON public.vendor_managers USING btree (vm_name);
+CREATE INDEX idx_bid_audience_countries_bid_id ON public.bid_audience_countries USING btree (bid_id);
 
 
 --
--- TOC entry 4898 (class 2606 OID 32876)
+-- TOC entry 4913 (class 1259 OID 16663)
+-- Name: idx_bid_partners_bid_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_bid_partners_bid_id ON public.bid_partners USING btree (bid_id);
+
+
+--
+-- TOC entry 4914 (class 1259 OID 16664)
+-- Name: idx_bid_partners_partner_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_bid_partners_partner_id ON public.bid_partners USING btree (partner_id);
+
+
+--
+-- TOC entry 4902 (class 1259 OID 16660)
+-- Name: idx_bid_target_audiences_bid_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_bid_target_audiences_bid_id ON public.bid_target_audiences USING btree (bid_id);
+
+
+--
+-- TOC entry 4897 (class 1259 OID 16657)
+-- Name: idx_bids_client; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_bids_client ON public.bids USING btree (client);
+
+
+--
+-- TOC entry 4898 (class 1259 OID 16658)
+-- Name: idx_bids_sales_contact; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_bids_sales_contact ON public.bids USING btree (sales_contact);
+
+
+--
+-- TOC entry 4899 (class 1259 OID 16659)
+-- Name: idx_bids_vm_contact; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_bids_vm_contact ON public.bids USING btree (vm_contact);
+
+
+--
+-- TOC entry 4923 (class 1259 OID 16668)
+-- Name: idx_partner_audience_responses_audience_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_partner_audience_responses_audience_id ON public.partner_audience_responses USING btree (audience_id);
+
+
+--
+-- TOC entry 4924 (class 1259 OID 16667)
+-- Name: idx_partner_audience_responses_bid_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_partner_audience_responses_bid_id ON public.partner_audience_responses USING btree (bid_id);
+
+
+--
+-- TOC entry 4925 (class 1259 OID 16669)
+-- Name: idx_partner_audience_responses_partner_response_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_partner_audience_responses_partner_response_id ON public.partner_audience_responses USING btree (partner_response_id);
+
+
+--
+-- TOC entry 4917 (class 1259 OID 16665)
+-- Name: idx_partner_responses_bid_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_partner_responses_bid_id ON public.partner_responses USING btree (bid_id);
+
+
+--
+-- TOC entry 4918 (class 1259 OID 16666)
+-- Name: idx_partner_responses_partner_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_partner_responses_partner_id ON public.partner_responses USING btree (partner_id);
+
+
+--
+-- TOC entry 4932 (class 2606 OID 16553)
 -- Name: bid_audience_countries bid_audience_countries_audience_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1167,7 +1059,7 @@ ALTER TABLE ONLY public.bid_audience_countries
 
 
 --
--- TOC entry 4899 (class 2606 OID 32871)
+-- TOC entry 4933 (class 2606 OID 16548)
 -- Name: bid_audience_countries bid_audience_countries_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1176,25 +1068,7 @@ ALTER TABLE ONLY public.bid_audience_countries
 
 
 --
--- TOC entry 4906 (class 2606 OID 41055)
--- Name: bid_countries bid_countries_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.bid_countries
-    ADD CONSTRAINT bid_countries_bid_id_fkey FOREIGN KEY (bid_id) REFERENCES public.bids(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 4897 (class 2606 OID 32839)
--- Name: bid_loi bid_loi_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.bid_loi
-    ADD CONSTRAINT bid_loi_bid_id_fkey FOREIGN KEY (bid_id) REFERENCES public.bids(id) ON DELETE CASCADE;
-
-
---
--- TOC entry 4896 (class 2606 OID 32821)
+-- TOC entry 4934 (class 2606 OID 16569)
 -- Name: bid_partners bid_partners_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1203,7 +1077,16 @@ ALTER TABLE ONLY public.bid_partners
 
 
 --
--- TOC entry 4905 (class 2606 OID 34698)
+-- TOC entry 4935 (class 2606 OID 16574)
+-- Name: bid_partners bid_partners_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.bid_partners
+    ADD CONSTRAINT bid_partners_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id);
+
+
+--
+-- TOC entry 4936 (class 2606 OID 16588)
 -- Name: bid_po_numbers bid_po_numbers_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1212,7 +1095,7 @@ ALTER TABLE ONLY public.bid_po_numbers
 
 
 --
--- TOC entry 4895 (class 2606 OID 32808)
+-- TOC entry 4931 (class 2606 OID 16532)
 -- Name: bid_target_audiences bid_target_audiences_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1221,7 +1104,7 @@ ALTER TABLE ONLY public.bid_target_audiences
 
 
 --
--- TOC entry 4892 (class 2606 OID 32792)
+-- TOC entry 4928 (class 2606 OID 16506)
 -- Name: bids bids_client_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1230,7 +1113,7 @@ ALTER TABLE ONLY public.bids
 
 
 --
--- TOC entry 4893 (class 2606 OID 32782)
+-- TOC entry 4929 (class 2606 OID 16511)
 -- Name: bids bids_sales_contact_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1239,7 +1122,7 @@ ALTER TABLE ONLY public.bids
 
 
 --
--- TOC entry 4894 (class 2606 OID 32787)
+-- TOC entry 4930 (class 2606 OID 16516)
 -- Name: bids bids_vm_contact_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1248,16 +1131,16 @@ ALTER TABLE ONLY public.bids
 
 
 --
--- TOC entry 4902 (class 2606 OID 34545)
+-- TOC entry 4939 (class 2606 OID 16652)
 -- Name: partner_audience_responses partner_audience_responses_audience_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.partner_audience_responses
-    ADD CONSTRAINT partner_audience_responses_audience_id_fkey FOREIGN KEY (audience_id) REFERENCES public.bid_target_audiences(id);
+    ADD CONSTRAINT partner_audience_responses_audience_id_fkey FOREIGN KEY (audience_id) REFERENCES public.bid_target_audiences(id) ON DELETE CASCADE;
 
 
 --
--- TOC entry 4903 (class 2606 OID 34540)
+-- TOC entry 4940 (class 2606 OID 16642)
 -- Name: partner_audience_responses partner_audience_responses_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1266,7 +1149,7 @@ ALTER TABLE ONLY public.partner_audience_responses
 
 
 --
--- TOC entry 4904 (class 2606 OID 34535)
+-- TOC entry 4941 (class 2606 OID 16647)
 -- Name: partner_audience_responses partner_audience_responses_partner_response_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1275,24 +1158,24 @@ ALTER TABLE ONLY public.partner_audience_responses
 
 
 --
--- TOC entry 4900 (class 2606 OID 32918)
--- Name: partner_response_countries partner_response_countries_audience_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- TOC entry 4937 (class 2606 OID 16611)
+-- Name: partner_responses partner_responses_bid_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.partner_response_countries
-    ADD CONSTRAINT partner_response_countries_audience_id_fkey FOREIGN KEY (audience_id) REFERENCES public.bid_target_audiences(id);
+ALTER TABLE ONLY public.partner_responses
+    ADD CONSTRAINT partner_responses_bid_id_fkey FOREIGN KEY (bid_id) REFERENCES public.bids(id) ON DELETE CASCADE;
 
 
 --
--- TOC entry 4901 (class 2606 OID 32913)
--- Name: partner_response_countries partner_response_countries_response_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- TOC entry 4938 (class 2606 OID 16616)
+-- Name: partner_responses partner_responses_partner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.partner_response_countries
-    ADD CONSTRAINT partner_response_countries_response_id_fkey FOREIGN KEY (response_id) REFERENCES public.partner_responses(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.partner_responses
+    ADD CONSTRAINT partner_responses_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES public.partners(id);
 
 
--- Completed on 2025-03-26 17:36:01
+-- Completed on 2025-04-30 16:47:05
 
 --
 -- PostgreSQL database dump complete

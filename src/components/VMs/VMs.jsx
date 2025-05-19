@@ -56,7 +56,7 @@ const VMs = () => {
 
     const handleEditSubmit = async (values) => {
         if (!currentVM) return;
-        
+
         try {
             setLoading(true);
             const response = await axios.put(`/api/vms/${currentVM.id}`, values);
@@ -243,7 +243,6 @@ const VMs = () => {
                             <Option value="pod3">POD 3</Option>
                             <Option value="pod4">POD 4</Option>
                             <Option value="operations">Operations</Option>
-                            <Option value="sales">Sales</Option>
                         </Select>
                     </Form.Item>
 
@@ -313,7 +312,6 @@ const VMs = () => {
                             <Option value="pod3">POD 3</Option>
                             <Option value="pod4">POD 4</Option>
                             <Option value="operations">Operations</Option>
-                            <Option value="sales">Sales</Option>
                         </Select>
                     </Form.Item>
 
@@ -331,4 +329,4 @@ const VMs = () => {
     );
 };
 
-export default VMs; 
+export default VMs;

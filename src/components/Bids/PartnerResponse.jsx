@@ -20,6 +20,9 @@ import {
 } from '@mui/material';
 import axios from '../../api/axios';
 import './Bids.css';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
 
 function PartnerResponse() {
   const navigate = useNavigate();
@@ -35,6 +38,10 @@ function PartnerResponse() {
   const [partnerSettings, setPartnerSettings] = useState({});
   const [error, setError] = useState(null);
   const [responsesInitialized, setResponsesInitialized] = useState(false);
+  const [linkData, setLinkData] = useState({});
+  const [linkLoading, setLinkLoading] = useState(false);
+  const [linkError, setLinkError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const currentPartner = partners[selectedPartner];
 
@@ -52,12 +59,12 @@ function PartnerResponse() {
 
         setBidData(bidResponse.data);
         setPartners(bidResponse.data.partners || []);
-        
+
         // Initialize responses with existing data
         const existingResponses = partnerResponse.data.responses || {};
         setResponses(existingResponses);
         setPartnerSettings(partnerResponse.data.settings || {});
-        
+
         // Mark responses as initialized to prevent overwriting
         setResponsesInitialized(true);
       } catch (error) {
@@ -84,17 +91,28 @@ function PartnerResponse() {
       bidData.loi.every(loi => {
         const responseKey = `${partner.id}-${loi}`;
         const response = responses[responseKey];
-        
+
         if (!response) return false;
 
         const allAudiencesComplete = bidData.target_audiences.every(audience => {
-          const audienceResponse = response.audiences?.[audience.uniqueId];
+          const audienceResponse = response.audiences?.[audience.id];
           if (!audienceResponse) return false;
 
           const allCountriesComplete = Object.entries(audience.country_samples || {}).every(
             ([country]) => {
               const countryResponse = audienceResponse[country];
-              return countryResponse?.commitment > 0 && countryResponse?.cpi > 0;
+              if (!countryResponse) return false;
+              
+              // Check if either:
+              // 1. It's BE/Max (commitment_type is 'be_max')
+              // 2. It has a valid commitment value > 0
+              const hasValidCommitment = countryResponse.commitment_type === 'be_max' || 
+                                       (countryResponse.commitment > 0);
+              
+              // CPI must always be > 0
+              const hasValidCPI = countryResponse.cpi > 0;
+              
+              return hasValidCommitment && hasValidCPI;
             }
           );
 
@@ -129,7 +147,7 @@ function PartnerResponse() {
   useEffect(() => {
     if (!responsesInitialized && bidData && partners && bidData.loi) {
       const initialResponses = { ...responses };
-      
+
       partners.forEach(partner => {
         bidData.loi.forEach(loi => {
           const key = `${partner.id}-${loi}`;
@@ -139,30 +157,30 @@ function PartnerResponse() {
               loi: loi,
               status: 'pending',
               currency: partnerSettings[partner.id]?.currency || 'USD',
-              pmf: partnerSettings[partner.id]?.pmf || 0,
+              pmf: '',
               audiences: {}
             };
+          }
 
-            // Initialize audience data for each LOI
-            bidData.target_audiences.forEach(audience => {
-              if (!initialResponses[key].audiences[audience.uniqueId]) {
-                initialResponses[key].audiences[audience.uniqueId] = {
-                  timeline: 0,
-                  comments: '',
+          // Ensure all audiences are present
+          bidData.target_audiences.forEach(audience => {
+            if (!initialResponses[key].audiences[audience.id]) {
+              initialResponses[key].audiences[audience.id] = {
+                timeline: '',
+                comments: '',
+              };
+            }
+            // Ensure all countries are present for each audience
+            Object.entries(audience.country_samples || {}).forEach(([country, sample]) => {
+              if (!initialResponses[key].audiences[audience.id][country]) {
+                initialResponses[key].audiences[audience.id][country] = {
+                  commitment_type: 'fixed',
+                  commitment: 0,
+                  cpi: 0
                 };
-
-                // Initialize country data for each audience
-                Object.entries(audience.country_samples || {}).forEach(([country, sample]) => {
-                  if (!initialResponses[key].audiences[audience.uniqueId][country]) {
-                    initialResponses[key].audiences[audience.uniqueId][country] = {
-                      commitment: 0,
-                      cpi: 0
-                    };
-                  }
-                });
               }
             });
-          }
+          });
         });
       });
 
@@ -177,8 +195,17 @@ function PartnerResponse() {
 
   const handleSave = async () => {
     try {
+      // Convert empty PMF to 0 before sending to backend
+      const responsesToSend = {};
+      Object.entries(responses).forEach(([key, response]) => {
+        responsesToSend[key] = {
+          ...response,
+          pmf: response.pmf === '' ? 0 : response.pmf
+        };
+      });
+
       await axios.put(`/api/bids/${bidId}/partner-responses`, {
-        responses: responses
+        responses: responsesToSend
       });
       alert('Partner responses saved successfully');
     } catch (error) {
@@ -201,30 +228,33 @@ function PartnerResponse() {
       partners.forEach(partner => {
         bidData.loi.forEach(loi => {
           const key = `${partner.id}-${loi}`;
-          
+
           // Create complete response structure for each LOI
           const response = {
             partner_id: partner.id,
             loi: loi,
             status: 'submitted',
             currency: partnerSettings[partner.id]?.currency || 'USD',
-            pmf: partnerSettings[partner.id]?.pmf || 0,
+            pmf: partnerSettings[partner.id]?.pmf === '' ? 0 : (partnerSettings[partner.id]?.pmf || 0),
             audiences: {}
           };
 
           // Add audience data for each target audience
           bidData.target_audiences.forEach(audience => {
-            response.audiences[audience.uniqueId] = {
-              ...responses[key]?.audiences?.[audience.uniqueId],
-              timeline: responses[key]?.audiences?.[audience.uniqueId]?.timeline || 0,
-              comments: responses[key]?.audiences?.[audience.uniqueId]?.comments || '',
+            const audienceKey = `audience-${audience.id}`;
+            response.audiences[audience.id] = {
+              ...responses[key]?.audiences?.[audience.id],
+              timeline: responses[key]?.audiences?.[audience.id]?.timeline || 0,
+              comments: responses[key]?.audiences?.[audience.id]?.comments || '',
             };
 
             // Add country data for each audience
             Object.entries(audience.country_samples || {}).forEach(([country, sample]) => {
-              response.audiences[audience.uniqueId][country] = {
-                commitment: responses[key]?.audiences?.[audience.uniqueId]?.[country]?.commitment || sample,
-                cpi: responses[key]?.audiences?.[audience.uniqueId]?.[country]?.cpi || 0
+              const countryData = responses[key]?.audiences?.[audience.id]?.[country] || {};
+              response.audiences[audience.id][country] = {
+                commitment_type: countryData.commitment_type || 'fixed',
+                commitment: countryData.commitment_type === 'be_max' ? 0 : (countryData.commitment || 0),
+                cpi: countryData.cpi || 0
               };
             });
           });
@@ -234,7 +264,7 @@ function PartnerResponse() {
       });
 
       // Send all responses to backend
-      const response = await axios.put(`http://localhost:5000/api/bids/${bidId}/partner-responses`, {
+      const response = await axios.put(`/api/bids/${bidId}/partner-responses`, {
         responses: updatedResponses
       });
 
@@ -267,7 +297,8 @@ function PartnerResponse() {
   };
 
   const handlePMFChange = (partnerId, value) => {
-    const pmf = parseFloat(value);
+    // Allow empty string in UI but store as 0 in settings
+    const pmf = value === '' ? '' : parseFloat(value);
     setPartnerSettings(prev => ({
       ...prev,
       [partnerId]: { ...prev[partnerId], pmf }
@@ -280,12 +311,43 @@ function PartnerResponse() {
         if (key.startsWith(`${partnerId}-`)) {
           updated[key] = {
             ...updated[key],
-            pmf
+            pmf: value === '' ? 0 : parseFloat(value) // Store as 0 in responses when empty
           };
         }
       });
       return updated;
     });
+  };
+
+  const handleGenerateLink = async () => {
+    setLinkLoading(true);
+    setLinkError('');
+    try {
+      const res = await axios.post(`/api/bids/${bidId}/partners/${currentPartner.id}/generate-link`);
+      setLinkData(prev => ({
+        ...prev,
+        [currentPartner.id]: { link: res.data.link, expiresAt: res.data.expires_at }
+      }));
+    } catch (err) {
+      setLinkError('Failed to generate link');
+    }
+    setLinkLoading(false);
+  };
+
+  // Helper to format time remaining
+  const getTimeRemaining = (expiresAt) => {
+    if (!expiresAt) return '';
+    const expiry = new Date(expiresAt);
+    const now = new Date();
+    const diffMs = expiry - now;
+    if (diffMs <= 0) return 'Expired';
+    const diffMins = Math.floor(diffMs / 60000) % 60;
+    const diffHrs = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffHrs / 24);
+    const hrs = diffHrs % 24;
+    if (diffDays > 0) return `${diffDays}d ${hrs}h ${diffMins}m left`;
+    if (hrs > 0) return `${hrs}h ${diffMins}m left`;
+    return `${diffMins}m left`;
   };
 
   if (loading) {
@@ -363,6 +425,33 @@ function PartnerResponse() {
 
               {currentPartner && (
                 <div className="partner-tab-content">
+                  <div style={{ marginBottom: 16 }}>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={handleGenerateLink}
+                      disabled={linkLoading}
+                    >
+                      {linkLoading ? 'Generating...' : 'Generate Link'}
+                    </Button>
+                    {linkData[currentPartner.id] && (
+                      <div>
+                        <strong>Link:</strong> <a href={linkData[currentPartner.id].link} target="_blank" rel="noopener noreferrer">{linkData[currentPartner.id].link}</a>
+                        <Tooltip title={copied ? 'Copied!' : 'Copy link'} open={copied} onClose={() => setCopied(false)}>
+                          <IconButton size="small" onClick={() => {
+                            navigator.clipboard.writeText(linkData[currentPartner.id].link);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 1200);
+                          }}>
+                            <ContentCopyIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <br />
+                        <strong>Expires At:</strong> {getTimeRemaining(linkData[currentPartner.id].expiresAt)}
+                      </div>
+                    )}
+                    {linkError && <div style={{ color: 'red' }}>{linkError}</div>}
+                  </div>
                   <div className="partner-settings">
                     <FormControl className="currency-select">
                       <Select
@@ -390,12 +479,9 @@ function PartnerResponse() {
                   </div>
 
                   {bidData.target_audiences.map((audience, audienceIndex) => (
-                    <div key={audience.uniqueId} className="audience-section">
-                      <Typography variant="subtitle1" className="audience-title">
-                        {audience.name} Details
-                      </Typography>
-                      <Typography variant="subtitle2" className="audience-category">
-                        {audience.ta_category}
+                    <div key={audience.id} className="audience-section">
+                      <Typography variant="subtitle1" className="audience-title" sx={{ fontWeight: 'bold' }}>
+                        Audience: {audience.ta_category} - {audience.broader_category} - {audience.mode} - IR {audience.ir}%
                       </Typography>
 
                       <TableContainer>
@@ -410,44 +496,78 @@ function PartnerResponse() {
                           </TableHead>
                           <TableBody>
                             {Object.entries(audience.country_samples || {}).map(([country, sample], idx) => (
-                              <TableRow key={`${audience.uniqueId}-${country}`}>
+                              <TableRow key={`${audience.id}-${country}`}>
                                 <TableCell>{country}</TableCell>
-                                <TableCell align="right">{sample}</TableCell>
+                                <TableCell align="right">{sample.is_best_efforts ? "BE/Max" : sample.sample_size}</TableCell>
                                 <TableCell align="right">
-                                  <TextField
-                                    type="number"
-                                    size="small"
-                                    inputProps={{ min: 0 }}
-                                    value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId]?.[country]?.commitment || ''}
-                                    onChange={(e) => {
-                                      const value = parseFloat(e.target.value);
-                                      setResponses(prev => ({
-                                        ...prev,
-                                        [`${currentPartner.id}-${selectedLOI}`]: {
-                                          ...prev[`${currentPartner.id}-${selectedLOI}`],
-                                          partner_id: currentPartner.id,
-                                          loi: selectedLOI,
-                                          audiences: {
-                                            ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
-                                            [audience.uniqueId]: {
-                                              ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId],
-                                              [country]: {
-                                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId]?.[country],
-                                                commitment: value
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                                    <FormControl size="small">
+                                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body2" sx={{ mr: 1 }}>BE/Max</Typography>
+                                        <input
+                                          type="checkbox"
+                                          checked={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment_type === 'be_max'}
+                                          onChange={(e) => {
+                                            const isBeMax = e.target.checked;
+                                            setResponses(prev => ({
+                                              ...prev,
+                                              [`${currentPartner.id}-${selectedLOI}`]: {
+                                                ...prev[`${currentPartner.id}-${selectedLOI}`],
+                                                partner_id: currentPartner.id,
+                                                loi: selectedLOI,
+                                                audiences: {
+                                                  ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
+                                                  [audience.id]: {
+                                                    ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id],
+                                                    [country]: {
+                                                      ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country],
+                                                      commitment_type: isBeMax ? 'be_max' : 'fixed',
+                                                      commitment: 0  // Always set to 0 for BE/Max
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }));
+                                          }}
+                                        />
+                                      </Box>
+                                    </FormControl>
+                                    <TextField
+                                      type="number"
+                                      size="small"
+                                      inputProps={{ min: 0 }}
+                                      value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment || ''}
+                                      onChange={(e) => {
+                                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);  // Convert empty string to 0
+                                        setResponses(prev => ({
+                                          ...prev,
+                                          [`${currentPartner.id}-${selectedLOI}`]: {
+                                            ...prev[`${currentPartner.id}-${selectedLOI}`],
+                                            partner_id: currentPartner.id,
+                                            loi: selectedLOI,
+                                            audiences: {
+                                              ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
+                                              [audience.id]: {
+                                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id],
+                                                [country]: {
+                                                  ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country],
+                                                  commitment: value
+                                                }
                                               }
                                             }
                                           }
-                                        }
-                                      }));
-                                    }}
-                                  />
+                                        }));
+                                      }}
+                                      disabled={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment_type === 'be_max'}
+                                    />
+                                  </Box>
                                 </TableCell>
                                 <TableCell align="right">
                                   <TextField
                                     type="number"
                                     size="small"
                                     inputProps={{ min: 0 }}
-                                    value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId]?.[country]?.cpi || ''}
+                                    value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi || ''}
                                     onChange={(e) => {
                                       const value = parseFloat(e.target.value);
                                       setResponses(prev => ({
@@ -458,10 +578,10 @@ function PartnerResponse() {
                                           loi: selectedLOI,
                                           audiences: {
                                             ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
-                                            [audience.uniqueId]: {
-                                              ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId],
+                                            [audience.id]: {
+                                              ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id],
                                               [country]: {
-                                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId]?.[country],
+                                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country],
                                                 cpi: value
                                               }
                                             }
@@ -482,15 +602,15 @@ function PartnerResponse() {
                         type="number"
                         label="Bid Timeline (days)"
                         className="timeline-field"
-                        value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId]?.timeline || ''}
+                        value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.timeline || ''}
                         onChange={(e) => setResponses(prev => ({
                           ...prev,
                           [`${currentPartner.id}-${selectedLOI}`]: {
                             ...prev[`${currentPartner.id}-${selectedLOI}`],
                             audiences: {
                               ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
-                              [audience.uniqueId]: {
-                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId],
+                              [audience.id]: {
+                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id],
                                 timeline: parseFloat(e.target.value)
                               }
                             }
@@ -503,15 +623,15 @@ function PartnerResponse() {
                         rows={3}
                         label="Comments"
                         className="comments-field"
-                        value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId]?.comments || ''}
+                        value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.comments || ''}
                         onChange={(e) => setResponses(prev => ({
                           ...prev,
                           [`${currentPartner.id}-${selectedLOI}`]: {
                             ...prev[`${currentPartner.id}-${selectedLOI}`],
                             audiences: {
                               ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
-                              [audience.uniqueId]: {
-                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId],
+                              [audience.id]: {
+                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id],
                                 comments: e.target.value
                               }
                             }
@@ -556,4 +676,4 @@ function PartnerResponse() {
   );
 }
 
-export default PartnerResponse; 
+export default PartnerResponse;
