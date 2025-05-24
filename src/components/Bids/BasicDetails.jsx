@@ -119,6 +119,7 @@ function BasicDetails() {
     "Guyana",
     "Haiti",
     "Honduras",
+    "Hong Kong",
     "Hungary",
     "Iceland",
     "India",
@@ -354,6 +355,7 @@ function BasicDetails() {
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [sampleDistribution, setSampleDistribution] = useState({});
   const [loading, setLoading] = useState(true);
+  const [deletedAudienceIds, setDeletedAudienceIds] = useState([]);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -464,7 +466,9 @@ function BasicDetails() {
         ...newTargetAudiences[index],
         [field]: value,
         // Clear sample_required if best efforts is checked
-        ...(field === 'is_best_efforts' && value === true ? { sample_required: '' } : {})
+        ...(field === "is_best_efforts" && value === true
+          ? { sample_required: "" }
+          : {}),
       };
       return {
         ...prev,
@@ -474,12 +478,11 @@ function BasicDetails() {
   };
 
   const addTargetAudience = () => {
-    setFormData((prev) => ({
-      ...prev,
-      target_audiences: [
+    setFormData((prev) => {
+      const newAudiences = [
         ...prev.target_audiences,
         {
-          name: `Audience - ${prev.target_audiences.length + 1}`,
+          // Do not set name here, will relabel below
           ta_category: "",
           broader_category: "",
           exact_ta_definition: "",
@@ -489,15 +492,37 @@ function BasicDetails() {
           ir: "",
           comments: "",
         },
-      ],
-    }));
+      ];
+      // Relabel all names
+      const relabeled = newAudiences.map((aud, idx) => ({
+        ...aud,
+        name: `Audience - ${idx + 1}`,
+      }));
+      return {
+        ...prev,
+        target_audiences: relabeled,
+      };
+    });
   };
 
   const removeTargetAudience = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      target_audiences: prev.target_audiences.filter((_, i) => i !== index),
-    }));
+    setFormData((prev) => {
+      const removed = prev.target_audiences[index];
+      if (removed.id) {
+        setDeletedAudienceIds((ids) => [...ids, removed.id]);
+      }
+      // Remove the audience
+      const newAudiences = prev.target_audiences.filter((_, i) => i !== index);
+      // Re-label names
+      const relabeled = newAudiences.map((aud, idx) => ({
+        ...aud,
+        name: `Audience - ${idx + 1}`,
+      }));
+      return {
+        ...prev,
+        target_audiences: relabeled,
+      };
+    });
   };
 
   const handleMultipleSelect = (e) => {
@@ -543,20 +568,27 @@ function BasicDetails() {
     }
   };
 
-  const handleDistributionChange = (country, audienceIndex, value, isBEMax = false) => {
+  const handleDistributionChange = (
+    country,
+    audienceIndex,
+    value,
+    isBEMax = false,
+  ) => {
     setSampleDistribution((prev) => {
-      const currentValue = prev[country]?.[`audience-${audienceIndex}`]?.value ?? "";
-      const currentIsBEMax = prev[country]?.[`audience-${audienceIndex}`]?.isBEMax || false;
+      const currentValue =
+        prev[country]?.[`audience-${audienceIndex}`]?.value ?? "";
+      const currentIsBEMax =
+        prev[country]?.[`audience-${audienceIndex}`]?.isBEMax || false;
 
       return {
         ...prev,
         [country]: {
           ...prev[country],
           [`audience-${audienceIndex}`]: {
-            value: isBEMax ? "" : (value === "" ? "" : parseInt(value) || ""),
-            isBEMax: isBEMax
-          }
-        }
+            value: isBEMax ? "" : value === "" ? "" : parseInt(value) || "",
+            isBEMax: isBEMax,
+          },
+        },
       };
     });
   };
@@ -567,18 +599,17 @@ function BasicDetails() {
 
     formData.target_audiences.forEach((audience, index) => {
       // Check if all countries have either a numeric value or BE/Max selected
-      const hasEmptyCountries = formData.countries.some(
-        (country) => {
-          const distribution = sampleDistribution[country]?.[`audience-${index}`];
-          return !distribution || 
-                 (distribution.value === "" && !distribution.isBEMax);
-        }
-      );
+      const hasEmptyCountries = formData.countries.some((country) => {
+        const distribution = sampleDistribution[country]?.[`audience-${index}`];
+        return (
+          !distribution || (distribution.value === "" && !distribution.isBEMax)
+        );
+      });
 
       if (hasEmptyCountries) {
         isValid = false;
         errors.push(
-          `${audience.name}: All countries must have either a numeric value or BE/Max selected`
+          `${audience.name}: All countries must have either a numeric value or BE/Max selected`,
         );
         return;
       }
@@ -590,14 +621,14 @@ function BasicDetails() {
             const value = country[`audience-${index}`]?.value;
             return sum + (value || 0);
           },
-          0
+          0,
         );
         const required = parseInt(audience.sample_required);
 
         if (total !== required) {
           isValid = false;
           errors.push(
-            `${audience.name}: Total (${total}) does not match required samples (${required})`
+            `${audience.name}: Total (${total}) does not match required samples (${required})`,
           );
         }
       }
@@ -624,13 +655,17 @@ function BasicDetails() {
         formData.target_audiences.forEach((audience, index) => {
           const existingSample = audience.country_samples?.[country];
           initialDistribution[country][`audience-${index}`] = {
-            value: existingSample?.is_best_efforts ? "" : (existingSample?.sample_size || ""),
-            isBEMax: existingSample?.is_best_efforts || false
+            value: existingSample?.is_best_efforts
+              ? ""
+              : existingSample?.sample_size || "",
+            isBEMax: existingSample?.is_best_efforts || false,
           };
         });
       });
 
       setSampleDistribution(initialDistribution);
+      // Debug: log target audiences before opening modal
+      console.log("Target audiences before opening modal:", formData.target_audiences);
       setDistributionModalOpen(true);
     } catch (error) {
       console.error("Error:", error);
@@ -680,7 +715,9 @@ function BasicDetails() {
     // Validate each target audience
     for (const audience of formData.target_audiences) {
       if (!audience.is_best_efforts && !audience.sample_required) {
-        alert("Please enter sample required or check Best Efforts/Maximum Possible");
+        alert(
+          "Please enter sample required or check Best Efforts/Maximum Possible",
+        );
         return false;
       }
     }
@@ -699,21 +736,26 @@ function BasicDetails() {
         ...formData,
         target_audiences: formData.target_audiences.map((audience, index) => ({
           ...audience,
-          sample_required: audience.is_best_efforts ? 0 : (parseInt(audience.sample_required) || 0),
+          sample_required: audience.is_best_efforts
+            ? 0
+            : parseInt(audience.sample_required) || 0,
           ir: parseInt(audience.ir) || 0,
           country_samples: Object.fromEntries(
             formData.countries.map((country) => {
-              const distribution = sampleDistribution[country]?.[`audience-${index}`] || { value: 0, isBEMax: false };
+              const distribution = sampleDistribution[country]?.[
+                `audience-${index}`
+              ] || { value: 0, isBEMax: false };
               return [
                 country,
                 {
                   sample_size: distribution.value || 0,
-                  is_best_efforts: distribution.isBEMax
-                }
+                  is_best_efforts: distribution.isBEMax,
+                },
               ];
-            })
+            }),
           ),
         })),
+        deleted_audience_ids: deletedAudienceIds,
       };
 
       console.log("Sending updated form data:", updatedFormData);
@@ -739,7 +781,9 @@ function BasicDetails() {
         // that falls out of the range of 2xx
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
-        alert(`Failed to save sample distribution: ${error.response.data.error || error.message}`);
+        alert(
+          `Failed to save sample distribution: ${error.response.data.error || error.message}`,
+        );
       } else if (error.request) {
         // The request was made but no response was received
         console.error("Error request:", error.request);
@@ -758,8 +802,8 @@ function BasicDetails() {
       // Update the name for the new copy
       audienceToCopy.name = `Audience - ${prev.target_audiences.length + 1}`;
       // Keep all other fields except sample_required (which might need adjustment)
-      audienceToCopy.sample_required = audienceToCopy.is_best_efforts ? '' : '';
-      
+      audienceToCopy.sample_required = audienceToCopy.is_best_efforts ? "" : "";
+
       return {
         ...prev,
         target_audiences: [...prev.target_audiences, audienceToCopy],
@@ -812,9 +856,9 @@ function BasicDetails() {
                   value={formData.methodology}
                   onChange={handleInputChange}
                 >
-                  <MenuItem value="online">Online</MenuItem>
-                  <MenuItem value="offline">Offline</MenuItem>
-                  <MenuItem value="mixed">Mixed</MenuItem>
+                  <MenuItem value="quant">quant</MenuItem>
+                  <MenuItem value="qual">qual</MenuItem>
+                  <MenuItem value="both">both</MenuItem>
                 </Select>
               </FormControl>
               <FormControl fullWidth required>
@@ -928,15 +972,27 @@ function BasicDetails() {
             <h3 className="section-title">Target Audiences</h3>
             {Array.isArray(formData.target_audiences) &&
               formData.target_audiences.map((audience, index) => (
-                <Paper key={index} elevation={3} className="audience-paper" style={{ padding: '20px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <Paper
+                  key={index}
+                  elevation={3}
+                  className="audience-paper"
+                  style={{ padding: "20px", marginBottom: "20px" }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "20px",
+                    }}
+                  >
                     <h3 style={{ margin: 0 }}>Audience - {index + 1}</h3>
                     <div>
                       <Button
                         variant="outlined"
                         color="primary"
                         onClick={() => copyTargetAudience(index)}
-                        style={{ marginRight: '10px' }}
+                        style={{ marginRight: "10px" }}
                       >
                         Copy
                       </Button>
@@ -1011,7 +1067,11 @@ function BasicDetails() {
                       <Select
                         value={audience.mode || ""}
                         onChange={(e) =>
-                          handleTargetAudienceChange(index, "mode", e.target.value)
+                          handleTargetAudienceChange(
+                            index,
+                            "mode",
+                            e.target.value,
+                          )
                         }
                         fullWidth
                         margin="normal"
@@ -1034,11 +1094,18 @@ function BasicDetails() {
                       inputProps={{
                         min: 0,
                         max: 100,
-                        step: 1
+                        step: 1,
                       }}
                     />
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%' }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "20px",
+                        width: "100%",
+                      }}
+                    >
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -1047,7 +1114,7 @@ function BasicDetails() {
                               handleTargetAudienceChange(
                                 index,
                                 "is_best_efforts",
-                                e.target.checked
+                                e.target.checked,
                               )
                             }
                           />
@@ -1065,7 +1132,7 @@ function BasicDetails() {
                             handleTargetAudienceChange(
                               index,
                               "sample_required",
-                              e.target.value
+                              e.target.value,
                             )
                           }
                         />
@@ -1119,6 +1186,7 @@ function BasicDetails() {
       >
         <DialogTitle>Distribute Samples Across Countries</DialogTitle>
         <DialogContent>
+          {console.log("Rendering modal, audiences:", formData.target_audiences)}
           <TableContainer>
             <Table>
               <TableHead>
@@ -1128,7 +1196,9 @@ function BasicDetails() {
                     <TableCell key={index} align="center">
                       {audience.name}
                       <br />
-                      {audience.is_best_efforts ? "(Best Efforts)" : `(Required: ${audience.sample_required})`}
+                      {audience.is_best_efforts
+                        ? "(Best Efforts)"
+                        : `(Required: ${audience.sample_required})`}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -1139,25 +1209,55 @@ function BasicDetails() {
                     <TableCell>{country}</TableCell>
                     {formData?.target_audiences?.map((audience, index) => (
                       <TableCell key={index} align="center">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            justifyContent: "center",
+                          }}
+                        >
                           <TextField
                             type="number"
                             size="small"
                             value={
-                              sampleDistribution[country]?.[`audience-${index}`]?.isBEMax 
-                                ? "" 
-                                : (sampleDistribution[country]?.[`audience-${index}`]?.value ?? "")
+                              sampleDistribution[country]?.[`audience-${index}`]
+                                ?.isBEMax
+                                ? ""
+                                : (sampleDistribution[country]?.[
+                                    `audience-${index}`
+                                  ]?.value ?? "")
                             }
-                            onChange={(e) => handleDistributionChange(country, index, e.target.value)}
-                            disabled={sampleDistribution[country]?.[`audience-${index}`]?.isBEMax}
+                            onChange={(e) =>
+                              handleDistributionChange(
+                                country,
+                                index,
+                                e.target.value,
+                              )
+                            }
+                            disabled={
+                              sampleDistribution[country]?.[`audience-${index}`]
+                                ?.isBEMax
+                            }
                             inputProps={{ min: 0 }}
-                            style={{ width: '100px' }}
+                            style={{ width: "100px" }}
                           />
                           <FormControlLabel
                             control={
                               <Checkbox
-                                checked={sampleDistribution[country]?.[`audience-${index}`]?.isBEMax || false}
-                                onChange={(e) => handleDistributionChange(country, index, "", e.target.checked)}
+                                checked={
+                                  sampleDistribution[country]?.[
+                                    `audience-${index}`
+                                  ]?.isBEMax || false
+                                }
+                                onChange={(e) =>
+                                  handleDistributionChange(
+                                    country,
+                                    index,
+                                    "",
+                                    e.target.checked,
+                                  )
+                                }
                               />
                             }
                             label="BE/Max"
@@ -1172,12 +1272,17 @@ function BasicDetails() {
           </TableContainer>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDistributionModalOpen(false)}>Cancel</Button>
+          <Button onClick={() => setDistributionModalOpen(false)}>
+            Cancel
+          </Button>
           <Button
             onClick={handleSaveDistribution}
             variant="contained"
             color="primary"
-            disabled={!formData?.target_audiences?.length || !formData?.countries?.length}
+            disabled={
+              !formData?.target_audiences?.length ||
+              !formData?.countries?.length
+            }
           >
             Save & Continue
           </Button>
