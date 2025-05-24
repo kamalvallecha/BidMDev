@@ -477,12 +477,19 @@ function BasicDetails() {
     });
   };
 
+  // Utility function to relabel all audience names sequentially
+  function relabelAudienceNames(audiences) {
+    return audiences.map((aud, idx) => ({
+      ...aud,
+      name: `Audience - ${idx + 1}`,
+    }));
+  }
+
   const addTargetAudience = () => {
     setFormData((prev) => {
       const newAudiences = [
         ...prev.target_audiences,
         {
-          // Do not set name here, will relabel below
           ta_category: "",
           broader_category: "",
           exact_ta_definition: "",
@@ -493,14 +500,9 @@ function BasicDetails() {
           comments: "",
         },
       ];
-      // Relabel all names
-      const relabeled = newAudiences.map((aud, idx) => ({
-        ...aud,
-        name: `Audience - ${idx + 1}`,
-      }));
       return {
         ...prev,
-        target_audiences: relabeled,
+        target_audiences: relabelAudienceNames(newAudiences),
       };
     });
   };
@@ -511,16 +513,10 @@ function BasicDetails() {
       if (removed.id) {
         setDeletedAudienceIds((ids) => [...ids, removed.id]);
       }
-      // Remove the audience
       const newAudiences = prev.target_audiences.filter((_, i) => i !== index);
-      // Re-label names
-      const relabeled = newAudiences.map((aud, idx) => ({
-        ...aud,
-        name: `Audience - ${idx + 1}`,
-      }));
       return {
         ...prev,
-        target_audiences: relabeled,
+        target_audiences: relabelAudienceNames(newAudiences),
       };
     });
   };
@@ -799,14 +795,12 @@ function BasicDetails() {
   const copyTargetAudience = (index) => {
     setFormData((prev) => {
       const audienceToCopy = { ...prev.target_audiences[index] };
-      // Update the name for the new copy
-      audienceToCopy.name = `Audience - ${prev.target_audiences.length + 1}`;
-      // Keep all other fields except sample_required (which might need adjustment)
-      audienceToCopy.sample_required = audienceToCopy.is_best_efforts ? "" : "";
-
+      // Remove the name, will relabel below
+      delete audienceToCopy.name;
+      const newAudiences = [...prev.target_audiences, audienceToCopy];
       return {
         ...prev,
-        target_audiences: [...prev.target_audiences, audienceToCopy],
+        target_audiences: relabelAudienceNames(newAudiences),
       };
     });
   };
