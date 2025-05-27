@@ -413,6 +413,7 @@ function BasicDetails() {
               countries: Array.isArray(bidData.countries)
                 ? bidData.countries
                 : [],
+              target_audiences: relabelAudienceNames(bidData.target_audiences || []),
             }));
 
             // Set selected partners and LOIs
@@ -519,6 +520,7 @@ function BasicDetails() {
         target_audiences: relabelAudienceNames(newAudiences),
       };
     });
+    setSampleDistribution({});
   };
 
   const handleMultipleSelect = (e) => {
