@@ -976,15 +976,14 @@ def update_bid(bid_id):
             WHERE bid_id = %s
             ORDER BY id
         """, (bid_id, ))
-        existing_audience_ids = [row[0] for row in cur.fetchall()]
+        existing_audience_ids = set(row[0] for row in cur.fetchall())
         print("Existing audience IDs:", existing_audience_ids)
 
-        # 3. Update or insert target audiences
-        for idx, audience in enumerate(data['target_audiences']):
-            print(f"Processing audience {idx}: {audience}")
-            if idx < len(existing_audience_ids):
-                # Update existing audience
-                audience_id = existing_audience_ids[idx]
+        # 3. Update or insert target audiences (by ID, not index)
+        for audience in data['target_audiences']:
+            audience_id = audience.get('id')
+            if audience_id and audience_id in existing_audience_ids:
+                # Update existing audience by ID
                 cur.execute(
                     """
                     UPDATE bid_target_audiences SET 
@@ -1004,9 +1003,7 @@ def update_bid(bid_id):
                      audience['broader_category'],
                      audience['exact_ta_definition'], audience['mode'],
                      audience['sample_required'], audience['ir'],
-                     audience.get(
-                         'comments', ''), audience.get(
-                             'is_best_efforts', False), audience_id, bid_id))
+                     audience.get('comments', ''), audience.get('is_best_efforts', False), audience_id, bid_id))
                 print(f"Updated audience ID: {audience_id}")
             else:
                 # Insert new audience
@@ -1030,10 +1027,8 @@ def update_bid(bid_id):
                      audience['broader_category'],
                      audience['exact_ta_definition'], audience['mode'],
                      audience['sample_required'], audience['ir'],
-                     audience.get('comments',
-                                  ''), audience.get('is_best_efforts', False)))
+                     audience.get('comments', ''), audience.get('is_best_efforts', False)))
                 audience_id = cur.fetchone()[0]
-                existing_audience_ids.append(audience_id)
                 print(f"Inserted new audience ID: {audience_id}")
 
             # Update or insert country samples
@@ -1045,65 +1040,32 @@ def update_bid(bid_id):
                     WHERE audience_id = %s
                 """, (audience_id, ))
                 print(
-                    f"Deleted old country samples for audience ID: {audience_id}"
-                )
+                    f"Deleted old country samples for audience ID: {audience_id}")
 
                 # Then insert new country samples
-                for country, sample_data in audience['country_samples'].items(
-                ):
+                for country, sample_data in audience['country_samples'].items():
                     try:
-                        print(
-                            f"Inserting country {country} with sample data {sample_data}"
-                        )
-                        # Handle both dictionary and direct integer values
+                        print(f"Inserting country {country} with sample data {sample_data}")
                         if isinstance(sample_data, dict):
                             sample_size = sample_data.get('sample_size', 0)
-                            is_best_efforts = sample_data.get(
-                                'is_best_efforts', False)
+                            is_best_efforts = sample_data.get('is_best_efforts', False)
                         else:
-                            # For backward compatibility
                             sample_size = sample_data
-                            is_best_efforts = sample_size == 0 and audience.get(
-                                'is_best_efforts', False)
-
-                        # Check if record already exists (despite the DELETE)
+                            is_best_efforts = sample_size == 0 and audience.get('is_best_efforts', False)
                         cur.execute(
                             """
-                            SELECT 1 FROM bid_audience_countries 
-                            WHERE bid_id = %s AND audience_id = %s AND country = %s
-                        """, (bid_id, audience_id, country))
-
-                        exists = cur.fetchone()
-                        if exists:
-                            # Update existing record
-                            print(
-                                f"Country record exists, updating: {country}")
-                            cur.execute(
-                                """
-                                UPDATE bid_audience_countries
-                                SET sample_size = %s,
-                                    is_best_efforts = %s
-                                WHERE bid_id = %s AND audience_id = %s AND country = %s
-                            """, (int(sample_size), is_best_efforts, bid_id,
-                                  audience_id, country))
-                        else:
-                            # Insert new record
-                            print(
-                                f"Country record does not exist, inserting: {country}"
-                            )
-                            cur.execute(
-                                """
-                                INSERT INTO bid_audience_countries (
-
-                                    bid_id, audience_id, country, sample_size, is_best_efforts
-                                ) VALUES (%s, %s, %s, %s, %s)
-                            """, (bid_id, audience_id, country,
-                                  int(sample_size), is_best_efforts))
+                            INSERT INTO bid_audience_countries (
+                                bid_id, audience_id, country, sample_size, is_best_efforts
+                            ) VALUES (%s, %s, %s, %s, %s)
+                            ON CONFLICT (bid_id, audience_id, country) DO UPDATE SET
+                                sample_size = EXCLUDED.sample_size,
+                                is_best_efforts = EXCLUDED.is_best_efforts
+                            """,
+                            (bid_id, audience_id, country, int(sample_size), is_best_efforts)
+                        )
                         print(f"Successfully processed country {country}")
                     except Exception as country_error:
-                        print(
-                            f"Error processing country {country}: {str(country_error)}"
-                        )
+                        print(f"Error processing country {country}: {str(country_error)}")
                         raise
 
         # 4. Update partner responses for new audiences
