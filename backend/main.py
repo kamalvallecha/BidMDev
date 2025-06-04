@@ -1015,11 +1015,16 @@ def update_bid(bid_id):
             if audience.get('id') and isinstance(audience.get('id'), int):
                 received_audience_ids.add(audience['id'])
         
+        print(f"Received audience IDs: {received_audience_ids}")
+        print(f"Existing audience IDs: {existing_audience_ids}")
+        
         auto_deleted_ids = existing_audience_ids - received_audience_ids
         if auto_deleted_ids:
             print(f"Auto-detected deleted audiences: {auto_deleted_ids}")
             deleted_audience_ids.extend(list(auto_deleted_ids))
             print(f"Final deleted_audience_ids after auto-detection: {deleted_audience_ids}")
+        else:
+            print("No audiences auto-detected for deletion")
         
         if deleted_audience_ids:
             print(f"Processing deletion of {len(deleted_audience_ids)} audiences: {deleted_audience_ids}")

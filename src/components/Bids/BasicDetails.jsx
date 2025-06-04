@@ -800,7 +800,7 @@ function BasicDetails() {
       // Create request payload with deleted_audience_ids explicitly included
       const requestPayload = {
         ...updatedFormData,
-        deleted_audience_ids: currentDeletedIds
+        deleted_audience_ids: currentDeletedIds || []
       };
 
       console.log("Final payload before sending:");
