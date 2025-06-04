@@ -526,7 +526,8 @@ function BasicDetails() {
     const removed = formData.target_audiences[index];
     console.log("Removing audience at index:", index, "Audience data:", removed);
     
-    if (removed && removed.id) {
+    // Only track deletion if this audience has an ID (exists in database)
+    if (removed && removed.id && typeof removed.id === 'number') {
       console.log("Adding audience ID to deletedAudienceIds:", removed.id);
       setDeletedAudienceIds((prevIds) => {
         const newIds = [...prevIds, removed.id];
@@ -534,7 +535,7 @@ function BasicDetails() {
         return newIds;
       });
     } else {
-      console.log("No ID found for removed audience:", removed);
+      console.log("No valid ID found for removed audience:", removed);
     }
 
     setFormData((prev) => {
@@ -785,12 +786,13 @@ function BasicDetails() {
             }),
           ),
         })),
-        deleted_audience_ids: deletedAudienceIds, // Use deletedAudienceIds directly without spread
+        deleted_audience_ids: [...deletedAudienceIds], // Ensure a fresh array is sent
       };
 
       console.log("Sending updated form data:", updatedFormData);
       console.log("Deleted audience IDs being sent:", deletedAudienceIds);
       console.log("Length of deleted audience IDs:", deletedAudienceIds.length);
+      console.log("Deleted audience IDs in payload:", updatedFormData.deleted_audience_ids);
 
       if (isEditMode) {
         await axios.put(`/api/bids/${bidId}`, updatedFormData);
