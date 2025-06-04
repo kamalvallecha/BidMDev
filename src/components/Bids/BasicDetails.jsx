@@ -357,10 +357,18 @@ function BasicDetails() {
   const [loading, setLoading] = useState(true);
   const [deletedAudienceIds, setDeletedAudienceIds] = useState([]);
 
+  // Add debug logging for deletedAudienceIds
+  useEffect(() => {
+    console.log('Current deletedAudienceIds:', deletedAudienceIds);
+  }, [deletedAudienceIds]);
+
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
+        // Reset deletedAudienceIds when loading a new bid
+        setDeletedAudienceIds([]);
+        
         console.log(
           "Starting loadInitialData, isEditMode:",
           isEditMode,
@@ -512,7 +520,12 @@ function BasicDetails() {
     setFormData((prev) => {
       const removed = prev.target_audiences[index];
       if (removed.id) {
-        setDeletedAudienceIds((ids) => [...ids, removed.id]);
+        console.log('Adding audience ID to deletedAudienceIds:', removed.id);
+        setDeletedAudienceIds((ids) => {
+          const newIds = [...ids, removed.id];
+          console.log('Updated deletedAudienceIds:', newIds);
+          return newIds;
+        });
       }
       const newAudiences = prev.target_audiences.filter((_, i) => i !== index);
       return {
@@ -760,6 +773,7 @@ function BasicDetails() {
       };
 
       console.log("Sending updated form data:", updatedFormData);
+      console.log("Deleted audience IDs being sent:", deletedAudienceIds);
 
       if (isEditMode) {
         await axios.put(`/api/bids/${bidId}`, updatedFormData);
