@@ -988,14 +988,20 @@ def update_bid(bid_id):
         # 3. Handle deleted audiences BEFORE updating/inserting new ones
         deleted_audience_ids = data.get('deleted_audience_ids', [])
         print("Received deleted_audience_ids:", deleted_audience_ids)
+        print("Type of deleted_audience_ids:", type(deleted_audience_ids))
+        print("Length of deleted_audience_ids:", len(deleted_audience_ids))
         
         if deleted_audience_ids:
+            print(f"Processing deletion of {len(deleted_audience_ids)} audiences: {deleted_audience_ids}")
+            
             # Delete partner audience responses for deleted audiences first
             cur.execute(
                 """
                 DELETE FROM partner_audience_responses 
                 WHERE audience_id = ANY(%s) AND bid_id = %s
             """, (deleted_audience_ids, bid_id))
+            deleted_par_count = cur.rowcount
+            print(f"Deleted {deleted_par_count} partner audience responses")
             
             # Delete country samples for deleted audiences
             cur.execute(
@@ -1003,6 +1009,8 @@ def update_bid(bid_id):
                 DELETE FROM bid_audience_countries 
                 WHERE audience_id = ANY(%s) AND bid_id = %s
             """, (deleted_audience_ids, bid_id))
+            deleted_bac_count = cur.rowcount
+            print(f"Deleted {deleted_bac_count} bid audience countries")
             
             # Delete the audiences themselves
             cur.execute(
@@ -1010,12 +1018,12 @@ def update_bid(bid_id):
                 DELETE FROM bid_target_audiences 
                 WHERE id = ANY(%s) AND bid_id = %s
             """, (deleted_audience_ids, bid_id))
+            deleted_bta_count = cur.rowcount
+            print(f"Deleted {deleted_bta_count} bid target audiences")
             
-            print(f"Deleted audiences and related data: {deleted_audience_ids}")
-        
-        # Clear the deleted audience IDs after processing to avoid re-processing
-        if deleted_audience_ids:
-            print(f"Cleared {len(deleted_audience_ids)} deleted audience IDs")
+            print(f"Successfully deleted audiences and related data: {deleted_audience_ids}")
+        else:
+            print("No audiences to delete")
 
         # 4. Update or insert target audiences (by ID, not index)
         for audience in data['target_audiences']:

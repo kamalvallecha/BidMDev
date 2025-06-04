@@ -413,6 +413,12 @@ function BasicDetails() {
 
             console.log("Processed partners array:", partnersArray);
 
+            const processedAudiences = relabelAudienceNames(
+              bidData.target_audiences || [],
+            );
+            
+            console.log("Loading audiences with IDs:", processedAudiences.map(a => ({ name: a.name, id: a.id })));
+            
             setFormData((prevData) => ({
               ...prevData,
               ...bidData,
@@ -421,9 +427,7 @@ function BasicDetails() {
               countries: Array.isArray(bidData.countries)
                 ? bidData.countries
                 : [],
-              target_audiences: relabelAudienceNames(
-                bidData.target_audiences || [],
-              ),
+              target_audiences: processedAudiences,
             }));
 
             // Set selected partners and LOIs
@@ -520,13 +524,17 @@ function BasicDetails() {
 
   const removeTargetAudience = (index) => {
     const removed = formData.target_audiences[index];
-    if (removed.id) {
+    console.log("Removing audience at index:", index, "Audience data:", removed);
+    
+    if (removed && removed.id) {
       console.log("Adding audience ID to deletedAudienceIds:", removed.id);
       setDeletedAudienceIds((prevIds) => {
         const newIds = [...prevIds, removed.id];
         console.log("Updated deletedAudienceIds:", newIds);
         return newIds;
       });
+    } else {
+      console.log("No ID found for removed audience:", removed);
     }
 
     setFormData((prev) => {
@@ -777,11 +785,12 @@ function BasicDetails() {
             }),
           ),
         })),
-        deleted_audience_ids: [...deletedAudienceIds], // Ensure we pass the current deletedAudienceIds
+        deleted_audience_ids: deletedAudienceIds, // Use deletedAudienceIds directly without spread
       };
 
       console.log("Sending updated form data:", updatedFormData);
       console.log("Deleted audience IDs being sent:", deletedAudienceIds);
+      console.log("Length of deleted audience IDs:", deletedAudienceIds.length);
 
       if (isEditMode) {
         await axios.put(`/api/bids/${bidId}`, updatedFormData);
