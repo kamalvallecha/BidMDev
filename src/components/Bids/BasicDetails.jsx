@@ -795,18 +795,20 @@ function BasicDetails() {
             }),
           ),
         })),
-        // Explicitly set deleted_audience_ids
-        deleted_audience_ids: currentDeletedIds
+      };
+
+      // Force deleted_audience_ids to be included by creating a completely new object
+      const requestPayload = {
+        ...updatedFormData,
+        deleted_audience_ids: currentDeletedIds.length > 0 ? currentDeletedIds : []
       };
 
       console.log("Final payload before sending:");
-      console.log("- updatedFormData keys:", Object.keys(updatedFormData));
-      console.log("- deleted_audience_ids in payload:", updatedFormData.deleted_audience_ids);
-      console.log("- deleted_audience_ids type:", typeof updatedFormData.deleted_audience_ids);
-      console.log("- deleted_audience_ids is array:", Array.isArray(updatedFormData.deleted_audience_ids));
+      console.log("- requestPayload keys:", Object.keys(requestPayload));
+      console.log("- deleted_audience_ids in payload:", requestPayload.deleted_audience_ids);
+      console.log("- deleted_audience_ids type:", typeof requestPayload.deleted_audience_ids);
+      console.log("- deleted_audience_ids is array:", Array.isArray(requestPayload.deleted_audience_ids));
       console.log("- JSON.stringify test:", JSON.stringify({ deleted_audience_ids: currentDeletedIds }));
-
-      const requestPayload = updatedFormData; // Assign updatedFormData to requestPayload
 
       if (isEditMode) {
         console.log("About to send PUT request with payload keys:", Object.keys(requestPayload));
