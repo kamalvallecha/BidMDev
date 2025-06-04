@@ -1,0 +1,31 @@
+Raw request data: {'bid_number': '332677', 'bid_date': '2025-05-23', 'study_name': 'Ktemo', 'methodology': 'quant', 'sales_contact': 1, 'vm_contact': 1, 'client': 1, 'project_requirement': 'dsds', 'partners': [20, 21], 'loi': [1], 'countries': ['Afghanistan', 'Albania'], 'target_audiences': [{'broader_category': 'Advertiser/Marketing/Media DM', 'comments': '', 'country_samples': {'Afghanistan': {'sample_size': 0, 'is_best_efforts': True}, 'Albania': {'sample_size': 100, 'is_best_efforts': False}}, 'exact_ta_definition': 'sds', 'id': 187, 'ir': 43, 'is_best_efforts': True, 'mode': 'Online', 'name': 'Audience - 3', 'sample_required': 0, 'ta_category': 'B2B', 'uniqueId': 'audience-187'}, {'broader_category': 'Advertiser/Marketing/Media DM', 'comments': 'as', 'country_samples': {'Afghanistan': {'sample_size': 0, 'is_best_efforts': True}, 'Albania': {'sample_size': 100, 'is_best_efforts': False}}, 'exact_ta_definition': 'sds', 'id': 188, 'ir': 12, 'is_best_efforts': True, 'mode': 'Online', 'name': 'Audience - 1', 'sample_required': 0, 'ta_category': 'B2B', 'uniqueId': 'audience-188'}], 'client_name': 'Vritual Causway', 'created_at': '2025-05-23T16:07:38.345300', 'id': 338, 'rejection_comments': None, 'rejection_reason': None, 'sales_person': 'Shrikant Sunchu', 'status': 'draft', 'updated_at': '2025-06-04T20:05:42.902146', 'vm_name': 'Ruturaj Shridhar Mohite'}
+Request content type: application/json
+Request headers: {'Host': '852a9f13-ef26-4807-ab24-71207044c362-00-1fo3iwwradvx1.sisko.replit.dev', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36', 'Content-Length': '1250', 'Accept': 'application/json, text/plain, */*', 'Accept-Encoding': 'gzip, deflate, br, zstd', 'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8', 'Content-Type': 'application/json', 'Origin': 'https://852a9f13-ef26-4807-ab24-71207044c362-00-1fo3iwwradvx1.sisko.replit.dev:5000', 'Referer': 'https://852a9f13-ef26-4807-ab24-71207044c362-00-1fo3iwwradvx1.sisko.replit.dev:5000/bids/edit/338', 'Sec-Ch-Ua': '"Chromium";v="136", "Google Chrome";v="136", "Not.A/Brand";v="99"', 'Sec-Ch-Ua-Mobile': '?0', 'Sec-Ch-Ua-Platform': '"Windows"', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Storage-Access': 'active', 'X-Forwarded-For': '103.195.202.43, 10.84.7.119', 'X-Forwarded-Proto': 'https', 'X-Replit-User-Bio': '', 'X-Replit-User-Id': '', 'X-Replit-User-Name': '', 'X-Replit-User-Profile-Image': '', 'X-Replit-User-Roles': '', 'X-Replit-User-Teams': '', 'X-Replit-User-Url': ''}
+Updated main bid details
+Existing audience IDs: {187, 188, 189}
+Received deleted_audience_ids: []
+Type of deleted_audience_ids: <class 'list'>
+Length of deleted_audience_ids: 0
+Full request data keys: ['bid_number', 'bid_date', 'study_name', 'methodology', 'sales_contact', 'vm_contact', 'client', 'project_requirement', 'partners', 'loi', 'countries', 'target_audiences', 'client_name', 'created_at', 'id', 'rejection_comments', 'rejection_reason', 'sales_person', 'status', 'updated_at', 'vm_name']
+Raw deleted_audience_ids from request: None
+Found related key: target_audiences = [{'broader_category': 'Advertiser/Marketing/Media DM', 'comments': '', 'country_samples': {'Afghanistan': {'sample_size': 0, 'is_best_efforts': True}, 'Albania': {'sample_size': 100, 'is_best_efforts': False}}, 'exact_ta_definition': 'sds', 'id': 187, 'ir': 43, 'is_best_efforts': True, 'mode': 'Online', 'name': 'Audience - 3', 'sample_required': 0, 'ta_category': 'B2B', 'uniqueId': 'audience-187'}, {'broader_category': 'Advertiser/Marketing/Media DM', 'comments': 'as', 'country_samples': {'Afghanistan': {'sample_size': 0, 'is_best_efforts': True}, 'Albania': {'sample_size': 100, 'is_best_efforts': False}}, 'exact_ta_definition': 'sds', 'id': 188, 'ir': 12, 'is_best_efforts': True, 'mode': 'Online', 'name': 'Audience - 1', 'sample_required': 0, 'ta_category': 'B2B', 'uniqueId': 'audience-188'}]
+No audiences to delete
+Updated audience ID: 187
+Deleted old country samples for audience ID: 187
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Updated audience ID: 188
+Deleted old country samples for audience ID: 188
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Processing partners: [20, 21] and LOIs: [1]
+Found audience_countries: [(187, 'Afghanistan'), (187, 'Albania'), (188, 'Afghanistan'), (188, 'Albania'), (189, 'Afghanistan'), (189, 'Albania')]
+Processing partner 20, LOI 1
+Using existing partner_response_id: 683
+Processing partner 21, LOI 1
+Using existing partner_response_id: 684
+Successfully updated bid and country samples
