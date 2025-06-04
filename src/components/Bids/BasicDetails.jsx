@@ -777,7 +777,7 @@ function BasicDetails() {
             }),
           ),
         })),
-        deleted_audience_ids: deletedAudienceIds,
+        deleted_audience_ids: [...deletedAudienceIds], // Ensure we pass the current deletedAudienceIds
       };
 
       console.log("Sending updated form data:", updatedFormData);
