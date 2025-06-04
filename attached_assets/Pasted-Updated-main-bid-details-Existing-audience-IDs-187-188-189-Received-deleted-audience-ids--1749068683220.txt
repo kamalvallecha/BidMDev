@@ -1,0 +1,28 @@
+Updated main bid details
+Existing audience IDs: {187, 188, 189}
+Received deleted_audience_ids: []
+Type of deleted_audience_ids: <class 'list'>
+Length of deleted_audience_ids: 0
+Full request data keys: ['bid_number', 'bid_date', 'study_name', 'methodology', 'sales_contact', 'vm_contact', 'client', 'project_requirement', 'partners', 'loi', 'countries', 'target_audiences', 'client_name', 'created_at', 'id', 'rejection_comments', 'rejection_reason', 'sales_person', 'status', 'updated_at', 'vm_name']
+Raw deleted_audience_ids from request: None
+Found related key: target_audiences = [{'broader_category': 'Advertiser/Marketing/Media DM', 'comments': '', 'country_samples': {'Afghanistan': {'sample_size': 0, 'is_best_efforts': True}, 'Albania': {'sample_size': 100, 'is_best_efforts': False}}, 'exact_ta_definition': 'sds', 'id': 187, 'ir': 43, 'is_best_efforts': True, 'mode': 'Online', 'name': 'Audience - 3', 'sample_required': 0, 'ta_category': 'B2B', 'uniqueId': 'audience-187'}, {'broader_category': 'Advertiser/Marketing/Media DM', 'comments': 'as', 'country_samples': {'Afghanistan': {'sample_size': 0, 'is_best_efforts': True}, 'Albania': {'sample_size': 100, 'is_best_efforts': False}}, 'exact_ta_definition': 'sds', 'id': 188, 'ir': 12, 'is_best_efforts': True, 'mode': 'Online', 'name': 'Audience - 1', 'sample_required': 0, 'ta_category': 'B2B', 'uniqueId': 'audience-188'}]
+No audiences to delete
+Updated audience ID: 187
+Deleted old country samples for audience ID: 187
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Updated audience ID: 188
+Deleted old country samples for audience ID: 188
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Processing partners: [20, 21] and LOIs: [1]
+Found audience_countries: [(187, 'Afghanistan'), (187, 'Albania'), (188, 'Afghanistan'), (188, 'Albania'), (189, 'Afghanistan'), (189, 'Albania')]
+Processing partner 20, LOI 1
+Using existing partner_response_id: 683
+Processing partner 21, LOI 1
+Using existing partner_response_id: 684
+Successfully updated bid and country samples
