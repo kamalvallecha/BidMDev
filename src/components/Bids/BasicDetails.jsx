@@ -359,7 +359,7 @@ function BasicDetails() {
 
   // Add debug logging for deletedAudienceIds
   useEffect(() => {
-    console.log('Current deletedAudienceIds:', deletedAudienceIds);
+    console.log("Current deletedAudienceIds:", deletedAudienceIds);
   }, [deletedAudienceIds]);
 
   useEffect(() => {
@@ -368,7 +368,7 @@ function BasicDetails() {
         setLoading(true);
         // Reset deletedAudienceIds when loading a new bid
         setDeletedAudienceIds([]);
-        
+
         console.log(
           "Starting loadInitialData, isEditMode:",
           isEditMode,
@@ -421,7 +421,9 @@ function BasicDetails() {
               countries: Array.isArray(bidData.countries)
                 ? bidData.countries
                 : [],
-              target_audiences: relabelAudienceNames(bidData.target_audiences || []),
+              target_audiences: relabelAudienceNames(
+                bidData.target_audiences || [],
+              ),
             }));
 
             // Set selected partners and LOIs
@@ -520,10 +522,10 @@ function BasicDetails() {
     setFormData((prev) => {
       const removed = prev.target_audiences[index];
       if (removed.id) {
-        console.log('Adding audience ID to deletedAudienceIds:', removed.id);
+        console.log("Adding audience ID to deletedAudienceIds:", removed.id);
         setDeletedAudienceIds((ids) => {
           const newIds = [...ids, removed.id];
-          console.log('Updated deletedAudienceIds:', newIds);
+          console.log("Updated deletedAudienceIds:", newIds);
           return newIds;
         });
       }
@@ -676,7 +678,10 @@ function BasicDetails() {
 
       setSampleDistribution(initialDistribution);
       // Debug: log target audiences before opening modal
-      console.log("Target audiences before opening modal:", formData.target_audiences);
+      console.log(
+        "Target audiences before opening modal:",
+        formData.target_audiences,
+      );
       setDistributionModalOpen(true);
     } catch (error) {
       console.error("Error:", error);
@@ -743,7 +748,9 @@ function BasicDetails() {
       }
 
       // Relabel all audience names before saving
-      const relabeledAudiences = relabelAudienceNames(formData.target_audiences);
+      const relabeledAudiences = relabelAudienceNames(
+        formData.target_audiences,
+      );
 
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
@@ -1199,7 +1206,10 @@ function BasicDetails() {
       >
         <DialogTitle>Distribute Samples Across Countries</DialogTitle>
         <DialogContent>
-          {console.log("Rendering modal, audiences:", formData.target_audiences)}
+          {console.log(
+            "Rendering modal, audiences:",
+            formData.target_audiences,
+          )}
           <TableContainer>
             <Table>
               <TableHead>
