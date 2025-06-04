@@ -952,7 +952,13 @@ def update_bid(bid_id):
         conn = get_db_connection()
         cur = conn.cursor()
 
-        data = request.json
+        # Use get_json() with force=True to ensure proper parsing
+        data = request.get_json(force=True)
+        
+        # Debug logging
+        print("Raw request data:", data)
+        print("Request content type:", request.content_type)
+        print("Request headers:", dict(request.headers))
 
         # Start transaction
         cur.execute("BEGIN")
@@ -992,6 +998,16 @@ def update_bid(bid_id):
         print("Length of deleted_audience_ids:", len(deleted_audience_ids))
         print("Full request data keys:", list(data.keys()))
         print("Raw deleted_audience_ids from request:", repr(data.get('deleted_audience_ids')))
+        
+        # Additional debugging - check if field exists with different casing or format
+        for key in data.keys():
+            if 'deleted' in key.lower() or 'audience' in key.lower():
+                print(f"Found related key: {key} = {data[key]}")
+        
+        # Force deleted_audience_ids to be a list if it exists but is None
+        if 'deleted_audience_ids' in data and data['deleted_audience_ids'] is None:
+            deleted_audience_ids = []
+            print("Converted None to empty list")
         
         if deleted_audience_ids:
             print(f"Processing deletion of {len(deleted_audience_ids)} audiences: {deleted_audience_ids}")
