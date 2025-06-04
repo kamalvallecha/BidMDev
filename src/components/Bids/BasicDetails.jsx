@@ -797,11 +797,11 @@ function BasicDetails() {
         })),
       };
 
-      // Create a clean request payload and explicitly ensure deleted_audience_ids is included
-      const requestPayload = JSON.parse(JSON.stringify({
+      // Create request payload with deleted_audience_ids explicitly included
+      const requestPayload = {
         ...updatedFormData,
         deleted_audience_ids: currentDeletedIds
-      }));
+      };
 
       console.log("Final payload before sending:");
       console.log("- requestPayload keys:", Object.keys(requestPayload));

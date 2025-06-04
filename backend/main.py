@@ -1009,6 +1009,18 @@ def update_bid(bid_id):
             deleted_audience_ids = []
             print("Converted None to empty list")
         
+        # Auto-detect deleted audiences: if an existing audience is not in the new target_audiences, it should be deleted
+        received_audience_ids = set()
+        for audience in data['target_audiences']:
+            if audience.get('id') and isinstance(audience.get('id'), int):
+                received_audience_ids.add(audience['id'])
+        
+        auto_deleted_ids = existing_audience_ids - received_audience_ids
+        if auto_deleted_ids:
+            print(f"Auto-detected deleted audiences: {auto_deleted_ids}")
+            deleted_audience_ids.extend(list(auto_deleted_ids))
+            print(f"Final deleted_audience_ids after auto-detection: {deleted_audience_ids}")
+        
         if deleted_audience_ids:
             print(f"Processing deletion of {len(deleted_audience_ids)} audiences: {deleted_audience_ids}")
             
