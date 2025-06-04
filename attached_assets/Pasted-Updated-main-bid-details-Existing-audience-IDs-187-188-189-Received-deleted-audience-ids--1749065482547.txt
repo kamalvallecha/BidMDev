@@ -1,0 +1,54 @@
+Updated main bid details
+Existing audience IDs: {187, 188, 189}
+Received deleted_audience_ids: []
+Type of deleted_audience_ids: <class 'list'>
+Length of deleted_audience_ids: 0
+Full request data keys: ['bid_number', 'bid_date', 'study_name', 'methodology', 'sales_contact', 'vm_contact', 'client', 'project_requirement', 'partners', 'loi', 'countries', 'target_audiences', 'client_name', 'created_at', 'id', 'rejection_comments', 'rejection_reason', 'sales_person', 'status', 'updated_at', 'vm_name']
+Raw deleted_audience_ids from request: None
+No audiences to delete
+Updated audience ID: 187
+Deleted old country samples for audience ID: 187
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Updated audience ID: 188
+Deleted old country samples for audience ID: 188
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Processing partners: [20, 21] and LOIs: [1]
+Found audience_countries: [(187, 'Afghanistan'), (187, 'Albania'), (188, 'Afghanistan'), (188, 'Albania'), (189, 'Afghanistan'), (189, 'Albania')]
+Processing partner 20, LOI 1
+Using existing partner_response_id: 683
+Processing partner 21, LOI 1
+Using existing partner_response_id: 684
+Successfully updated bid and country samples
+Updated main bid details
+Existing audience IDs: {187, 188, 189}
+Received deleted_audience_ids: []
+Type of deleted_audience_ids: <class 'list'>
+Length of deleted_audience_ids: 0
+Full request data keys: ['bid_number', 'bid_date', 'study_name', 'methodology', 'sales_contact', 'vm_contact', 'client', 'project_requirement', 'partners', 'loi', 'countries', 'target_audiences', 'client_name', 'created_at', 'id', 'rejection_comments', 'rejection_reason', 'sales_person', 'status', 'updated_at', 'vm_name']
+Raw deleted_audience_ids from request: None
+No audiences to delete
+Updated audience ID: 187
+Deleted old country samples for audience ID: 187
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Updated audience ID: 188
+Deleted old country samples for audience ID: 188
+Inserting country Afghanistan with sample data {'sample_size': 0, 'is_best_efforts': True}
+Successfully processed country Afghanistan
+Inserting country Albania with sample data {'sample_size': 100, 'is_best_efforts': False}
+Successfully processed country Albania
+Processing partners: [20, 21] and LOIs: [1]
+Found audience_countries: [(187, 'Afghanistan'), (187, 'Albania'), (188, 'Afghanistan'), (188, 'Albania'), (189, 'Afghanistan'), (189, 'Albania')]
+Processing partner 20, LOI 1
+Using existing partner_response_id: 683
+Processing partner 21, LOI 1
+Using existing partner_response_id: 684
+Successfully updated bid and country samples
