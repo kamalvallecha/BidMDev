@@ -813,7 +813,7 @@ function BasicDetails() {
       if (isEditMode) {
         console.log("About to send PUT request with payload keys:", Object.keys(requestPayload));
         console.log("Deleted audience IDs being sent:", requestPayload.deleted_audience_ids);
-        
+
         // Use explicit headers to ensure proper JSON serialization
         await axios.put(`/api/bids/${bidId}`, requestPayload, {
           headers: {
@@ -1078,9 +1078,8 @@ function BasicDetails() {
                             "ta_category",
                             e.target.value,
                           )
-                        }
-                      >
-                        {taCategories.map((category) => (
+                        }>
+                          {taCategories.map((category) => (
                           <MenuItem key={category} value={category}>
                             {category}
                           </MenuItem>
