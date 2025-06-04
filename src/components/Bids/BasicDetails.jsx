@@ -416,10 +416,10 @@ function BasicDetails() {
             const processedAudiences = relabelAudienceNames(
               bidData.target_audiences || [],
             );
-            
+
             console.log("Loading audiences with IDs:", processedAudiences.map(a => ({ name: a.name, id: a.id })));
             console.log("Initial deletedAudienceIds before setting formData:", deletedAudienceIds);
-            
+
             setFormData((prevData) => ({
               ...prevData,
               ...bidData,
@@ -528,7 +528,7 @@ function BasicDetails() {
   const removeTargetAudience = (index) => {
     const removed = formData.target_audiences[index];
     console.log("Removing audience at index:", index, "Audience data:", removed);
-    
+
     // Only track deletion if this audience has an ID (exists in database)
     if (removed && removed.id && typeof removed.id === 'number') {
       console.log("Adding audience ID to deletedAudienceIds:", removed.id);
@@ -806,11 +806,17 @@ function BasicDetails() {
       console.log("- deleted_audience_ids is array:", Array.isArray(updatedFormData.deleted_audience_ids));
       console.log("- JSON.stringify test:", JSON.stringify({ deleted_audience_ids: currentDeletedIds }));
 
+      const requestPayload = updatedFormData; // Assign updatedFormData to requestPayload
+
       if (isEditMode) {
-        await axios.put(`/api/bids/${bidId}`, updatedFormData);
+        console.log("About to send PUT request with payload keys:", Object.keys(requestPayload));
+        console.log("Deleted audience IDs being sent:", requestPayload.deleted_audience_ids);
+        await axios.put(`/api/bids/${bidId}`, requestPayload);
         navigate(`/bids/partner/${bidId}`);
       } else {
-        const response = await axios.post("/api/bids", updatedFormData);
+        console.log("About to send POST request with payload keys:", Object.keys(requestPayload));
+        console.log("Deleted audience IDs being sent:", requestPayload.deleted_audience_ids);
+        const response = await axios.post("/api/bids", requestPayload);
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
