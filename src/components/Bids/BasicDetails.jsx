@@ -763,6 +763,8 @@ function BasicDetails() {
       // Capture current deletedAudienceIds state at submission time
       const currentDeletedIds = [...deletedAudienceIds];
       console.log("Captured deletedAudienceIds at submission:", currentDeletedIds);
+      console.log("Type of currentDeletedIds:", typeof currentDeletedIds);
+      console.log("Array.isArray(currentDeletedIds):", Array.isArray(currentDeletedIds));
 
       // Relabel all audience names before saving
       const relabeledAudiences = relabelAudienceNames(
@@ -793,15 +795,16 @@ function BasicDetails() {
             }),
           ),
         })),
+        // Explicitly set deleted_audience_ids
+        deleted_audience_ids: currentDeletedIds
       };
 
-      // Explicitly add deleted_audience_ids to ensure it's included in the request
-      updatedFormData.deleted_audience_ids = currentDeletedIds;
-
-      console.log("Sending updated form data:", updatedFormData);
-      console.log("Deleted audience IDs being sent:", currentDeletedIds);
-      console.log("Length of deleted audience IDs:", currentDeletedIds.length);
-      console.log("Deleted audience IDs in payload:", updatedFormData.deleted_audience_ids);
+      console.log("Final payload before sending:");
+      console.log("- updatedFormData keys:", Object.keys(updatedFormData));
+      console.log("- deleted_audience_ids in payload:", updatedFormData.deleted_audience_ids);
+      console.log("- deleted_audience_ids type:", typeof updatedFormData.deleted_audience_ids);
+      console.log("- deleted_audience_ids is array:", Array.isArray(updatedFormData.deleted_audience_ids));
+      console.log("- JSON.stringify test:", JSON.stringify({ deleted_audience_ids: currentDeletedIds }));
 
       if (isEditMode) {
         await axios.put(`/api/bids/${bidId}`, updatedFormData);
