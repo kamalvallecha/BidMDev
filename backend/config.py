@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # Database configuration
-    DATABASE_URL = "postgresql://postgres:root123@localhost:5432/BidM"
+    # Database configuration - use Replit's DATABASE_URL or construct from env vars
+    DATABASE_URL = os.getenv('DATABASE_URL') or f"postgresql://{os.getenv('PGUSER', 'postgres')}:{os.getenv('PGPASSWORD', 'root123')}@{os.getenv('PGHOST', 'localhost')}:{os.getenv('PGPORT', '5432')}/{os.getenv('PGDATABASE', 'BidM')}"
 
     # JWT configuration
     SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key')

@@ -160,13 +160,19 @@ scheduler.start()
 
 def get_db_connection():
     try:
-        return psycopg2.connect(
-            host="127.0.0.1",
-            database="BidM",
-            user="postgres",
-            password="root123",
-            port="5432"
-        )
+        # Use Replit's DATABASE_URL if available, otherwise fall back to individual env vars
+        database_url = os.getenv('DATABASE_URL')
+        if database_url:
+            return psycopg2.connect(database_url)
+        else:
+            # Fallback to individual environment variables
+            return psycopg2.connect(
+                host=os.getenv('PGHOST', '127.0.0.1'),
+                database=os.getenv('PGDATABASE', 'BidM'),
+                user=os.getenv('PGUSER', 'postgres'),
+                password=os.getenv('PGPASSWORD', 'root123'),
+                port=os.getenv('PGPORT', '5432')
+            )
     except Exception as e:
         print(f"Database connection error: {str(e)}")
         raise e
