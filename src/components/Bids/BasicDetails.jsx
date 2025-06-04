@@ -517,16 +517,17 @@ function BasicDetails() {
   };
 
   const removeTargetAudience = (index) => {
-    setFormData((prev) => {
-      const removed = prev.target_audiences[index];
-      if (removed.id) {
-        console.log('Adding audience ID to deletedAudienceIds:', removed.id);
-        setDeletedAudienceIds((ids) => {
-          const newIds = [...ids, removed.id];
-          console.log('Updated deletedAudienceIds:', newIds);
-          return newIds;
-        });
-      }
+    const removed = formData.target_audiences[index];
+    if (removed.id) {
+      console.log('Adding audience ID to deletedAudienceIds:', removed.id);
+      setDeletedAudienceIds(prevIds => {
+        const newIds = [...prevIds, removed.id];
+        console.log('Updated deletedAudienceIds:', newIds);
+        return newIds;
+      });
+    }
+    
+    setFormData(prev => {
       const newAudiences = prev.target_audiences.filter((_, i) => i !== index);
       return {
         ...prev,
