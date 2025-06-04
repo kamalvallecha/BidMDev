@@ -793,8 +793,10 @@ function BasicDetails() {
             }),
           ),
         })),
-        deleted_audience_ids: currentDeletedIds, // Use captured state
       };
+
+      // Explicitly add deleted_audience_ids to ensure it's included in the request
+      updatedFormData.deleted_audience_ids = currentDeletedIds;
 
       console.log("Sending updated form data:", updatedFormData);
       console.log("Deleted audience IDs being sent:", currentDeletedIds);
