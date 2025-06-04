@@ -797,11 +797,11 @@ function BasicDetails() {
         })),
       };
 
-      // Force deleted_audience_ids to be included by creating a completely new object
-      const requestPayload = {
+      // Create a clean request payload and explicitly ensure deleted_audience_ids is included
+      const requestPayload = JSON.parse(JSON.stringify({
         ...updatedFormData,
-        deleted_audience_ids: currentDeletedIds.length > 0 ? currentDeletedIds : []
-      };
+        deleted_audience_ids: currentDeletedIds
+      }));
 
       console.log("Final payload before sending:");
       console.log("- requestPayload keys:", Object.keys(requestPayload));
@@ -813,12 +813,22 @@ function BasicDetails() {
       if (isEditMode) {
         console.log("About to send PUT request with payload keys:", Object.keys(requestPayload));
         console.log("Deleted audience IDs being sent:", requestPayload.deleted_audience_ids);
-        await axios.put(`/api/bids/${bidId}`, requestPayload);
+        
+        // Use explicit headers to ensure proper JSON serialization
+        await axios.put(`/api/bids/${bidId}`, requestPayload, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
         navigate(`/bids/partner/${bidId}`);
       } else {
         console.log("About to send POST request with payload keys:", Object.keys(requestPayload));
         console.log("Deleted audience IDs being sent:", requestPayload.deleted_audience_ids);
-        const response = await axios.post("/api/bids", requestPayload);
+        const response = await axios.post("/api/bids", requestPayload, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
