@@ -418,6 +418,7 @@ function BasicDetails() {
             );
             
             console.log("Loading audiences with IDs:", processedAudiences.map(a => ({ name: a.name, id: a.id })));
+            console.log("Initial deletedAudienceIds before setting formData:", deletedAudienceIds);
             
             setFormData((prevData) => ({
               ...prevData,
@@ -429,6 +430,8 @@ function BasicDetails() {
                 : [],
               target_audiences: processedAudiences,
             }));
+
+            console.log("FormData set in edit mode, current deletedAudienceIds:", deletedAudienceIds);
 
             // Set selected partners and LOIs
             setSelectedPartners(partnersArray);
@@ -757,6 +760,10 @@ function BasicDetails() {
         return;
       }
 
+      // Capture current deletedAudienceIds state at submission time
+      const currentDeletedIds = [...deletedAudienceIds];
+      console.log("Captured deletedAudienceIds at submission:", currentDeletedIds);
+
       // Relabel all audience names before saving
       const relabeledAudiences = relabelAudienceNames(
         formData.target_audiences,
@@ -786,12 +793,12 @@ function BasicDetails() {
             }),
           ),
         })),
-        deleted_audience_ids: [...deletedAudienceIds], // Ensure a fresh array is sent
+        deleted_audience_ids: currentDeletedIds, // Use captured state
       };
 
       console.log("Sending updated form data:", updatedFormData);
-      console.log("Deleted audience IDs being sent:", deletedAudienceIds);
-      console.log("Length of deleted audience IDs:", deletedAudienceIds.length);
+      console.log("Deleted audience IDs being sent:", currentDeletedIds);
+      console.log("Length of deleted audience IDs:", currentDeletedIds.length);
       console.log("Deleted audience IDs in payload:", updatedFormData.deleted_audience_ids);
 
       if (isEditMode) {

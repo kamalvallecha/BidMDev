@@ -990,6 +990,8 @@ def update_bid(bid_id):
         print("Received deleted_audience_ids:", deleted_audience_ids)
         print("Type of deleted_audience_ids:", type(deleted_audience_ids))
         print("Length of deleted_audience_ids:", len(deleted_audience_ids))
+        print("Full request data keys:", list(data.keys()))
+        print("Raw deleted_audience_ids from request:", repr(data.get('deleted_audience_ids')))
         
         if deleted_audience_ids:
             print(f"Processing deletion of {len(deleted_audience_ids)} audiences: {deleted_audience_ids}")
