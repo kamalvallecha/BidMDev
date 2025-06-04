@@ -729,10 +729,13 @@ function BasicDetails() {
         return;
       }
 
+      // Relabel all audience names before saving
+      const relabeledAudiences = relabelAudienceNames(formData.target_audiences);
+
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
         ...formData,
-        target_audiences: formData.target_audiences.map((audience, index) => ({
+        target_audiences: relabeledAudiences.map((audience, index) => ({
           ...audience,
           sample_required: audience.is_best_efforts
             ? 0
