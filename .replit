@@ -52,7 +52,11 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && pip install -r requirements.txt && python main.py & cd . && npm install && npm run dev"
+args = "cd backend && pip install -r requirements.txt && python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install && npm run dev"
 
 [[ports]]
 localPort = 3000
