@@ -505,12 +505,13 @@ function BasicDetails() {
   };
 
   // Utility function to relabel all audience names sequentially
-  function relabelAudienceNames(audiences) {
-    return audiences.map((aud, idx) => ({
-      ...aud,
-      name: `Audience - ${idx + 1}`,
+  const relabelAudienceNames = (audiences) => {
+    return audiences.map((audience, index) => ({
+      ...audience,
+      name: `Audience - ${index + 1}`,
+      uniqueId: `audience-${index}`, // Ensure uniqueId matches the index
     }));
-  }
+  };
 
   const addTargetAudience = () => {
     setFormData((prev) => {
@@ -1101,8 +1102,7 @@ function BasicDetails() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginBottom: "20px",
-                    }}
+                      marginBottom: "20px",                    }}
                   >
                     <h3 style={{ margin: 0 }}>Audience - {index + 1}</h3>
                     <div>
