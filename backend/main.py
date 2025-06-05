@@ -875,6 +875,15 @@ def get_bid(bid_id):
         """, (bid_id, ))
 
         rows = cur.fetchall()
+        print(f"=== BACKEND GET_BID DEBUG for bid_id {bid_id} ===")
+        print(f"Raw query result count: {len(rows)}")
+        
+        # Log all audience IDs found in order
+        audience_ids_found = []
+        for row in rows:
+            if row['id'] not in audience_ids_found:
+                audience_ids_found.append(row['id'])
+                print(f"Found audience ID {row['id']} with name '{row['name']}'")
 
         # Format target audiences with their sample sizes
         target_audiences = {}
@@ -883,8 +892,7 @@ def get_bid(bid_id):
             if audience_id not in target_audiences:
                 target_audiences[audience_id] = {
                     'id': row['id'],
-                    'uniqueId':
-                    f"audience-{audience_id}",  # Add unique identifier
+                    'uniqueId': f"audience-{audience_id}",
                     'name': row['name'],
                     'ta_category': row['ta_category'],
                     'broader_category': row['broader_category'],
@@ -896,12 +904,18 @@ def get_bid(bid_id):
                     'is_best_efforts': row['is_best_efforts'],
                     'country_samples': {}
                 }
+                print(f"Created audience object for ID {audience_id}: {row['name']}")
             if row['country']:
-                target_audiences[audience_id]['country_samples'][
-                    row['country']] = {
-                        'sample_size': row['sample_size'],
-                        'is_best_efforts': row['country_is_best_efforts']
-                    }
+                target_audiences[audience_id]['country_samples'][row['country']] = {
+                    'sample_size': row['sample_size'],
+                    'is_best_efforts': row['country_is_best_efforts']
+                }
+                print(f"Added country sample: audience {audience_id}, country {row['country']}, size {row['sample_size']}")
+
+        # Sort audiences by ID to maintain consistent order
+        sorted_audiences = sorted(target_audiences.values(), key=lambda x: x['id'])
+        print(f"Final sorted audience order: {[f'ID:{a['id']}-{a['name']}' for a in sorted_audiences]}")
+        print(f"=== END BACKEND DEBUG ===\n")
 
         # Get partners and LOIs with full partner details
         cur.execute(
@@ -931,7 +945,7 @@ def get_bid(bid_id):
 
         response = {
             **bid, 
-            'target_audiences': list(target_audiences.values()),
+            'target_audiences': sorted_audiences,
             'partners': partners,
             'loi': lois
         }

@@ -615,13 +615,19 @@ function BasicDetails() {
     value,
     isBEMax = false,
   ) => {
+    console.log(`=== DISTRIBUTION CHANGE DEBUG ===`);
+    console.log(`Country: ${country}, Index: ${audienceIndex}, Value: ${value}, isBEMax: ${isBEMax}`);
+    console.log(`Audience at index ${audienceIndex}:`, formData.target_audiences?.[audienceIndex]);
+    
     setSampleDistribution((prev) => {
       const currentValue =
         prev[country]?.[`audience-${audienceIndex}`]?.value ?? "";
       const currentIsBEMax =
         prev[country]?.[`audience-${audienceIndex}`]?.isBEMax || false;
 
-      return {
+      console.log(`Previous value: ${currentValue}, Previous isBEMax: ${currentIsBEMax}`);
+
+      const newDistribution = {
         ...prev,
         [country]: {
           ...prev[country],
@@ -631,6 +637,9 @@ function BasicDetails() {
           },
         },
       };
+
+      console.log(`New distribution for ${country}:`, newDistribution[country]);
+      return newDistribution;
     });
   };
 
@@ -689,10 +698,38 @@ function BasicDetails() {
         return;
       }
 
-      // Relabel audiences synchronously
-      const relabeledAudiences = relabelAudienceNames(
-        formData.target_audiences,
-      );
+      console.log("=== SUBMIT DEBUG - START ===");
+      console.log("Original formData.target_audiences:", formData.target_audiences.map(a => ({ 
+        id: a.id, 
+        name: a.name, 
+        uniqueId: a.uniqueId,
+        originalIndex: formData.target_audiences.indexOf(a)
+      })));
+
+      // Sort audiences by ID first to ensure consistent database order
+      const sortedAudiences = [...formData.target_audiences].sort((a, b) => {
+        if (a.id && b.id) return a.id - b.id;
+        if (a.id && !b.id) return -1;
+        if (!a.id && b.id) return 1;
+        return 0;
+      });
+
+      console.log("After sorting by ID:", sortedAudiences.map(a => ({ 
+        id: a.id, 
+        name: a.name, 
+        uniqueId: a.uniqueId,
+        sortedIndex: sortedAudiences.indexOf(a)
+      })));
+
+      // Relabel audiences to maintain sequential numbering
+      const relabeledAudiences = relabelAudienceNames(sortedAudiences);
+
+      console.log("After relabeling:", relabeledAudiences.map(a => ({ 
+        id: a.id, 
+        name: a.name, 
+        uniqueId: a.uniqueId,
+        finalIndex: relabeledAudiences.indexOf(a)
+      })));
 
       // Initialize sample distribution with existing data in edit mode
       const initialDistribution = {};
@@ -706,15 +743,17 @@ function BasicDetails() {
               : existingSample?.sample_size || "",
             isBEMax: existingSample?.is_best_efforts || false,
           };
+          console.log(`Distribution setup for ${country}, audience-${index}:`, {
+            audienceId: audience.id,
+            audienceName: audience.name,
+            existingSample,
+            distributionValue: initialDistribution[country][`audience-${index}`]
+          });
         });
       });
 
+      console.log("Final initialDistribution:", initialDistribution);
       setSampleDistribution(initialDistribution);
-      // Debug: log target audiences before opening modal
-      console.log(
-        "Target audiences before opening modal:",
-        formData.target_audiences,
-      );
 
       // Set relabeled audiences in state
       setFormData((prev) => ({
@@ -722,6 +761,7 @@ function BasicDetails() {
         target_audiences: relabeledAudiences,
       }));
 
+      console.log("=== SUBMIT DEBUG - END ===");
       setDistributionModalOpen(true);
     } catch (error) {
       console.error("Error:", error);
@@ -1299,102 +1339,109 @@ function BasicDetails() {
       >
         <DialogTitle>Distribute Samples Across Countries</DialogTitle>
         <DialogContent>
-          {console.log(
-            "Rendering modal, audiences:",
-            formData.target_audiences,
-          )}
+          {console.log("=== MODAL RENDER DEBUG ===") || 
+           console.log("Modal audiences (raw):", formData.target_audiences) ||
+           console.log("Modal audiences (with indices):", formData.target_audiences?.map((a, i) => ({
+             index: i,
+             id: a.id,
+             name: a.name,
+             uniqueId: a.uniqueId
+           }))) ||
+           console.log("Sample distribution keys:", Object.keys(sampleDistribution)) ||
+           console.log("Full sample distribution:", sampleDistribution)}
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>Country</TableCell>
-                  {formData?.target_audiences
-                    ?.sort((a, b) => {
-                      // Extract number from "Audience - X" format for proper sorting
-                      const aNum = parseInt(a.name.split(' - ')[1]) || 0;
-                      const bNum = parseInt(b.name.split(' - ')[1]) || 0;
-                      return aNum - bNum;
-                    })
-                    ?.map((audience, index) => (
-                    <TableCell key={index} align="center">
-                      {audience.name}
-                      <br />
-                      {audience.is_best_efforts
-                        ? "(Best Efforts)"
-                        : `(Required: ${audience.sample_required})`}
-                    </TableCell>
-                  ))}
+                  {formData?.target_audiences?.map((audience, index) => {
+                    console.log(`Header - Index ${index}:`, {
+                      id: audience.id,
+                      name: audience.name,
+                      uniqueId: audience.uniqueId,
+                      is_best_efforts: audience.is_best_efforts,
+                      sample_required: audience.sample_required
+                    });
+                    return (
+                      <TableCell key={`header-${index}`} align="center">
+                        {audience.name}
+                        <br />
+                        <small>ID: {audience.id || 'NEW'}</small>
+                        <br />
+                        {audience.is_best_efforts
+                          ? "(Best Efforts)"
+                          : `(Required: ${audience.sample_required})`}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {formData?.countries?.map((country) => (
                   <TableRow key={country}>
                     <TableCell>{country}</TableCell>
-                    {formData?.target_audiences
-                      ?.sort((a, b) => {
-                        // Extract number from "Audience - X" format for proper sorting
-                        const aNum = parseInt(a.name.split(' - ')[1]) || 0;
-                        const bNum = parseInt(b.name.split(' - ')[1]) || 0;
-                        return aNum - bNum;
-                      })
-                      ?.map((audience, index) => (
-                      <TableCell key={index} align="center">
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <TextField
-                            type="number"
-                            size="small"
-                            value={
-                              sampleDistribution[country]?.[`audience-${index}`]
-                                ?.isBEMax
-                                ? ""
-                                : (sampleDistribution[country]?.[
-                                    `audience-${index}`
-                                  ]?.value ?? "")
-                            }
-                            onChange={(e) =>
-                              handleDistributionChange(
-                                country,
-                                index,
-                                e.target.value,
-                              )
-                            }
-                            disabled={
-                              sampleDistribution[country]?.[`audience-${index}`]
-                                ?.isBEMax
-                            }
-                            inputProps={{ min: 0 }}
-                            style={{ width: "100px" }}
-                          />
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={
-                                  sampleDistribution[country]?.[
-                                    `audience-${index}`
-                                  ]?.isBEMax || false
-                                }
-                                onChange={(e) =>
-                                  handleDistributionChange(
-                                    country,
-                                    index,
-                                    "",
-                                    e.target.checked,
-                                  )
-                                }
-                              />
-                            }
-                            label="BE/Max"
-                          />
-                        </div>
-                      </TableCell>
-                    ))}
+                    {formData?.target_audiences?.map((audience, index) => {
+                      const distributionKey = `audience-${index}`;
+                      const distributionData = sampleDistribution[country]?.[distributionKey];
+                      console.log(`Body - ${country}, Index ${index} (${distributionKey}):`, {
+                        audienceId: audience.id,
+                        audienceName: audience.name,
+                        distributionData,
+                        distributionExists: !!distributionData
+                      });
+                      
+                      return (
+                        <TableCell key={`body-${index}`} align="center">
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <TextField
+                              type="number"
+                              size="small"
+                              value={
+                                distributionData?.isBEMax
+                                  ? ""
+                                  : (distributionData?.value ?? "")
+                              }
+                              onChange={(e) => {
+                                console.log(`TextField change - ${country}, index ${index}:`, e.target.value);
+                                handleDistributionChange(
+                                  country,
+                                  index,
+                                  e.target.value,
+                                );
+                              }}
+                              disabled={distributionData?.isBEMax}
+                              inputProps={{ min: 0 }}
+                              style={{ width: "100px" }}
+                              placeholder={`Idx:${index}`}
+                            />
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  checked={distributionData?.isBEMax || false}
+                                  onChange={(e) => {
+                                    console.log(`Checkbox change - ${country}, index ${index}:`, e.target.checked);
+                                    handleDistributionChange(
+                                      country,
+                                      index,
+                                      "",
+                                      e.target.checked,
+                                    );
+                                  }}
+                                />
+                              }
+                              label="BE/Max"
+                            />
+                          </div>
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
