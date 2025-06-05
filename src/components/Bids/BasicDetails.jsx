@@ -413,45 +413,29 @@ function BasicDetails() {
 
             console.log("Processed partners array:", partnersArray);
 
-            console.log("=== LOADING BID DATA DEBUG ===");
-            console.log("Raw bidData.target_audiences:", bidData.target_audiences?.map((a, i) => ({
-              originalIndex: i,
-              id: a.id,
-              name: a.name,
-              uniqueId: a.uniqueId
-            })));
-
             const processedAudiences = relabelAudienceNames(
               bidData.target_audiences || [],
             );
 
-            console.log("Processed audiences after relabeling:", processedAudiences.map((a, i) => ({
-              processedIndex: i,
-              id: a.id,
-              name: a.name,
-              uniqueId: a.uniqueId
-            })));
+            console.log(
+              "Loading audiences with IDs:",
+              processedAudiences.map((a) => ({ name: a.name, id: a.id })),
+            );
+            console.log(
+              "Initial deletedAudienceIds before setting formData:",
+              deletedAudienceIds,
+            );
 
-            setFormData((prevData) => {
-              const newFormData = {
-                ...prevData,
-                ...bidData,
-                partners: partnersArray,
-                loi: loiArray,
-                countries: Array.isArray(bidData.countries)
-                  ? bidData.countries
-                  : [],
-                target_audiences: processedAudiences,
-              };
-              console.log("Setting formData with target_audiences:", newFormData.target_audiences.map((a, i) => ({
-                finalIndex: i,
-                id: a.id,
-                name: a.name,
-                uniqueId: a.uniqueId
-              })));
-              console.log("=== END LOADING BID DATA DEBUG ===");
-              return newFormData;
-            });
+            setFormData((prevData) => ({
+              ...prevData,
+              ...bidData,
+              partners: partnersArray,
+              loi: loiArray,
+              countries: Array.isArray(bidData.countries)
+                ? bidData.countries
+                : [],
+              target_audiences: processedAudiences,
+            }));
 
             console.log(
               "FormData set in edit mode, current deletedAudienceIds:",
@@ -522,29 +506,11 @@ function BasicDetails() {
 
   // Utility function to relabel all audience names sequentially
   const relabelAudienceNames = (audiences) => {
-    console.log("=== RELABEL AUDIENCE NAMES DEBUG ===");
-    console.log("Input audiences:", audiences.map((a, i) => ({
-      originalIndex: i,
-      id: a.id,
-      name: a.name,
-      uniqueId: a.uniqueId
-    })));
-    
-    const result = audiences.map((audience, index) => ({
+    return audiences.map((audience, index) => ({
       ...audience,
       name: `Audience - ${index + 1}`,
       uniqueId: `audience-${index}`, // Ensure uniqueId matches the index
     }));
-    
-    console.log("Output audiences:", result.map((a, i) => ({
-      newIndex: i,
-      id: a.id,
-      name: a.name,
-      uniqueId: a.uniqueId
-    })));
-    console.log("=== END RELABEL AUDIENCE NAMES DEBUG ===");
-    
-    return result;
   };
 
   const addTargetAudience = () => {
@@ -723,25 +689,10 @@ function BasicDetails() {
         return;
       }
 
-      console.log("=== AUDIENCE ORDERING DEBUG - HANDLESUBMIT ===");
-      console.log("Original formData.target_audiences:", formData.target_audiences.map((a, i) => ({
-        index: i,
-        id: a.id,
-        name: a.name,
-        uniqueId: a.uniqueId
-      })));
-
       // Relabel audiences synchronously
       const relabeledAudiences = relabelAudienceNames(
         formData.target_audiences,
       );
-
-      console.log("After relabelAudienceNames:", relabeledAudiences.map((a, i) => ({
-        index: i,
-        id: a.id,
-        name: a.name,
-        uniqueId: a.uniqueId
-      })));
 
       // Initialize sample distribution with existing data in edit mode
       const initialDistribution = {};
@@ -749,7 +700,6 @@ function BasicDetails() {
         initialDistribution[country] = {};
         relabeledAudiences.forEach((audience, index) => {
           const existingSample = audience.country_samples?.[country];
-          console.log(`Setting up distribution for ${country}, audience index ${index}, audience name ${audience.name}, audience id ${audience.id}`);
           initialDistribution[country][`audience-${index}`] = {
             value: existingSample?.is_best_efforts
               ? ""
@@ -759,25 +709,19 @@ function BasicDetails() {
         });
       });
 
-      console.log("Initial distribution setup:", initialDistribution);
       setSampleDistribution(initialDistribution);
+      // Debug: log target audiences before opening modal
+      console.log(
+        "Target audiences before opening modal:",
+        formData.target_audiences,
+      );
 
       // Set relabeled audiences in state
-      setFormData((prev) => {
-        const newFormData = {
-          ...prev,
-          target_audiences: relabeledAudiences,
-        };
-        console.log("Setting new formData with target_audiences:", newFormData.target_audiences.map((a, i) => ({
-          index: i,
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId
-        })));
-        return newFormData;
-      });
+      setFormData((prev) => ({
+        ...prev,
+        target_audiences: relabeledAudiences,
+      }));
 
-      console.log("=== END AUDIENCE ORDERING DEBUG - HANDLESUBMIT ===");
       setDistributionModalOpen(true);
     } catch (error) {
       console.error("Error:", error);
@@ -1355,16 +1299,10 @@ function BasicDetails() {
       >
         <DialogTitle>Distribute Samples Across Countries</DialogTitle>
         <DialogContent>
-          {console.log("=== MODAL RENDERING DEBUG ===")}
-          {console.log("formData.target_audiences in modal:", formData.target_audiences?.map((a, i) => ({
-            index: i,
-            id: a.id,
-            name: a.name,
-            uniqueId: a.uniqueId
-          })))}
-          {console.log("formData.countries in modal:", formData.countries)}
-          {console.log("sampleDistribution in modal:", sampleDistribution)}
-          {console.log("=== END MODAL RENDERING DEBUG ===")}
+          {console.log(
+            "Rendering modal, audiences:",
+            formData.target_audiences,
+          )}
           <TableContainer>
             <Table>
               <TableHead>
