@@ -413,9 +413,14 @@ function BasicDetails() {
 
             console.log("Processed partners array:", partnersArray);
 
-            // Sort audiences by ID to maintain consistent order, then relabel
+            // Sort audiences by ID to maintain consistent database order, then renumber sequentially
             const sortedAudiences = (bidData.target_audiences || []).sort((a, b) => (a.id || 0) - (b.id || 0));
-            const processedAudiences = relabelAudienceNames(sortedAudiences);
+            // Renumber audiences sequentially based on their sorted database ID order
+            const processedAudiences = sortedAudiences.map((audience, index) => ({
+              ...audience,
+              name: `Audience - ${index + 1}`,
+              uniqueId: `audience-${index}`, // Ensure uniqueId matches the new index
+            }));
 
             console.log(
               "Loading audiences with IDs:",
@@ -721,8 +726,12 @@ function BasicDetails() {
         sortedIndex: sortedAudiences.indexOf(a)
       })));
 
-      // Relabel audiences to maintain sequential numbering
-      const relabeledAudiences = relabelAudienceNames(sortedAudiences);
+      // Renumber audiences sequentially based on their sorted database ID order
+      const relabeledAudiences = sortedAudiences.map((audience, index) => ({
+        ...audience,
+        name: `Audience - ${index + 1}`,
+        uniqueId: `audience-${index}`,
+      }));
 
       console.log("After relabeling:", relabeledAudiences.map(a => ({ 
         id: a.id, 
@@ -844,7 +853,7 @@ function BasicDetails() {
         }))
       );
 
-      // Sort audiences by ID to match backend expectation, then relabel
+      // Sort audiences by ID to match backend expectation, then renumber
       const sortedAudiences = [...formData.target_audiences].sort((a, b) => {
         if (a.id && b.id) return a.id - b.id;
         if (a.id && !b.id) return -1;
@@ -861,8 +870,12 @@ function BasicDetails() {
         }))
       );
 
-      // Relabel audiences to maintain sequential numbering
-      const relabeledAudiences = relabelAudienceNames(sortedAudiences);
+      // Renumber audiences sequentially based on their sorted database ID order
+      const relabeledAudiences = sortedAudiences.map((audience, index) => ({
+        ...audience,
+        name: `Audience - ${index + 1}`,
+        uniqueId: `audience-${index}`,
+      }));
 
       console.log("After relabeling:", 
         relabeledAudiences.map((a, i) => ({
