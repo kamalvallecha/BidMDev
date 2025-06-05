@@ -833,18 +833,81 @@ function BasicDetails() {
         "Captured deletedAudienceIds at submission:",
         currentDeletedIds,
       );
-      console.log("Type of currentDeletedIds:", typeof currentDeletedIds);
-      console.log(
-        "Array.isArray(currentDeletedIds):",
-        Array.isArray(currentDeletedIds),
+
+      console.log("=== DISTRIBUTION MAPPING DEBUG ===");
+      console.log("Current formData.target_audiences before processing:", 
+        formData.target_audiences.map((a, i) => ({
+          index: i,
+          id: a.id,
+          name: a.name,
+          uniqueId: a.uniqueId
+        }))
       );
 
-      // Relabel all audience names before saving
-      const relabeledAudiences = relabelAudienceNames(
-        formData.target_audiences,
+      // Sort audiences by ID to match backend expectation, then relabel
+      const sortedAudiences = [...formData.target_audiences].sort((a, b) => {
+        if (a.id && b.id) return a.id - b.id;
+        if (a.id && !b.id) return -1;
+        if (!a.id && b.id) return 1;
+        return 0;
+      });
+
+      console.log("After sorting by ID:", 
+        sortedAudiences.map((a, i) => ({
+          index: i,
+          id: a.id,
+          name: a.name,
+          originalName: a.name
+        }))
       );
 
-      // Update formData with the new distribution while preserving other data
+      // Relabel audiences to maintain sequential numbering
+      const relabeledAudiences = relabelAudienceNames(sortedAudiences);
+
+      console.log("After relabeling:", 
+        relabeledAudiences.map((a, i) => ({
+          index: i,
+          id: a.id,
+          name: a.name,
+          newName: a.name
+        }))
+      );
+
+      // Create mapping from old positions to new positions
+      const originalToSortedMapping = {};
+      formData.target_audiences.forEach((audience, originalIndex) => {
+        const newIndex = relabeledAudiences.findIndex(a => a.id === audience.id);
+        if (newIndex !== -1) {
+          originalToSortedMapping[originalIndex] = newIndex;
+          console.log(`Mapping: original index ${originalIndex} (ID: ${audience.id}) -> new index ${newIndex}`);
+        }
+      });
+
+      console.log("Index mapping:", originalToSortedMapping);
+      console.log("Sample distribution before remapping:", sampleDistribution);
+
+      // Remap sample distribution to match the new sorted order
+      const remappedSampleDistribution = {};
+      formData.countries.forEach(country => {
+        remappedSampleDistribution[country] = {};
+        
+        Object.entries(sampleDistribution[country] || {}).forEach(([key, value]) => {
+          const match = key.match(/^audience-(\d+)$/);
+          if (match) {
+            const originalIndex = parseInt(match[1]);
+            const newIndex = originalToSortedMapping[originalIndex];
+            if (newIndex !== undefined) {
+              const newKey = `audience-${newIndex}`;
+              remappedSampleDistribution[country][newKey] = value;
+              console.log(`Remapping ${country}: ${key} -> ${newKey}`, value);
+            }
+          }
+        });
+      });
+
+      console.log("Sample distribution after remapping:", remappedSampleDistribution);
+
+      // Update formData with the new distribution using remapped data
       const updatedFormData = {
         ...formData,
         target_audiences: relabeledAudiences.map((audience, index) => ({
@@ -855,9 +918,10 @@ function BasicDetails() {
           ir: parseInt(audience.ir) || 0,
           country_samples: Object.fromEntries(
             formData.countries.map((country) => {
-              const distribution = sampleDistribution[country]?.[
+              const distribution = remappedSampleDistribution[country]?.[
                 `audience-${index}`
               ] || { value: 0, isBEMax: false };
+              console.log(`Final mapping for ${country}, audience-${index}:`, distribution);
               return [
                 country,
                 {
@@ -870,37 +934,23 @@ function BasicDetails() {
         })),
       };
 
+      console.log("Final updated audiences with country samples:", 
+        updatedFormData.target_audiences.map(a => ({
+          id: a.id,
+          name: a.name,
+          country_samples: a.country_samples
+        }))
+      );
+
       // Create request payload with deleted_audience_ids explicitly included
       const requestPayload = {
         ...updatedFormData,
         deleted_audience_ids: currentDeletedIds || [],
       };
 
-      console.log("=== DETAILED FRONTEND DEBUG ===");
-      console.log("Current deletedAudienceIds state:", deletedAudienceIds);
-      console.log("Captured currentDeletedIds:", currentDeletedIds);
-      console.log("Original formData.target_audiences:", formData.target_audiences.map(a => ({id: a.id, name: a.name})));
-      console.log("Updated formData.target_audiences:", updatedFormData.target_audiences.map(a => ({id: a.id, name: a.name})));
-      console.log("Final payload before sending:");
-      console.log("- requestPayload keys:", Object.keys(requestPayload));
-      console.log("- deleted_audience_ids in payload:", requestPayload.deleted_audience_ids);
-      console.log("- deleted_audience_ids type:", typeof requestPayload.deleted_audience_ids);
-      console.log("- deleted_audience_ids is array:", Array.isArray(requestPayload.deleted_audience_ids));
-      console.log("- deleted_audience_ids length:", requestPayload.deleted_audience_ids?.length);
-      console.log("- Full request payload:", JSON.stringify(requestPayload, null, 2));
-      console.log("=== END FRONTEND DEBUG ===");
+      console.log("=== END DISTRIBUTION MAPPING DEBUG ===");
 
       if (isEditMode) {
-        console.log(
-          "About to send PUT request with payload keys:",
-          Object.keys(requestPayload),
-        );
-        console.log(
-          "Deleted audience IDs being sent:",
-          requestPayload.deleted_audience_ids,
-        );
-
-        // Use explicit headers to ensure proper JSON serialization
         await axios.put(`/api/bids/${bidId}`, requestPayload, {
           headers: {
             "Content-Type": "application/json",
@@ -908,20 +958,11 @@ function BasicDetails() {
         });
         navigate(`/bids/partner/${bidId}`);
       } else {
-        console.log(
-          "About to send POST request with payload keys:",
-          Object.keys(requestPayload),
-        );
-        console.log(
-          "Deleted audience IDs being sent:",
-          requestPayload.deleted_audience_ids,
-        );
         const response = await axios.post("/api/bids", requestPayload, {
           headers: {
             "Content-Type": "application/json",
           },
         });
-        // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
           lois: selectedLOIs,
@@ -933,19 +974,15 @@ function BasicDetails() {
     } catch (error) {
       console.error("Error saving distribution:", error);
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
         alert(
           `Failed to save sample distribution: ${error.response.data.error || error.message}`,
         );
       } else if (error.request) {
-        // The request was made but no response was received
         console.error("Error request:", error.request);
         alert("Failed to save sample distribution: No response from server");
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error("Error message:", error.message);
         alert(`Failed to save sample distribution: ${error.message}`);
       }
