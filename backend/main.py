@@ -851,7 +851,7 @@ def get_bid(bid_id):
         if bid['bid_date']:
             bid['bid_date'] = bid['bid_date'].strftime('%Y-%m-%d')
 
-        # Get target audiences with sample sizes
+        # Get target audiences with sample sizes - ordered by creation order
         cur.execute(
             """
             SELECT 
@@ -871,6 +871,7 @@ def get_bid(bid_id):
             FROM bid_target_audiences bta
             LEFT JOIN bid_audience_countries bac ON bta.id = bac.audience_id
             WHERE bta.bid_id = %s
+            ORDER BY bta.id, bac.country
         """, (bid_id, ))
 
         rows = cur.fetchall()

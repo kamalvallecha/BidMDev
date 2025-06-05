@@ -413,9 +413,9 @@ function BasicDetails() {
 
             console.log("Processed partners array:", partnersArray);
 
-            const processedAudiences = relabelAudienceNames(
-              bidData.target_audiences || [],
-            );
+            // Sort audiences by ID to maintain consistent order, then relabel
+            const sortedAudiences = (bidData.target_audiences || []).sort((a, b) => (a.id || 0) - (b.id || 0));
+            const processedAudiences = relabelAudienceNames(sortedAudiences);
 
             console.log(
               "Loading audiences with IDs:",
@@ -1308,7 +1308,14 @@ function BasicDetails() {
               <TableHead>
                 <TableRow>
                   <TableCell>Country</TableCell>
-                  {formData?.target_audiences?.map((audience, index) => (
+                  {formData?.target_audiences
+                    ?.sort((a, b) => {
+                      // Extract number from "Audience - X" format for proper sorting
+                      const aNum = parseInt(a.name.split(' - ')[1]) || 0;
+                      const bNum = parseInt(b.name.split(' - ')[1]) || 0;
+                      return aNum - bNum;
+                    })
+                    ?.map((audience, index) => (
                     <TableCell key={index} align="center">
                       {audience.name}
                       <br />
@@ -1323,7 +1330,14 @@ function BasicDetails() {
                 {formData?.countries?.map((country) => (
                   <TableRow key={country}>
                     <TableCell>{country}</TableCell>
-                    {formData?.target_audiences?.map((audience, index) => (
+                    {formData?.target_audiences
+                      ?.sort((a, b) => {
+                        // Extract number from "Audience - X" format for proper sorting
+                        const aNum = parseInt(a.name.split(' - ')[1]) || 0;
+                        const bNum = parseInt(b.name.split(' - ')[1]) || 0;
+                        return aNum - bNum;
+                      })
+                      ?.map((audience, index) => (
                       <TableCell key={index} align="center">
                         <div
                           style={{
