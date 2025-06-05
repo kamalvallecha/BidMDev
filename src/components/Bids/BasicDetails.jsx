@@ -836,24 +836,19 @@ function BasicDetails() {
         deleted_audience_ids: currentDeletedIds || [],
       };
 
+      console.log("=== DETAILED FRONTEND DEBUG ===");
+      console.log("Current deletedAudienceIds state:", deletedAudienceIds);
+      console.log("Captured currentDeletedIds:", currentDeletedIds);
+      console.log("Original formData.target_audiences:", formData.target_audiences.map(a => ({id: a.id, name: a.name})));
+      console.log("Updated formData.target_audiences:", updatedFormData.target_audiences.map(a => ({id: a.id, name: a.name})));
       console.log("Final payload before sending:");
       console.log("- requestPayload keys:", Object.keys(requestPayload));
-      console.log(
-        "- deleted_audience_ids in payload:",
-        requestPayload.deleted_audience_ids,
-      );
-      console.log(
-        "- deleted_audience_ids type:",
-        typeof requestPayload.deleted_audience_ids,
-      );
-      console.log(
-        "- deleted_audience_ids is array:",
-        Array.isArray(requestPayload.deleted_audience_ids),
-      );
-      console.log(
-        "- JSON.stringify test:",
-        JSON.stringify({ deleted_audience_ids: currentDeletedIds }),
-      );
+      console.log("- deleted_audience_ids in payload:", requestPayload.deleted_audience_ids);
+      console.log("- deleted_audience_ids type:", typeof requestPayload.deleted_audience_ids);
+      console.log("- deleted_audience_ids is array:", Array.isArray(requestPayload.deleted_audience_ids));
+      console.log("- deleted_audience_ids length:", requestPayload.deleted_audience_ids?.length);
+      console.log("- Full request payload:", JSON.stringify(requestPayload, null, 2));
+      console.log("=== END FRONTEND DEBUG ===");
 
       if (isEditMode) {
         console.log(
