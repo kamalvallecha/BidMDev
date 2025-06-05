@@ -926,10 +926,11 @@ def get_bid(bid_id):
                 })
                 seen_partners.add(row['partner_id'])
 
-        lois = list(set([r['loi'] for r in partner_lois]))
+        lois = list(set([r['loi'] for r in partner_lois])) if partner_lois else []
 
         response = {
-            **bid, 'target_audiences': list(target_audiences.values()),
+            **bid, 
+            'target_audiences': list(target_audiences.values()),
             'partners': partners,
             'loi': lois
         }
