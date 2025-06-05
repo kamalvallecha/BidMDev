@@ -417,8 +417,14 @@ function BasicDetails() {
               bidData.target_audiences || [],
             );
 
-            console.log("Loading audiences with IDs:", processedAudiences.map(a => ({ name: a.name, id: a.id })));
-            console.log("Initial deletedAudienceIds before setting formData:", deletedAudienceIds);
+            console.log(
+              "Loading audiences with IDs:",
+              processedAudiences.map((a) => ({ name: a.name, id: a.id })),
+            );
+            console.log(
+              "Initial deletedAudienceIds before setting formData:",
+              deletedAudienceIds,
+            );
 
             setFormData((prevData) => ({
               ...prevData,
@@ -431,7 +437,10 @@ function BasicDetails() {
               target_audiences: processedAudiences,
             }));
 
-            console.log("FormData set in edit mode, current deletedAudienceIds:", deletedAudienceIds);
+            console.log(
+              "FormData set in edit mode, current deletedAudienceIds:",
+              deletedAudienceIds,
+            );
 
             // Set selected partners and LOIs
             setSelectedPartners(partnersArray);
@@ -527,10 +536,15 @@ function BasicDetails() {
 
   const removeTargetAudience = (index) => {
     const removed = formData.target_audiences[index];
-    console.log("Removing audience at index:", index, "Audience data:", removed);
+    console.log(
+      "Removing audience at index:",
+      index,
+      "Audience data:",
+      removed,
+    );
 
     // Only track deletion if this audience has an ID (exists in database)
-    if (removed && removed.id && typeof removed.id === 'number') {
+    if (removed && removed.id && typeof removed.id === "number") {
       console.log("Adding audience ID to deletedAudienceIds:", removed.id);
       setDeletedAudienceIds((prevIds) => {
         const newIds = [...prevIds, removed.id];
@@ -674,11 +688,16 @@ function BasicDetails() {
         return;
       }
 
+      // Relabel audiences synchronously
+      const relabeledAudiences = relabelAudienceNames(
+        formData.target_audiences,
+      );
+
       // Initialize sample distribution with existing data in edit mode
       const initialDistribution = {};
       formData.countries.forEach((country) => {
         initialDistribution[country] = {};
-        formData.target_audiences.forEach((audience, index) => {
+        relabeledAudiences.forEach((audience, index) => {
           const existingSample = audience.country_samples?.[country];
           initialDistribution[country][`audience-${index}`] = {
             value: existingSample?.is_best_efforts
@@ -695,6 +714,13 @@ function BasicDetails() {
         "Target audiences before opening modal:",
         formData.target_audiences,
       );
+
+      // Set relabeled audiences in state
+      setFormData((prev) => ({
+        ...prev,
+        target_audiences: relabeledAudiences,
+      }));
+
       setDistributionModalOpen(true);
     } catch (error) {
       console.error("Error:", error);
@@ -762,9 +788,15 @@ function BasicDetails() {
 
       // Capture current deletedAudienceIds state at submission time
       const currentDeletedIds = [...deletedAudienceIds];
-      console.log("Captured deletedAudienceIds at submission:", currentDeletedIds);
+      console.log(
+        "Captured deletedAudienceIds at submission:",
+        currentDeletedIds,
+      );
       console.log("Type of currentDeletedIds:", typeof currentDeletedIds);
-      console.log("Array.isArray(currentDeletedIds):", Array.isArray(currentDeletedIds));
+      console.log(
+        "Array.isArray(currentDeletedIds):",
+        Array.isArray(currentDeletedIds),
+      );
 
       // Relabel all audience names before saving
       const relabeledAudiences = relabelAudienceNames(
@@ -800,34 +832,58 @@ function BasicDetails() {
       // Create request payload with deleted_audience_ids explicitly included
       const requestPayload = {
         ...updatedFormData,
-        deleted_audience_ids: currentDeletedIds || []
+        deleted_audience_ids: currentDeletedIds || [],
       };
 
       console.log("Final payload before sending:");
       console.log("- requestPayload keys:", Object.keys(requestPayload));
-      console.log("- deleted_audience_ids in payload:", requestPayload.deleted_audience_ids);
-      console.log("- deleted_audience_ids type:", typeof requestPayload.deleted_audience_ids);
-      console.log("- deleted_audience_ids is array:", Array.isArray(requestPayload.deleted_audience_ids));
-      console.log("- JSON.stringify test:", JSON.stringify({ deleted_audience_ids: currentDeletedIds }));
+      console.log(
+        "- deleted_audience_ids in payload:",
+        requestPayload.deleted_audience_ids,
+      );
+      console.log(
+        "- deleted_audience_ids type:",
+        typeof requestPayload.deleted_audience_ids,
+      );
+      console.log(
+        "- deleted_audience_ids is array:",
+        Array.isArray(requestPayload.deleted_audience_ids),
+      );
+      console.log(
+        "- JSON.stringify test:",
+        JSON.stringify({ deleted_audience_ids: currentDeletedIds }),
+      );
 
       if (isEditMode) {
-        console.log("About to send PUT request with payload keys:", Object.keys(requestPayload));
-        console.log("Deleted audience IDs being sent:", requestPayload.deleted_audience_ids);
+        console.log(
+          "About to send PUT request with payload keys:",
+          Object.keys(requestPayload),
+        );
+        console.log(
+          "Deleted audience IDs being sent:",
+          requestPayload.deleted_audience_ids,
+        );
 
         // Use explicit headers to ensure proper JSON serialization
         await axios.put(`/api/bids/${bidId}`, requestPayload, {
           headers: {
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         });
         navigate(`/bids/partner/${bidId}`);
       } else {
-        console.log("About to send POST request with payload keys:", Object.keys(requestPayload));
-        console.log("Deleted audience IDs being sent:", requestPayload.deleted_audience_ids);
+        console.log(
+          "About to send POST request with payload keys:",
+          Object.keys(requestPayload),
+        );
+        console.log(
+          "Deleted audience IDs being sent:",
+          requestPayload.deleted_audience_ids,
+        );
         const response = await axios.post("/api/bids", requestPayload, {
           headers: {
-            'Content-Type': 'application/json'
-          }
+            "Content-Type": "application/json",
+          },
         });
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
@@ -1078,8 +1134,9 @@ function BasicDetails() {
                             "ta_category",
                             e.target.value,
                           )
-                        }>
-                          {taCategories.map((category) => (
+                        }
+                      >
+                        {taCategories.map((category) => (
                           <MenuItem key={category} value={category}>
                             {category}
                           </MenuItem>
