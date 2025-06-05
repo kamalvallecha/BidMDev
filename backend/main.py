@@ -871,9 +871,12 @@ def get_bid(bid_id):
             FROM bid_target_audiences bta
             LEFT JOIN bid_audience_countries bac ON bta.id = bac.audience_id
             WHERE bta.bid_id = %s
+            ORDER BY bta.id
         """, (bid_id, ))
 
         rows = cur.fetchall()
+        print(f"=== BACKEND AUDIENCE DEBUG FOR BID {bid_id} ===")
+        print(f"Raw audience rows from DB: {[(r['id'], r['name']) for r in rows]}")
 
         # Format target audiences with their sample sizes
         target_audiences = {}
@@ -902,6 +905,19 @@ def get_bid(bid_id):
                         'is_best_efforts': row['country_is_best_efforts']
                     }
 
+        # Convert to list and sort by ID to ensure consistent ordering
+        target_audiences_list = list(target_audiences.values())
+        target_audiences_list.sort(key=lambda x: x['id'])
+        
+        print(f"Processed audience list (sorted by ID): {[(a['id'], a['name']) for a in target_audiences_list]}")
+        print(f"=== END BACKEND AUDIENCE DEBUG ===")
+
+        response = {
+            **bid, 'target_audiences': target_audiences_list,
+            'partners': partners,
+            'loi': lois
+        }
+
         # Get partners and LOIs with full partner details
         cur.execute(
             """
@@ -927,12 +943,6 @@ def get_bid(bid_id):
                 seen_partners.add(row['partner_id'])
 
         lois = list(set([r['loi'] for r in partner_lois]))
-
-        response = {
-            **bid, 'target_audiences': list(target_audiences.values()),
-            'partners': partners,
-            'loi': lois
-        }
 
         return jsonify(response)
 
