@@ -912,9 +912,15 @@ def get_bid(bid_id):
                 }
                 print(f"Added country sample: audience {audience_id}, country {row['country']}, size {row['sample_size']}")
 
-        # Sort audiences by ID to maintain consistent order
+        # Sort audiences by ID to maintain consistent database order, then renumber sequentially
         sorted_audiences = sorted(target_audiences.values(), key=lambda x: x['id'])
-        print(f"Final sorted audience order: {[f'ID:{a['id']}-{a['name']}' for a in sorted_audiences]}")
+        
+        # Renumber audiences sequentially based on their sorted database ID order
+        for index, audience in enumerate(sorted_audiences):
+            audience['name'] = f"Audience - {index + 1}"
+            audience['uniqueId'] = f"audience-{index}"
+        
+        print(f"Final sorted audience order after renumbering: {[f'ID:{a['id']}-{a['name']}' for a in sorted_audiences]}")
         print(f"=== END BACKEND DEBUG ===\n")
 
         # Get partners and LOIs with full partner details
