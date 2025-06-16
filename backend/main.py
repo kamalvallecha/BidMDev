@@ -2848,11 +2848,9 @@ def get_next_bid_number():
         """)
         current_max = cur.fetchone()[0]
         
-        # Ensure we start from 33485 minimum
-        if current_max < 33484:
-            next_bid_number = "33485"
-        else:
-            next_bid_number = str(current_max + 1)
+        # The next bid number should always be current_max + 1
+        # Since your max is 33484, the next should be 33485
+        next_bid_number = str(current_max + 1)
 
         return jsonify({"next_bid_number": next_bid_number})
 
