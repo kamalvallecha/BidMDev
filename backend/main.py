@@ -163,18 +163,31 @@ def get_db_connection():
         # Use Replit's DATABASE_URL if available, otherwise fall back to individual env vars
         database_url = os.getenv('DATABASE_URL')
         if database_url:
+            print(f"Connecting to database using DATABASE_URL")
             return psycopg2.connect(database_url)
         else:
             # Fallback to individual environment variables
+            host = os.getenv('PGHOST', '127.0.0.1')
+            database = os.getenv('PGDATABASE', 'BidM')
+            user = os.getenv('PGUSER', 'postgres')
+            password = os.getenv('PGPASSWORD', 'root123')
+            port = os.getenv('PGPORT', '5432')
+            
+            print(f"Connecting to database: host={host}, database={database}, user={user}, port={port}")
             return psycopg2.connect(
-                host=os.getenv('PGHOST', '127.0.0.1'),
-                database=os.getenv('PGDATABASE', 'BidM'),
-                user=os.getenv('PGUSER', 'postgres'),
-                password=os.getenv('PGPASSWORD', 'root123'),
-                port=os.getenv('PGPORT', '5432')
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port
             )
     except Exception as e:
         print(f"Database connection error: {str(e)}")
+        print(f"Available environment variables: DATABASE_URL={'SET' if os.getenv('DATABASE_URL') else 'NOT SET'}")
+        print(f"PGHOST={os.getenv('PGHOST', 'NOT SET')}")
+        print(f"PGDATABASE={os.getenv('PGDATABASE', 'NOT SET')}")
+        print(f"PGUSER={os.getenv('PGUSER', 'NOT SET')}")
+        print(f"PGPORT={os.getenv('PGPORT', 'NOT SET')}")
         raise e
 
 
@@ -5241,22 +5254,34 @@ def debug_routes():
 # Move app.run to the end after all routes are defined
 if __name__ == '__main__':
     try:
+        print("Initializing application...")
         # Initialize database when app starts
         init_db()
         add_field_close_date_column()
         standardize_invoice_status()
+        print("Database initialization completed")
         
-        print("Starting server on port 5000...")
+        port = int(os.environ.get('PORT', 5000))
+        print(f"Starting server on port {port}...")
+        
+        # Use Waitress for production
         from waitress import serve
         serve(app,
               host='0.0.0.0',
-              port=5000,
+              port=port,
               threads=6,
               connection_limit=1000,
               cleanup_interval=8,
-              channel_timeout=300,
-              url_scheme='https')
+              channel_timeout=300)
     except Exception as e:
-        print(f"Error starting server: {str(e)}")
-        # Fallback to Flask dev server
-        app.run(host='0.0.0.0', port=5000, debug=True)
+        print(f"Error starting server with Waitress: {str(e)}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        try:
+            # Fallback to Flask dev server
+            port = int(os.environ.get('PORT', 5000))
+            print(f"Falling back to Flask dev server on port {port}")
+            app.run(host='0.0.0.0', port=port, debug=False)
+        except Exception as fallback_error:
+            print(f"Fallback server also failed: {str(fallback_error)}")
+            raise
