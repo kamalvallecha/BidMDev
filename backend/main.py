@@ -2840,12 +2840,16 @@ def get_next_bid_number():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Get the highest bid number
+        # Get the highest bid number, but ensure minimum of 33484
         cur.execute("""
-            SELECT COALESCE(MAX(CAST(bid_number AS INTEGER)), 39999) 
+            SELECT COALESCE(MAX(CAST(bid_number AS INTEGER)), 33484) 
             FROM bids
         """)
         current_max = cur.fetchone()[0]
+        
+        # Ensure we don't go below 33485
+        if current_max < 33484:
+            current_max = 33484
 
         # Generate next bid number
         next_bid_number = str(current_max + 1)
