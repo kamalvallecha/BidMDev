@@ -2852,12 +2852,15 @@ def get_next_bid_number():
         
         if result:
             current_max = int(result[0])
+            print(f"Found current max bid number: {current_max}")
         else:
             # If no numeric bid numbers found, start from 33484
             current_max = 33484
+            print("No numeric bid numbers found, starting from 33484")
         
         # The next bid number should always be current_max + 1
         next_bid_number = str(current_max + 1)
+        print(f"Returning next bid number: {next_bid_number}")
 
         return jsonify({"next_bid_number": next_bid_number})
 
