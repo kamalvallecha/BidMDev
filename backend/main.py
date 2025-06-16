@@ -5241,6 +5241,11 @@ def debug_routes():
 # Move app.run to the end after all routes are defined
 if __name__ == '__main__':
     try:
+        # Initialize database when app starts
+        init_db()
+        add_field_close_date_column()
+        standardize_invoice_status()
+        
         print("Starting server on port 5000...")
         from waitress import serve
         serve(app,
@@ -5253,3 +5258,5 @@ if __name__ == '__main__':
               url_scheme='https')
     except Exception as e:
         print(f"Error starting server: {str(e)}")
+        # Fallback to Flask dev server
+        app.run(host='0.0.0.0', port=5000, debug=True)
