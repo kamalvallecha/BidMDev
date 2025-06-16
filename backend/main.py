@@ -2840,19 +2840,19 @@ def get_next_bid_number():
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Get the highest bid number, but ensure minimum of 33484
+        # Get the highest bid number from existing bids
         cur.execute("""
-            SELECT COALESCE(MAX(CAST(bid_number AS INTEGER)), 33484) 
+            SELECT COALESCE(MAX(CAST(bid_number AS INTEGER)), 0) 
             FROM bids
+            WHERE bid_number ~ '^[0-9]+$'
         """)
         current_max = cur.fetchone()[0]
         
-        # Ensure we don't go below 33485
+        # Ensure we start from 33485 minimum
         if current_max < 33484:
-            current_max = 33484
-
-        # Generate next bid number
-        next_bid_number = str(current_max + 1)
+            next_bid_number = "33485"
+        else:
+            next_bid_number = str(current_max + 1)
 
         return jsonify({"next_bid_number": next_bid_number})
 
