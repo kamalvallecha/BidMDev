@@ -18,7 +18,7 @@ def rehash_passwords():
         
         # Set a default password for everyone
         default_password = "Course5@123"
-        new_password_hash = generate_password_hash(default_password, method='sha256')
+        new_password_hash = generate_password_hash(default_password, method='pbkdf2:sha256')
         
         # Update all users
         for user in users:
