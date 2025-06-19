@@ -27,7 +27,7 @@ function formToCSV({ data, form, pmf, currency }) {
   if (!data || !form) return '';
   const rows = [
     [
-      'Bid Number', 'Project Name', 'Project Requirement', 'Partner Name', 'LOI', 'Audience', 'Country', 'BE/Max', 'Commitment', 'CPI', 'Timeline', 'Comments'
+      'Bid Number', 'Project Name', 'Project Requirement', 'Partner Name', 'LOI', 'Audience', 'IR', 'Country', 'BE/Max', 'Commitment', 'CPI', 'Timeline', 'Comments'
     ]
   ];
   for (const loi of data.lois || []) {
@@ -42,7 +42,8 @@ function formToCSV({ data, form, pmf, currency }) {
           data.bid?.project_requirement || '',
           data.partner?.partner_name || '',
           loi,
-          aud.name || '',
+          aud.audience_name || '',
+          aud.ir || '',
           country,
           c.commitment_type === 'be_max' ? 'Yes' : '',
           c.commitment,
