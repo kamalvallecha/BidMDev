@@ -103,11 +103,23 @@ function PartnerPublicForm() {
         }
         setPMF(initialPMF);
         setCurrency(initialCurrency);
+        // Sort audiences by ID to maintain consistent database order, then renumber sequentially
+        const sortedAudiences = (res.data.audiences || []).sort((a, b) => (a.id || 0) - (b.id || 0));
+        
+        // Renumber audiences sequentially based on their sorted database ID order
+        const processedAudiences = sortedAudiences.map((audience, index) => ({
+          ...audience,
+          audience_name: `Audience - ${index + 1}`,
+        }));
+        
+        // Update the data with processed audiences
+        res.data.audiences = processedAudiences;
+
         // Initialize form state by LOI, pre-filling with existing responses if available
         const initialForm = {};
         (res.data.lois || []).forEach(loi => {
           initialForm[loi] = {};
-          (res.data.audiences || []).forEach(aud => {
+          processedAudiences.forEach(aud => {
             const pr = (res.data.partner_responses || []).find(r => r.loi === loi);
             const parList = (res.data.partner_audience_responses || []).filter(par => par.partner_response_id === pr?.id && par.audience_id === aud.id);
             const timeline = parList.length > 0 ? (parList[0].timeline_days ?? '') : '';
