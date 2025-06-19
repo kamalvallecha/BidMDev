@@ -16,10 +16,7 @@ export default defineConfig({
         secure: true,
       },
     },
-    allowedHosts: [
-      "*.replit.dev",
-      "*.replit.app"
-    ],
+    allowedHosts: "all",
   },
   preview: {
     host: "0.0.0.0",
