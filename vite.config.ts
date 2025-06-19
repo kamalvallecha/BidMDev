@@ -16,7 +16,12 @@ export default defineConfig({
         secure: true,
       },
     },
-    allowedHosts: "all",
+    allowedHosts: [
+      "all",
+      "852a9f13-ef26-4807-ab24-71207044c362-00-1fo3iwwradvx1.sisko.replit.dev",
+      "*.replit.dev",
+      "*.replit.app"
+    ],
   },
   preview: {
     host: "0.0.0.0",
