@@ -1021,10 +1021,16 @@ function BasicDetails() {
   const copyTargetAudience = (index) => {
     setFormData((prev) => {
       const audienceToCopy = { ...prev.target_audiences[index] };
-      // Remove the name and ID for new copy, will relabel below
+      // Remove the name, ID, and uniqueId for new copy, will relabel below
       delete audienceToCopy.name;
       delete audienceToCopy.id; // Ensure copied audience is treated as new
       delete audienceToCopy.uniqueId; // Reset uniqueId as well
+      
+      // Also remove any country_samples that might reference the old audience ID
+      if (audienceToCopy.country_samples) {
+        delete audienceToCopy.country_samples;
+      }
+      
       const newAudiences = [...prev.target_audiences, audienceToCopy];
       return {
         ...prev,
