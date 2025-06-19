@@ -314,6 +314,11 @@ function PartnerPublicForm() {
               <Typography variant="body2" gutterBottom>
                 Broader Category: {aud.broader_category} | Mode: {aud.mode} | IR: {aud.ir}%
               </Typography>
+              {aud.exact_ta_definition && (
+                <Typography variant="body2" gutterBottom sx={{ fontStyle: 'italic', mb: 2 }}>
+                  <strong>Exact TA Definition:</strong> {aud.exact_ta_definition}
+                </Typography>
+              )}
               <TableContainer>
                 <Table size="small">
                   <TableHead>
