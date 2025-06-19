@@ -377,17 +377,17 @@ function BasicDetails() {
         );
 
         // Get next bid number first if it's a new bid
-        if (!isEditMode) {
-          try {
-            const bidNumberResponse = await axios.get("/api/bids/next-number");
-            setFormData({
-              ...defaultFormData,
-              bid_number: bidNumberResponse.data.next_bid_number,
-            });
-          } catch (error) {
-            console.error("Error getting next bid number:", error);
-          }
-        }
+        // if (!isEditMode) {
+        //   try {
+        //     const bidNumberResponse = await axios.get("/api/bids/next-number");
+        //     setFormData({
+        //       ...defaultFormData,
+        //       bid_number: bidNumberResponse.data.next_bid_number,
+        //     });
+        //   } catch (error) {
+        //     console.error("Error getting next bid number:", error);
+        //   }
+        // }
 
         if (isEditMode && bidId) {
           console.log("Fetching bid data for ID:", bidId);
@@ -623,7 +623,7 @@ function BasicDetails() {
     console.log(`=== DISTRIBUTION CHANGE DEBUG ===`);
     console.log(`Country: ${country}, Index: ${audienceIndex}, Value: ${value}, isBEMax: ${isBEMax}`);
     console.log(`Audience at index ${audienceIndex}:`, formData.target_audiences?.[audienceIndex]);
-    
+
     setSampleDistribution((prev) => {
       const currentValue =
         prev[country]?.[`audience-${audienceIndex}`]?.value ?? "";
@@ -903,7 +903,7 @@ function BasicDetails() {
       const remappedSampleDistribution = {};
       formData.countries.forEach(country => {
         remappedSampleDistribution[country] = {};
-        
+
         Object.entries(sampleDistribution[country] || {}).forEach(([key, value]) => {
           const match = key.match(/^audience-(\d+)$/);
           if (match) {
@@ -1033,9 +1033,11 @@ function BasicDetails() {
                 label="Bid Number"
                 name="bid_number"
                 value={formData.bid_number}
+                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: true,
+                  readOnly: false,
                 }}
+                helperText={!isEditMode ? "Enter a unique bid number manually" : ""}
               />
               <TextField
                 required
@@ -1439,7 +1441,7 @@ function BasicDetails() {
                         distributionData,
                         distributionExists: !!distributionData
                       });
-                      
+
                       return (
                         <TableCell key={`body-${index}`} align="center">
                           <div

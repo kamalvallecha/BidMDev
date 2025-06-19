@@ -751,6 +751,11 @@ def create_bid():
         conn = get_db_connection()
         cur = conn.cursor()
 
+        # Check if bid number already exists
+        cur.execute('SELECT id FROM bids WHERE bid_number = %s', (data['bid_number'],))
+        if cur.fetchone():
+            return jsonify({"error": "Bid number already exists. Please choose a different number."}), 400
+
         # Insert new bid record
         cur.execute(
             '''
@@ -2850,41 +2855,12 @@ def save_invoice_data(bid_number):
 @app.route('/api/bids/next-number', methods=['GET'])
 def get_next_bid_number():
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        # Get all numeric bid numbers, convert to integers, and find the max
-        cur.execute("""
-            SELECT bid_number 
-            FROM bids
-            WHERE bid_number ~ '^[0-9]+$'
-            ORDER BY CAST(bid_number AS INTEGER) DESC
-            LIMIT 1
-        """)
-        result = cur.fetchone()
-        
-        if result:
-            current_max = int(result[0])
-            print(f"Found current max bid number: {current_max}")
-        else:
-            # If no numeric bid numbers found, start from 33484
-            current_max = 33484
-            print("No numeric bid numbers found, starting from 33484")
-        
-        # The next bid number should always be current_max + 1
-        next_bid_number = str(current_max + 1)
-        print(f"Returning next bid number: {next_bid_number}")
-
-        return jsonify({"next_bid_number": next_bid_number})
+        # Return empty string to indicate manual entry is required
+        return jsonify({"next_bid_number": ""})
 
     except Exception as e:
         print(f"Error getting next bid number: {str(e)}")
         return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
 
 
 @app.route('/api/bids/<bid_id>/status', methods=['POST'])
