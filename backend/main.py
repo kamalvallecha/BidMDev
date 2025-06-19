@@ -1100,10 +1100,18 @@ def update_bid(bid_id):
         else:
             print("No audiences to delete")
 
-        # 4. Update or insert target audiences (by ID, not index)
+        # 4. Update or insert target audiences 
+        # Track which existing audience IDs have been updated to prevent duplicates
+        updated_audience_ids = set()
+        
         for audience in data['target_audiences']:
             audience_id = audience.get('id')
-            if audience_id and audience_id in existing_audience_ids:
+            
+            # If this audience has an ID and exists in the database and hasn't been updated yet
+            if (audience_id and 
+                audience_id in existing_audience_ids and 
+                audience_id not in updated_audience_ids):
+                
                 # Update existing audience by ID
                 cur.execute(
                     """
@@ -1126,8 +1134,9 @@ def update_bid(bid_id):
                      audience['sample_required'], audience['ir'],
                      audience.get('comments', ''), audience.get('is_best_efforts', False), audience_id, bid_id))
                 print(f"Updated audience ID: {audience_id}")
+                updated_audience_ids.add(audience_id)
             else:
-                # Insert new audience
+                # Insert new audience (either no ID, doesn't exist, or is a duplicate)
                 cur.execute(
                     """
                     INSERT INTO bid_target_audiences (
