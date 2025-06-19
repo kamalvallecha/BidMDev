@@ -209,7 +209,7 @@ function PartnerPublicForm() {
 
   // Helper to check if all required fields are filled for all LOIs
   const isFormComplete = () => {
-    if (!pmf || !currency) return false;
+    if (pmf === '' || pmf === null || pmf === undefined || !currency) return false;
     for (const loi in form) {
       const loiData = form[loi];
       if (!loiData) return false;
