@@ -549,8 +549,8 @@ function BasicDetails() {
       removed,
     );
 
-    // Only track deletion if this audience has an ID (exists in database)
-    if (removed && removed.id && typeof removed.id === "number") {
+    // Only track deletion if this audience has a valid numeric ID (exists in database)
+    if (removed && removed.id && typeof removed.id === "number" && removed.id > 0) {
       console.log("Adding audience ID to deletedAudienceIds:", removed.id);
       setDeletedAudienceIds((prevIds) => {
         const newIds = [...prevIds, removed.id];
@@ -558,7 +558,7 @@ function BasicDetails() {
         return newIds;
       });
     } else {
-      console.log("No valid ID found for removed audience:", removed);
+      console.log("No valid database ID found for removed audience:", removed);
     }
 
     setFormData((prev) => {
@@ -853,24 +853,26 @@ function BasicDetails() {
         }))
       );
 
-      // Sort audiences by ID to match backend expectation, then renumber
-      const sortedAudiences = [...formData.target_audiences].sort((a, b) => {
-        if (a.id && b.id) return a.id - b.id;
-        if (a.id && !b.id) return -1;
-        if (!a.id && b.id) return 1;
-        return 0;
-      });
+      // Separate existing audiences (with IDs) from new audiences (without IDs)
+      const existingAudiences = formData.target_audiences.filter(a => a.id && typeof a.id === "number" && a.id > 0);
+      const newAudiences = formData.target_audiences.filter(a => !a.id || typeof a.id !== "number" || a.id <= 0);
+      
+      // Sort existing audiences by ID to maintain database order
+      const sortedExistingAudiences = existingAudiences.sort((a, b) => a.id - b.id);
+      
+      // Combine existing audiences first, then new audiences
+      const sortedAudiences = [...sortedExistingAudiences, ...newAudiences];
 
-      console.log("After sorting by ID:", 
+      console.log("After sorting (existing first, then new):", 
         sortedAudiences.map((a, i) => ({
           index: i,
           id: a.id,
           name: a.name,
-          originalName: a.name
+          isNew: !a.id || typeof a.id !== "number" || a.id <= 0
         }))
       );
 
-      // Renumber audiences sequentially based on their sorted database ID order
+      // Renumber audiences sequentially
       const relabeledAudiences = sortedAudiences.map((audience, index) => ({
         ...audience,
         name: `Audience - ${index + 1}`,
@@ -882,17 +884,31 @@ function BasicDetails() {
           index: i,
           id: a.id,
           name: a.name,
-          newName: a.name
+          isNew: !a.id || typeof a.id !== "number" || a.id <= 0
         }))
       );
 
       // Create mapping from old positions to new positions
       const originalToSortedMapping = {};
       formData.target_audiences.forEach((audience, originalIndex) => {
-        const newIndex = relabeledAudiences.findIndex(a => a.id === audience.id);
+        let newIndex;
+        if (audience.id && typeof audience.id === "number" && audience.id > 0) {
+          // For existing audiences, find by ID
+          newIndex = relabeledAudiences.findIndex(a => a.id === audience.id);
+        } else {
+          // For new audiences, find by content match since they don't have IDs
+          newIndex = relabeledAudiences.findIndex((a, idx) => 
+            (!a.id || typeof a.id !== "number" || a.id <= 0) &&
+            a.ta_category === audience.ta_category &&
+            a.broader_category === audience.broader_category &&
+            a.exact_ta_definition === audience.exact_ta_definition &&
+            !originalToSortedMapping.hasOwnProperty(Object.keys(originalToSortedMapping).find(key => originalToSortedMapping[key] === idx))
+          );
+        }
+        
         if (newIndex !== -1) {
           originalToSortedMapping[originalIndex] = newIndex;
-          console.log(`Mapping: original index ${originalIndex} (ID: ${audience.id}) -> new index ${newIndex}`);
+          console.log(`Mapping: original index ${originalIndex} (ID: ${audience.id || 'NEW'}) -> new index ${newIndex}`);
         }
       });
 
@@ -1005,8 +1021,10 @@ function BasicDetails() {
   const copyTargetAudience = (index) => {
     setFormData((prev) => {
       const audienceToCopy = { ...prev.target_audiences[index] };
-      // Remove the name, will relabel below
+      // Remove the name and ID for new copy, will relabel below
       delete audienceToCopy.name;
+      delete audienceToCopy.id; // Ensure copied audience is treated as new
+      delete audienceToCopy.uniqueId; // Reset uniqueId as well
       const newAudiences = [...prev.target_audiences, audienceToCopy];
       return {
         ...prev,
