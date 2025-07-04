@@ -1,4 +1,3 @@
-
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -7,9 +6,9 @@ load_dotenv()
 
 class Config:
     # Database configuration
-    DATABASE_URL = os.getenv('DATABASE_URL', 'postgres://postgres:admin123@ep-royal-math-a4zavfz2.us-east-1.aws.neon.tech:5432/BidM?sslmode=require')
+    DATABASE_URL = "postgresql://postgres:root123@localhost:5432/BidM"
 
-    # JWT configuration 
+    # JWT configuration
     SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key')
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
@@ -17,5 +16,3 @@ class Config:
     # Other configuration
     DEBUG = True
     CORS_HEADERS = 'Content-Type'
-    HOST = '0.0.0.0'
-    PORT = 5000

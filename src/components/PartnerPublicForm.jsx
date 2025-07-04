@@ -119,7 +119,7 @@ function PartnerPublicForm() {
             (res.data.country_samples || []).filter(cs => cs.audience_id === aud.id).forEach(cs => {
               const par = parList.find(p => p.country === cs.country);
               initialForm[loi][aud.id].countries[cs.country] = {
-                commitment_type: cs.is_best_efforts ? 'be_max' : 'fixed',
+                commitment_type: par?.commitment_type === 'be_max' || cs.is_best_efforts ? 'be_max' : 'fixed',
                 commitment: par ? par.commitment ?? '' : '',
                 cpi: par ? par.cpi ?? '' : '',
               };

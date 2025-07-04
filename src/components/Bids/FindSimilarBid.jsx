@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   Box, Button, TextField, MenuItem, Typography, Paper, Chip, Table, TableHead, TableRow, TableCell, TableBody, CircularProgress, Grid, Dialog, DialogTitle, DialogContent, DialogActions, Checkbox
 } from '@mui/material';
@@ -6,6 +6,7 @@ import { useTheme } from '@mui/material/styles';
 import axios from '../../api/axios';
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
+import { useAuth } from '../../contexts/AuthContext';
 
 const taCategories = ['B2B', 'B2C', 'HC - HCP', 'HC - Patient'];
 const broaderCategories = [
@@ -28,6 +29,9 @@ export default function FindSimilarBid() {
   const [modalSelected, setModalSelected] = useState({});
   const [expandedRows, setExpandedRows] = useState(new Set());
   const theme = useTheme();
+  const { user: currentUser } = useAuth();
+  const [accessRequestedBid, setAccessRequestedBid] = useState(null);
+  const [accessRequestStatus, setAccessRequestStatus] = useState('');
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -103,6 +107,41 @@ export default function FindSimilarBid() {
       }
       return newSet;
     });
+  };
+
+  // Helper: check if user has access to a bid (reuse logic from BidList)
+  const hasAccessToBid = (bid) => {
+    const normalizedUserTeam = (currentUser?.team || '').replace(/\s+/g, '').toLowerCase();
+    const normalizedBidTeam = (bid.rows[0]?.team || '').replace(/\s+/g, '').toLowerCase();
+    const isOwnTeam = normalizedUserTeam === normalizedBidTeam;
+    const isSuperAdmin = currentUser?.role === 'super_admin' || (currentUser?.name && currentUser.name.trim().toLowerCase().includes('kamal vallecha'));
+    const isKamal = currentUser?.name && currentUser.name.trim().toLowerCase().includes('kamal vallecha');
+    // For demo, assume user has access if own team, super admin, or Kamal
+    return isSuperAdmin || isOwnTeam || isKamal;
+  };
+
+  // Request access handler
+  const handleRequestAccess = async (bid) => {
+    setAccessRequestedBid(bid.bid_number);
+    setAccessRequestStatus('');
+    try {
+      await axios.post('/api/bids/request-access', {
+        bidId: bid.rows[0]?.bid_id || bid.rows[0]?.id || bid.bid_number,
+        bidNumber: bid.bid_number,
+        studyName: bid.rows[0]?.study_name || bid.exact_ta_definition,
+        userEmail: currentUser?.email,
+        userName: currentUser?.name,
+        userTeam: currentUser?.team,
+      });
+      setAccessRequestStatus('Request sent!');
+    } catch (error) {
+      setAccessRequestStatus('Failed to send request.');
+    } finally {
+      setTimeout(() => {
+        setAccessRequestedBid(null);
+        setAccessRequestStatus('');
+      }, 3000);
+    }
   };
 
   return (
@@ -442,14 +481,25 @@ export default function FindSimilarBid() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setModalOpen(false)}>Close</Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleCopySelected}
-            disabled={Object.values(modalSelected).filter(Boolean).length === 0}
-          >
-            Copy Selected Partners
-          </Button>
+          {modalBid && !hasAccessToBid(modalBid) ? (
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => handleRequestAccess(modalBid)}
+              disabled={accessRequestedBid === modalBid.bid_number}
+            >
+              {accessRequestedBid === modalBid.bid_number ? accessRequestStatus || "Requesting..." : "Request Access"}
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleCopySelected}
+              disabled={Object.values(modalSelected).filter(Boolean).length === 0}
+            >
+              Copy Selected Partners
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Box>

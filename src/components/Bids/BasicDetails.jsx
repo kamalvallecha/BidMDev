@@ -26,11 +26,13 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import axios from "../../api/axios";
 import "./Bids.css";
 import GlobeIcon from "@mui/icons-material/Public"; // Import globe icon
+import { useAuth } from "../../contexts/AuthContext";
 
 function BasicDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const { bidId } = useParams();
+  const { user: currentUser } = useAuth();
   const isEditMode = !!bidId;
 
   // Add debug log for edit mode
@@ -354,6 +356,14 @@ function BasicDetails() {
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [sampleDistribution, setSampleDistribution] = useState({});
   const [loading, setLoading] = useState(true);
+
+  // Filter VM contacts to only show those from the current user's team
+  const filteredVMContacts = vmContacts.filter(
+    (vm) =>
+      vm.team &&
+      vm.team.toLowerCase().replace(/\s+/g, '') ===
+        currentUser.team.toLowerCase().replace(/\s+/g, '')
+  );
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -722,7 +732,14 @@ function BasicDetails() {
         await axios.put(`/api/bids/${bidId}`, updatedFormData);
         navigate(`/bids/partner/${bidId}`);
       } else {
-        const response = await axios.post("/api/bids", updatedFormData);
+        // Add user information for new bids
+        const bidDataWithUser = {
+          ...updatedFormData,
+          created_by: currentUser?.id,
+          team: currentUser?.team
+        };
+        
+        const response = await axios.post("/api/bids", bidDataWithUser);
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
@@ -766,6 +783,8 @@ function BasicDetails() {
       };
     });
   };
+
+
 
   return (
     <div className="bid-form-container">
@@ -838,7 +857,7 @@ function BasicDetails() {
                   value={formData.vm_contact}
                   onChange={handleInputChange}
                 >
-                  {vmContacts.map((contact) => (
+                  {filteredVMContacts.map((contact) => (
                     <MenuItem key={contact.id} value={contact.id}>
                       {contact.vm_name}
                     </MenuItem>
