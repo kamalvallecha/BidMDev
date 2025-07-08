@@ -122,7 +122,7 @@ def check_expiring_links():
                 Bid Management Team
                 """
 
-                mail.send(msg)
+                #mail.send(msg)
 
                 # Mark notification as sent
                 cur.execute(
@@ -172,18 +172,20 @@ def get_db_connection():
             user = os.getenv('PGUSER', 'postgres')
             password = os.getenv('PGPASSWORD', 'root123')
             port = os.getenv('PGPORT', '5432')
-            
-            print(f"Connecting to database: host={host}, database={database}, user={user}, port={port}")
-            return psycopg2.connect(
-                host=host,
-                database=database,
-                user=user,
-                password=password,
-                port=port
+
+            print(
+                f"Connecting to database: host={host}, database={database}, user={user}, port={port}"
             )
+            return psycopg2.connect(host=host,
+                                    database=database,
+                                    user=user,
+                                    password=password,
+                                    port=port)
     except Exception as e:
         print(f"Database connection error: {str(e)}")
-        print(f"Available environment variables: DATABASE_URL={'SET' if os.getenv('DATABASE_URL') else 'NOT SET'}")
+        print(
+            f"Available environment variables: DATABASE_URL={'SET' if os.getenv('DATABASE_URL') else 'NOT SET'}"
+        )
         print(f"PGHOST={os.getenv('PGHOST', 'NOT SET')}")
         print(f"PGDATABASE={os.getenv('PGDATABASE', 'NOT SET')}")
         print(f"PGUSER={os.getenv('PGUSER', 'NOT SET')}")
@@ -752,9 +754,13 @@ def create_bid():
         cur = conn.cursor()
 
         # Check if bid number already exists
-        cur.execute('SELECT id FROM bids WHERE bid_number = %s', (data['bid_number'],))
+        cur.execute('SELECT id FROM bids WHERE bid_number = %s',
+                    (data['bid_number'], ))
         if cur.fetchone():
-            return jsonify({"error": "Bid number already exists. Please choose a different number."}), 400
+            return jsonify({
+                "error":
+                "Bid number already exists. Please choose a different number."
+            }), 400
 
         # Insert new bid record
         cur.execute(
@@ -895,13 +901,14 @@ def get_bid(bid_id):
         rows = cur.fetchall()
         print(f"=== BACKEND GET_BID DEBUG for bid_id {bid_id} ===")
         print(f"Raw query result count: {len(rows)}")
-        
+
         # Log all audience IDs found in order
         audience_ids_found = []
         for row in rows:
             if row['id'] not in audience_ids_found:
                 audience_ids_found.append(row['id'])
-                print(f"Found audience ID {row['id']} with name '{row['name']}'")
+                print(
+                    f"Found audience ID {row['id']} with name '{row['name']}'")
 
         # Format target audiences with their sample sizes
         target_audiences = {}
@@ -922,23 +929,31 @@ def get_bid(bid_id):
                     'is_best_efforts': row['is_best_efforts'],
                     'country_samples': {}
                 }
-                print(f"Created audience object for ID {audience_id}: {row['name']}")
+                print(
+                    f"Created audience object for ID {audience_id}: {row['name']}"
+                )
             if row['country']:
-                target_audiences[audience_id]['country_samples'][row['country']] = {
-                    'sample_size': row['sample_size'],
-                    'is_best_efforts': row['country_is_best_efforts']
-                }
-                print(f"Added country sample: audience {audience_id}, country {row['country']}, size {row['sample_size']}")
+                target_audiences[audience_id]['country_samples'][
+                    row['country']] = {
+                        'sample_size': row['sample_size'],
+                        'is_best_efforts': row['country_is_best_efforts']
+                    }
+                print(
+                    f"Added country sample: audience {audience_id}, country {row['country']}, size {row['sample_size']}"
+                )
 
         # Sort audiences by ID to maintain consistent database order, then renumber sequentially
-        sorted_audiences = sorted(target_audiences.values(), key=lambda x: x['id'])
-        
+        sorted_audiences = sorted(target_audiences.values(),
+                                  key=lambda x: x['id'])
+
         # Renumber audiences sequentially based on their sorted database ID order
         for index, audience in enumerate(sorted_audiences):
             audience['name'] = f"Audience - {index + 1}"
             audience['uniqueId'] = f"audience-{index}"
-        
-        print(f"Final sorted audience order after renumbering: {[f'ID:{a['id']}-{a['name']}' for a in sorted_audiences]}")
+
+        print(
+            f"Final sorted audience order after renumbering: {[f'ID:{a['id']}-{a['name']}' for a in sorted_audiences]}"
+        )
         print(f"=== END BACKEND DEBUG ===\n")
 
         # Get partners and LOIs with full partner details
@@ -965,11 +980,11 @@ def get_bid(bid_id):
                 })
                 seen_partners.add(row['partner_id'])
 
-        lois = list(set([r['loi'] for r in partner_lois])) if partner_lois else []
+        lois = list(set([r['loi']
+                         for r in partner_lois])) if partner_lois else []
 
         response = {
-            **bid, 
-            'target_audiences': sorted_audiences,
+            **bid, 'target_audiences': sorted_audiences,
             'partners': partners,
             'loi': lois
         }
@@ -994,7 +1009,7 @@ def update_bid(bid_id):
 
         # Use get_json() with force=True to ensure proper parsing
         data = request.get_json(force=True)
-        
+
         # Debug logging
         print("Raw request data:", data)
         print("Request content type:", request.content_type)
@@ -1037,38 +1052,44 @@ def update_bid(bid_id):
         print("Type of deleted_audience_ids:", type(deleted_audience_ids))
         print("Length of deleted_audience_ids:", len(deleted_audience_ids))
         print("Full request data keys:", list(data.keys()))
-        print("Raw deleted_audience_ids from request:", repr(data.get('deleted_audience_ids')))
-        
+        print("Raw deleted_audience_ids from request:",
+              repr(data.get('deleted_audience_ids')))
+
         # Additional debugging - check if field exists with different casing or format
         for key in data.keys():
             if 'deleted' in key.lower() or 'audience' in key.lower():
                 print(f"Found related key: {key} = {data[key]}")
-        
+
         # Force deleted_audience_ids to be a list if it exists but is None
-        if 'deleted_audience_ids' in data and data['deleted_audience_ids'] is None:
+        if 'deleted_audience_ids' in data and data[
+                'deleted_audience_ids'] is None:
             deleted_audience_ids = []
             print("Converted None to empty list")
-        
+
         # Auto-detect deleted audiences: if an existing audience is not in the new target_audiences, it should be deleted
         received_audience_ids = set()
         for audience in data['target_audiences']:
             if audience.get('id') and isinstance(audience.get('id'), int):
                 received_audience_ids.add(audience['id'])
-        
+
         print(f"Received audience IDs: {received_audience_ids}")
         print(f"Existing audience IDs: {existing_audience_ids}")
-        
+
         auto_deleted_ids = existing_audience_ids - received_audience_ids
         if auto_deleted_ids:
             print(f"Auto-detected deleted audiences: {auto_deleted_ids}")
             deleted_audience_ids.extend(list(auto_deleted_ids))
-            print(f"Final deleted_audience_ids after auto-detection: {deleted_audience_ids}")
+            print(
+                f"Final deleted_audience_ids after auto-detection: {deleted_audience_ids}"
+            )
         else:
             print("No audiences auto-detected for deletion")
-        
+
         if deleted_audience_ids:
-            print(f"Processing deletion of {len(deleted_audience_ids)} audiences: {deleted_audience_ids}")
-            
+            print(
+                f"Processing deletion of {len(deleted_audience_ids)} audiences: {deleted_audience_ids}"
+            )
+
             # Delete partner audience responses for deleted audiences first
             cur.execute(
                 """
@@ -1077,7 +1098,7 @@ def update_bid(bid_id):
             """, (deleted_audience_ids, bid_id))
             deleted_par_count = cur.rowcount
             print(f"Deleted {deleted_par_count} partner audience responses")
-            
+
             # Delete country samples for deleted audiences
             cur.execute(
                 """
@@ -1086,7 +1107,7 @@ def update_bid(bid_id):
             """, (deleted_audience_ids, bid_id))
             deleted_bac_count = cur.rowcount
             print(f"Deleted {deleted_bac_count} bid audience countries")
-            
+
             # Delete the audiences themselves
             cur.execute(
                 """
@@ -1095,23 +1116,24 @@ def update_bid(bid_id):
             """, (deleted_audience_ids, bid_id))
             deleted_bta_count = cur.rowcount
             print(f"Deleted {deleted_bta_count} bid target audiences")
-            
-            print(f"Successfully deleted audiences and related data: {deleted_audience_ids}")
+
+            print(
+                f"Successfully deleted audiences and related data: {deleted_audience_ids}"
+            )
         else:
             print("No audiences to delete")
 
-        # 4. Update or insert target audiences 
+        # 4. Update or insert target audiences
         # Track which existing audience IDs have been updated to prevent duplicates
         updated_audience_ids = set()
-        
+
         for audience in data['target_audiences']:
             audience_id = audience.get('id')
-            
+
             # If this audience has an ID and exists in the database and hasn't been updated yet
-            if (audience_id and 
-                audience_id in existing_audience_ids and 
-                audience_id not in updated_audience_ids):
-                
+            if (audience_id and audience_id in existing_audience_ids
+                    and audience_id not in updated_audience_ids):
+
                 # Update existing audience by ID
                 cur.execute(
                     """
@@ -1132,7 +1154,9 @@ def update_bid(bid_id):
                      audience['broader_category'],
                      audience['exact_ta_definition'], audience['mode'],
                      audience['sample_required'], audience['ir'],
-                     audience.get('comments', ''), audience.get('is_best_efforts', False), audience_id, bid_id))
+                     audience.get(
+                         'comments', ''), audience.get(
+                             'is_best_efforts', False), audience_id, bid_id))
                 print(f"Updated audience ID: {audience_id}")
                 updated_audience_ids.add(audience_id)
             else:
@@ -1157,7 +1181,8 @@ def update_bid(bid_id):
                      audience['broader_category'],
                      audience['exact_ta_definition'], audience['mode'],
                      audience['sample_required'], audience['ir'],
-                     audience.get('comments', ''), audience.get('is_best_efforts', False)))
+                     audience.get('comments',
+                                  ''), audience.get('is_best_efforts', False)))
                 audience_id = cur.fetchone()[0]
                 print(f"Inserted new audience ID: {audience_id}")
 
@@ -1170,18 +1195,24 @@ def update_bid(bid_id):
                     WHERE audience_id = %s
                 """, (audience_id, ))
                 print(
-                    f"Deleted old country samples for audience ID: {audience_id}")
+                    f"Deleted old country samples for audience ID: {audience_id}"
+                )
 
                 # Then insert new country samples
-                for country, sample_data in audience['country_samples'].items():
+                for country, sample_data in audience['country_samples'].items(
+                ):
                     try:
-                        print(f"Inserting country {country} with sample data {sample_data}")
+                        print(
+                            f"Inserting country {country} with sample data {sample_data}"
+                        )
                         if isinstance(sample_data, dict):
                             sample_size = sample_data.get('sample_size', 0)
-                            is_best_efforts = sample_data.get('is_best_efforts', False)
+                            is_best_efforts = sample_data.get(
+                                'is_best_efforts', False)
                         else:
                             sample_size = sample_data
-                            is_best_efforts = sample_size == 0 and audience.get('is_best_efforts', False)
+                            is_best_efforts = sample_size == 0 and audience.get(
+                                'is_best_efforts', False)
                         cur.execute(
                             """
                             INSERT INTO bid_audience_countries (
@@ -1190,12 +1221,13 @@ def update_bid(bid_id):
                             ON CONFLICT (bid_id, audience_id, country) DO UPDATE SET
                                 sample_size = EXCLUDED.sample_size,
                                 is_best_efforts = EXCLUDED.is_best_efforts
-                            """,
-                            (bid_id, audience_id, country, int(sample_size), is_best_efforts)
-                        )
+                            """, (bid_id, audience_id, country,
+                                  int(sample_size), is_best_efforts))
                         print(f"Successfully processed country {country}")
                     except Exception as country_error:
-                        print(f"Error processing country {country}: {str(country_error)}")
+                        print(
+                            f"Error processing country {country}: {str(country_error)}"
+                        )
                         raise
 
         # 4. Update partner responses for new audiences
@@ -4601,7 +4633,7 @@ def send_link_extension_email(email, partner_name, bid_number, study_name,
         Bid Management Team
         """
 
-        mail.send(msg)
+        #mail.send(msg)
     except Exception as e:
         print(f"Error sending email: {str(e)}")
 
@@ -5245,10 +5277,10 @@ if __name__ == '__main__':
         add_field_close_date_column()
         standardize_invoice_status()
         print("Database initialization completed")
-        
+
         port = int(os.environ.get('PORT', 5000))
         print(f"Starting server on port {port}...")
-        
+
         # Use Waitress for production
         from waitress import serve
         serve(app,
