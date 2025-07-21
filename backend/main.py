@@ -1383,6 +1383,7 @@ def update_bid(bid_id):
         print("Existing audience IDs:", existing_audience_ids)
 
         # 3. Update or insert target audiences
+        updated_audience_ids = set()  # Track which audience IDs have been updated
         for idx, audience in enumerate(data['target_audiences']):
             print(f"Processing audience {idx}: {audience}")
             if idx < len(existing_audience_ids):
