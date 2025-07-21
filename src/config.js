@@ -1,12 +1,8 @@
 
-const development = {
-    API_URL: ''  // Empty string for relative URLs
+const config = {
+    API_URL: window.location.hostname === 'localhost' 
+        ? 'http://localhost:5000'
+        : `${window.location.protocol}//${window.location.hostname}:5000`
 };
-
-const production = {
-    API_URL: ''  // Empty string for relative URLs
-};
-
-const config = import.meta.env.MODE === 'production' ? production : development;
 
 export default config;

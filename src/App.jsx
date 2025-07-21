@@ -27,6 +27,7 @@ import Unauthorized from './components/common/Unauthorized';
 import PartnerResponseSuccess from './components/PartnerResponseSuccess';
 import ProposalList from './components/Proposals/ProposalList';
 import ProposalForm from './components/Proposals/ProposalForm';
+import FindSimilarBid from './components/Bids/FindSimilarBid';
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -84,6 +85,11 @@ function App() {
                   <Route path="bids/field-allocation/:bidId" element={
                     <PrivateRoute requiredPermissions={['can_view_infield', 'can_edit_infield']}>
                       <FieldAllocation />
+                    </PrivateRoute>
+                  } />
+                  <Route path="bids/find-similar" element={
+                    <PrivateRoute requiredPermissions={['can_view_bids']}>
+                      <FindSimilarBid />
                     </PrivateRoute>
                   } />
                   
