@@ -1,0 +1,42 @@
+BidM=# \d bids;
+                                             Table "public.bids"
+       Column        |            Type             | Collation | Nullable |             Default
+---------------------+-----------------------------+-----------+----------+----------------------------------
+ id                  | integer                     |           | not null | nextval('bids_id_seq'::regclass)
+ bid_number          | character varying(50)       |           | not null |
+ bid_date            | date                        |           | not null |
+ study_name          | character varying(255)      |           | not null |
+ methodology         | methodology                 |           | not null |
+ status              | bid_status                  |           |          | 'draft'::bid_status
+ client              | integer                     |           |          |
+ sales_contact       | integer                     |           |          |
+ vm_contact          | integer                     |           |          |
+ project_requirement | text                        |           |          |
+ created_at          | timestamp without time zone |           |          | CURRENT_TIMESTAMP
+ updated_at          | timestamp without time zone |           |          | CURRENT_TIMESTAMP
+ rejection_reason    | character varying(100)      |           |          |
+ rejection_comments  | text                        |           |          |
+ created_by          | integer                     |           |          |
+ team                | character varying(100)      |           |          |
+Indexes:
+    "bids_pkey" PRIMARY KEY, btree (id)
+    "bids_bid_number_key" UNIQUE CONSTRAINT, btree (bid_number)
+    "idx_bids_client" btree (client)
+    "idx_bids_sales_contact" btree (sales_contact)
+    "idx_bids_vm_contact" btree (vm_contact)
+Foreign-key constraints:
+    "bids_client_fkey" FOREIGN KEY (client) REFERENCES clients(id)
+    "bids_created_by_fkey" FOREIGN KEY (created_by) REFERENCES users(id)
+    "bids_sales_contact_fkey" FOREIGN KEY (sales_contact) REFERENCES sales(id)
+    "bids_vm_contact_fkey" FOREIGN KEY (vm_contact) REFERENCES vendor_managers(id)
+Referenced by:
+    TABLE "bid_access" CONSTRAINT "bid_access_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "bid_access_requests" CONSTRAINT "bid_access_requests_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "bid_audience_countries" CONSTRAINT "bid_audience_countries_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "bid_partners" CONSTRAINT "bid_partners_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "bid_po_numbers" CONSTRAINT "bid_po_numbers_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "bid_target_audiences" CONSTRAINT "bid_target_audiences_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "partner_links" CONSTRAINT "fk_bid" FOREIGN KEY (bid_id) REFERENCES bids(id)
+    TABLE "partner_audience_responses" CONSTRAINT "partner_audience_responses_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "partner_responses" CONSTRAINT "partner_responses_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
+    TABLE "proposals" CONSTRAINT "proposals_bid_id_fkey" FOREIGN KEY (bid_id) REFERENCES bids(id) ON DELETE CASCADE
