@@ -26,11 +26,13 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import axios from "../../api/axios";
 import "./Bids.css";
 import GlobeIcon from "@mui/icons-material/Public"; // Import globe icon
+import { useAuth } from "../../contexts/AuthContext";
 
 function BasicDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const { bidId } = useParams();
+  const { user: currentUser } = useAuth();
   const isEditMode = !!bidId;
 
   // Add debug log for edit mode
@@ -119,7 +121,6 @@ function BasicDetails() {
     "Guyana",
     "Haiti",
     "Honduras",
-    "Hong Kong",
     "Hungary",
     "Iceland",
     "India",
@@ -355,20 +356,19 @@ function BasicDetails() {
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [sampleDistribution, setSampleDistribution] = useState({});
   const [loading, setLoading] = useState(true);
-  const [deletedAudienceIds, setDeletedAudienceIds] = useState([]);
 
-  // Add debug logging for deletedAudienceIds
-  useEffect(() => {
-    console.log("Current deletedAudienceIds:", deletedAudienceIds);
-  }, [deletedAudienceIds]);
+  // Filter VM contacts to only show those from the current user's team
+  const filteredVMContacts = vmContacts.filter(
+    (vm) =>
+      vm.team &&
+      vm.team.toLowerCase().replace(/\s+/g, "") ===
+        currentUser.team.toLowerCase().replace(/\s+/g, ""),
+  );
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        // Reset deletedAudienceIds when loading a new bid
-        setDeletedAudienceIds([]);
-
         console.log(
           "Starting loadInitialData, isEditMode:",
           isEditMode,
@@ -414,13 +414,17 @@ function BasicDetails() {
             console.log("Processed partners array:", partnersArray);
 
             // Sort audiences by ID to maintain consistent database order, then renumber sequentially
-            const sortedAudiences = (bidData.target_audiences || []).sort((a, b) => (a.id || 0) - (b.id || 0));
+            const sortedAudiences = (bidData.target_audiences || []).sort(
+              (a, b) => (a.id || 0) - (b.id || 0),
+            );
             // Renumber audiences sequentially based on their sorted database ID order
-            const processedAudiences = sortedAudiences.map((audience, index) => ({
-              ...audience,
-              name: `Audience - ${index + 1}`,
-              uniqueId: `audience-${index}`, // Ensure uniqueId matches the new index
-            }));
+            const processedAudiences = sortedAudiences.map(
+              (audience, index) => ({
+                ...audience,
+                name: `Audience - ${index + 1}`,
+                uniqueId: `audience-${index}`, // Ensure uniqueId matches the new index
+              }),
+            );
 
             console.log(
               "Loading audiences with IDs:",
@@ -439,7 +443,6 @@ function BasicDetails() {
               countries: Array.isArray(bidData.countries)
                 ? bidData.countries
                 : [],
-              target_audiences: processedAudiences,
             }));
 
             console.log(
@@ -509,20 +512,13 @@ function BasicDetails() {
     });
   };
 
-  // Utility function to relabel all audience names sequentially
-  const relabelAudienceNames = (audiences) => {
-    return audiences.map((audience, index) => ({
-      ...audience,
-      name: `Audience - ${index + 1}`,
-      uniqueId: `audience-${index}`, // Ensure uniqueId matches the index
-    }));
-  };
-
   const addTargetAudience = () => {
-    setFormData((prev) => {
-      const newAudiences = [
+    setFormData((prev) => ({
+      ...prev,
+      target_audiences: [
         ...prev.target_audiences,
         {
+          name: `Audience - ${prev.target_audiences.length + 1}`,
           ta_category: "",
           broader_category: "",
           exact_ta_definition: "",
@@ -532,43 +528,15 @@ function BasicDetails() {
           ir: "",
           comments: "",
         },
-      ];
-      return {
-        ...prev,
-        target_audiences: relabelAudienceNames(newAudiences),
-      };
-    });
+      ],
+    }));
   };
 
   const removeTargetAudience = (index) => {
-    const removed = formData.target_audiences[index];
-    console.log(
-      "Removing audience at index:",
-      index,
-      "Audience data:",
-      removed,
-    );
-
-    // Only track deletion if this audience has a valid numeric ID (exists in database)
-    if (removed && removed.id && typeof removed.id === "number" && removed.id > 0) {
-      console.log("Adding audience ID to deletedAudienceIds:", removed.id);
-      setDeletedAudienceIds((prevIds) => {
-        const newIds = [...prevIds, removed.id];
-        console.log("Updated deletedAudienceIds:", newIds);
-        return newIds;
-      });
-    } else {
-      console.log("No valid database ID found for removed audience:", removed);
-    }
-
-    setFormData((prev) => {
-      const newAudiences = prev.target_audiences.filter((_, i) => i !== index);
-      return {
-        ...prev,
-        target_audiences: relabelAudienceNames(newAudiences),
-      };
-    });
-    setSampleDistribution({});
+    setFormData((prev) => ({
+      ...prev,
+      target_audiences: prev.target_audiences.filter((_, i) => i !== index),
+    }));
   };
 
   const handleMultipleSelect = (e) => {
@@ -620,17 +588,15 @@ function BasicDetails() {
     value,
     isBEMax = false,
   ) => {
-    console.log(`=== DISTRIBUTION CHANGE DEBUG ===`);
-    console.log(`Country: ${country}, Index: ${audienceIndex}, Value: ${value}, isBEMax: ${isBEMax}`);
-    console.log(`Audience at index ${audienceIndex}:`, formData.target_audiences?.[audienceIndex]);
-
     setSampleDistribution((prev) => {
       const currentValue =
         prev[country]?.[`audience-${audienceIndex}`]?.value ?? "";
       const currentIsBEMax =
         prev[country]?.[`audience-${audienceIndex}`]?.isBEMax || false;
 
-      console.log(`Previous value: ${currentValue}, Previous isBEMax: ${currentIsBEMax}`);
+      console.log(
+        `Previous value: ${currentValue}, Previous isBEMax: ${currentIsBEMax}`,
+      );
 
       const newDistribution = {
         ...prev,
@@ -704,12 +670,15 @@ function BasicDetails() {
       }
 
       console.log("=== SUBMIT DEBUG - START ===");
-      console.log("Original formData.target_audiences:", formData.target_audiences.map(a => ({ 
-        id: a.id, 
-        name: a.name, 
-        uniqueId: a.uniqueId,
-        originalIndex: formData.target_audiences.indexOf(a)
-      })));
+      console.log(
+        "Original formData.target_audiences:",
+        formData.target_audiences.map((a) => ({
+          id: a.id,
+          name: a.name,
+          uniqueId: a.uniqueId,
+          originalIndex: formData.target_audiences.indexOf(a),
+        })),
+      );
 
       // Sort audiences by ID first to ensure consistent database order
       const sortedAudiences = [...formData.target_audiences].sort((a, b) => {
@@ -719,12 +688,15 @@ function BasicDetails() {
         return 0;
       });
 
-      console.log("After sorting by ID:", sortedAudiences.map(a => ({ 
-        id: a.id, 
-        name: a.name, 
-        uniqueId: a.uniqueId,
-        sortedIndex: sortedAudiences.indexOf(a)
-      })));
+      console.log(
+        "After sorting by ID:",
+        sortedAudiences.map((a) => ({
+          id: a.id,
+          name: a.name,
+          uniqueId: a.uniqueId,
+          sortedIndex: sortedAudiences.indexOf(a),
+        })),
+      );
 
       // Renumber audiences sequentially based on their sorted database ID order
       const relabeledAudiences = sortedAudiences.map((audience, index) => ({
@@ -733,12 +705,15 @@ function BasicDetails() {
         uniqueId: `audience-${index}`,
       }));
 
-      console.log("After relabeling:", relabeledAudiences.map(a => ({ 
-        id: a.id, 
-        name: a.name, 
-        uniqueId: a.uniqueId,
-        finalIndex: relabeledAudiences.indexOf(a)
-      })));
+      console.log(
+        "After relabeling:",
+        relabeledAudiences.map((a) => ({
+          id: a.id,
+          name: a.name,
+          uniqueId: a.uniqueId,
+          finalIndex: relabeledAudiences.indexOf(a),
+        })),
+      );
 
       // Initialize sample distribution with existing data in edit mode
       const initialDistribution = {};
@@ -756,21 +731,14 @@ function BasicDetails() {
             audienceId: audience.id,
             audienceName: audience.name,
             existingSample,
-            distributionValue: initialDistribution[country][`audience-${index}`]
+            distributionValue:
+              initialDistribution[country][`audience-${index}`],
           });
         });
       });
 
       console.log("Final initialDistribution:", initialDistribution);
       setSampleDistribution(initialDistribution);
-
-      // Set relabeled audiences in state
-      setFormData((prev) => ({
-        ...prev,
-        target_audiences: relabeledAudiences,
-      }));
-
-      console.log("=== SUBMIT DEBUG - END ===");
       setDistributionModalOpen(true);
     } catch (error) {
       console.error("Error:", error);
@@ -836,110 +804,10 @@ function BasicDetails() {
         return;
       }
 
-      // Capture current deletedAudienceIds state at submission time
-      const currentDeletedIds = [...deletedAudienceIds];
-      console.log(
-        "Captured deletedAudienceIds at submission:",
-        currentDeletedIds,
-      );
-
-      console.log("=== DISTRIBUTION MAPPING DEBUG ===");
-      console.log("Current formData.target_audiences before processing:", 
-        formData.target_audiences.map((a, i) => ({
-          index: i,
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId
-        }))
-      );
-
-      // Separate existing audiences (with IDs) from new audiences (without IDs)
-      const existingAudiences = formData.target_audiences.filter(a => a.id && typeof a.id === "number" && a.id > 0);
-      const newAudiences = formData.target_audiences.filter(a => !a.id || typeof a.id !== "number" || a.id <= 0);
-      
-      // Sort existing audiences by ID to maintain database order
-      const sortedExistingAudiences = existingAudiences.sort((a, b) => a.id - b.id);
-      
-      // Combine existing audiences first, then new audiences
-      const sortedAudiences = [...sortedExistingAudiences, ...newAudiences];
-
-      console.log("After sorting (existing first, then new):", 
-        sortedAudiences.map((a, i) => ({
-          index: i,
-          id: a.id,
-          name: a.name,
-          isNew: !a.id || typeof a.id !== "number" || a.id <= 0
-        }))
-      );
-
-      // Renumber audiences sequentially
-      const relabeledAudiences = sortedAudiences.map((audience, index) => ({
-        ...audience,
-        name: `Audience - ${index + 1}`,
-        uniqueId: `audience-${index}`,
-      }));
-
-      console.log("After relabeling:", 
-        relabeledAudiences.map((a, i) => ({
-          index: i,
-          id: a.id,
-          name: a.name,
-          isNew: !a.id || typeof a.id !== "number" || a.id <= 0
-        }))
-      );
-
-      // Create mapping from old positions to new positions
-      const originalToSortedMapping = {};
-      formData.target_audiences.forEach((audience, originalIndex) => {
-        let newIndex;
-        if (audience.id && typeof audience.id === "number" && audience.id > 0) {
-          // For existing audiences, find by ID
-          newIndex = relabeledAudiences.findIndex(a => a.id === audience.id);
-        } else {
-          // For new audiences, find by content match since they don't have IDs
-          newIndex = relabeledAudiences.findIndex((a, idx) => 
-            (!a.id || typeof a.id !== "number" || a.id <= 0) &&
-            a.ta_category === audience.ta_category &&
-            a.broader_category === audience.broader_category &&
-            a.exact_ta_definition === audience.exact_ta_definition &&
-            !originalToSortedMapping.hasOwnProperty(Object.keys(originalToSortedMapping).find(key => originalToSortedMapping[key] === idx))
-          );
-        }
-        
-        if (newIndex !== -1) {
-          originalToSortedMapping[originalIndex] = newIndex;
-          console.log(`Mapping: original index ${originalIndex} (ID: ${audience.id || 'NEW'}) -> new index ${newIndex}`);
-        }
-      });
-
-      console.log("Index mapping:", originalToSortedMapping);
-      console.log("Sample distribution before remapping:", sampleDistribution);
-
-      // Remap sample distribution to match the new sorted order
-      const remappedSampleDistribution = {};
-      formData.countries.forEach(country => {
-        remappedSampleDistribution[country] = {};
-
-        Object.entries(sampleDistribution[country] || {}).forEach(([key, value]) => {
-          const match = key.match(/^audience-(\d+)$/);
-          if (match) {
-            const originalIndex = parseInt(match[1]);
-            const newIndex = originalToSortedMapping[originalIndex];
-            if (newIndex !== undefined) {
-              const newKey = `audience-${newIndex}`;
-              remappedSampleDistribution[country][newKey] = value;
-              console.log(`Remapping ${country}: ${key} -> ${newKey}`, value);
-            }
-          }
-        });
-      });
-
-      console.log("Sample distribution after remapping:", remappedSampleDistribution);
-
-      // Update formData with the new distribution using remapped data
+      // Update formData with the new distribution while preserving other data
       const updatedFormData = {
         ...formData,
-        target_audiences: relabeledAudiences.map((audience, index) => ({
+        target_audiences: formData.target_audiences.map((audience, index) => ({
           ...audience,
           sample_required: audience.is_best_efforts
             ? 0
@@ -947,10 +815,9 @@ function BasicDetails() {
           ir: parseInt(audience.ir) || 0,
           country_samples: Object.fromEntries(
             formData.countries.map((country) => {
-              const distribution = remappedSampleDistribution[country]?.[
+              const distribution = sampleDistribution[country]?.[
                 `audience-${index}`
               ] || { value: 0, isBEMax: false };
-              console.log(`Final mapping for ${country}, audience-${index}:`, distribution);
               return [
                 country,
                 {
@@ -963,21 +830,7 @@ function BasicDetails() {
         })),
       };
 
-      console.log("Final updated audiences with country samples:", 
-        updatedFormData.target_audiences.map(a => ({
-          id: a.id,
-          name: a.name,
-          country_samples: a.country_samples
-        }))
-      );
-
-      // Create request payload with deleted_audience_ids explicitly included
-      const requestPayload = {
-        ...updatedFormData,
-        deleted_audience_ids: currentDeletedIds || [],
-      };
-
-      console.log("=== END DISTRIBUTION MAPPING DEBUG ===");
+      console.log("Sending updated form data:", updatedFormData);
 
       if (isEditMode) {
         await axios.put(`/api/bids/${bidId}`, requestPayload, {
@@ -987,11 +840,15 @@ function BasicDetails() {
         });
         navigate(`/bids/partner/${bidId}`);
       } else {
-        const response = await axios.post("/api/bids", requestPayload, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        // Add user information for new bids
+        const bidDataWithUser = {
+          ...updatedFormData,
+          created_by: currentUser?.id,
+          team: currentUser?.team,
+        };
+
+        const response = await axios.post("/api/bids", bidDataWithUser);
+        // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
           lois: selectedLOIs,
@@ -1021,20 +878,14 @@ function BasicDetails() {
   const copyTargetAudience = (index) => {
     setFormData((prev) => {
       const audienceToCopy = { ...prev.target_audiences[index] };
-      // Remove the name, ID, and uniqueId for new copy, will relabel below
-      delete audienceToCopy.name;
-      delete audienceToCopy.id; // Ensure copied audience is treated as new
-      delete audienceToCopy.uniqueId; // Reset uniqueId as well
-      
-      // Also remove any country_samples that might reference the old audience ID
-      if (audienceToCopy.country_samples) {
-        delete audienceToCopy.country_samples;
-      }
-      
-      const newAudiences = [...prev.target_audiences, audienceToCopy];
+      // Update the name for the new copy
+      audienceToCopy.name = `Audience - ${prev.target_audiences.length + 1}`;
+      // Keep all other fields except sample_required (which might need adjustment)
+      audienceToCopy.sample_required = audienceToCopy.is_best_efforts ? "" : "";
+
       return {
         ...prev,
-        target_audiences: relabelAudienceNames(newAudiences),
+        target_audiences: [...prev.target_audiences, audienceToCopy],
       };
     });
   };
@@ -1061,7 +912,9 @@ function BasicDetails() {
                 InputProps={{
                   readOnly: false,
                 }}
-                helperText={!isEditMode ? "Enter a unique bid number manually" : ""}
+                helperText={
+                  !isEditMode ? "Enter a unique bid number manually" : ""
+                }
               />
               <TextField
                 required
@@ -1086,9 +939,9 @@ function BasicDetails() {
                   value={formData.methodology}
                   onChange={handleInputChange}
                 >
-                  <MenuItem value="quant">quant</MenuItem>
-                  <MenuItem value="qual">qual</MenuItem>
-                  <MenuItem value="both">both</MenuItem>
+                  <MenuItem value="online">Online</MenuItem>
+                  <MenuItem value="offline">Offline</MenuItem>
+                  <MenuItem value="mixed">Mixed</MenuItem>
                 </Select>
               </FormControl>
               <FormControl fullWidth required>
@@ -1112,7 +965,7 @@ function BasicDetails() {
                   value={formData.vm_contact}
                   onChange={handleInputChange}
                 >
-                  {vmContacts.map((contact) => (
+                  {filteredVMContacts.map((contact) => (
                     <MenuItem key={contact.id} value={contact.id}>
                       {contact.vm_name}
                     </MenuItem>
@@ -1213,7 +1066,8 @@ function BasicDetails() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginBottom: "20px",                    }}
+                      marginBottom: "20px",
+                    }}
                   >
                     <h3 style={{ margin: 0 }}>Audience - {index + 1}</h3>
                     <div>
@@ -1415,109 +1269,84 @@ function BasicDetails() {
       >
         <DialogTitle>Distribute Samples Across Countries</DialogTitle>
         <DialogContent>
-          {console.log("=== MODAL RENDER DEBUG ===") || 
-           console.log("Modal audiences (raw):", formData.target_audiences) ||
-           console.log("Modal audiences (with indices):", formData.target_audiences?.map((a, i) => ({
-             index: i,
-             id: a.id,
-             name: a.name,
-             uniqueId: a.uniqueId
-           }))) ||
-           console.log("Sample distribution keys:", Object.keys(sampleDistribution)) ||
-           console.log("Full sample distribution:", sampleDistribution)}
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
                   <TableCell>Country</TableCell>
-                  {formData?.target_audiences?.map((audience, index) => {
-                    console.log(`Header - Index ${index}:`, {
-                      id: audience.id,
-                      name: audience.name,
-                      uniqueId: audience.uniqueId,
-                      is_best_efforts: audience.is_best_efforts,
-                      sample_required: audience.sample_required
-                    });
-                    return (
-                      <TableCell key={`header-${index}`} align="center">
-                        {audience.name}
-                        <br />
-                        <small>ID: {audience.id || 'NEW'}</small>
-                        <br />
-                        {audience.is_best_efforts
-                          ? "(Best Efforts)"
-                          : `(Required: ${audience.sample_required})`}
-                      </TableCell>
-                    );
-                  })}
+                  {formData?.target_audiences?.map((audience, index) => (
+                    <TableCell key={index} align="center">
+                      {audience.name}
+                      <br />
+                      {audience.is_best_efforts
+                        ? "(Best Efforts)"
+                        : `(Required: ${audience.sample_required})`}
+                    </TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
               <TableBody>
                 {formData?.countries?.map((country) => (
                   <TableRow key={country}>
                     <TableCell>{country}</TableCell>
-                    {formData?.target_audiences?.map((audience, index) => {
-                      const distributionKey = `audience-${index}`;
-                      const distributionData = sampleDistribution[country]?.[distributionKey];
-                      console.log(`Body - ${country}, Index ${index} (${distributionKey}):`, {
-                        audienceId: audience.id,
-                        audienceName: audience.name,
-                        distributionData,
-                        distributionExists: !!distributionData
-                      });
-
-                      return (
-                        <TableCell key={`body-${index}`} align="center">
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              justifyContent: "center",
-                            }}
-                          >
-                            <TextField
-                              type="number"
-                              size="small"
-                              value={
-                                distributionData?.isBEMax
-                                  ? ""
-                                  : (distributionData?.value ?? "")
-                              }
-                              onChange={(e) => {
-                                console.log(`TextField change - ${country}, index ${index}:`, e.target.value);
-                                handleDistributionChange(
-                                  country,
-                                  index,
-                                  e.target.value,
-                                );
-                              }}
-                              disabled={distributionData?.isBEMax}
-                              inputProps={{ min: 0 }}
-                              style={{ width: "100px" }}
-                              placeholder={`Idx:${index}`}
-                            />
-                            <FormControlLabel
-                              control={
-                                <Checkbox
-                                  checked={distributionData?.isBEMax || false}
-                                  onChange={(e) => {
-                                    console.log(`Checkbox change - ${country}, index ${index}:`, e.target.checked);
-                                    handleDistributionChange(
-                                      country,
-                                      index,
-                                      "",
-                                      e.target.checked,
-                                    );
-                                  }}
-                                />
-                              }
-                              label="BE/Max"
-                            />
-                          </div>
-                        </TableCell>
-                      );
-                    })}
+                    {formData?.target_audiences?.map((audience, index) => (
+                      <TableCell key={index} align="center">
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <TextField
+                            type="number"
+                            size="small"
+                            value={
+                              sampleDistribution[country]?.[`audience-${index}`]
+                                ?.isBEMax
+                                ? ""
+                                : (sampleDistribution[country]?.[
+                                    `audience-${index}`
+                                  ]?.value ?? "")
+                            }
+                            onChange={(e) =>
+                              handleDistributionChange(
+                                country,
+                                index,
+                                e.target.value,
+                              )
+                            }
+                            disabled={
+                              sampleDistribution[country]?.[`audience-${index}`]
+                                ?.isBEMax
+                            }
+                            inputProps={{ min: 0 }}
+                            style={{ width: "100px" }}
+                          />
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={
+                                  sampleDistribution[country]?.[
+                                    `audience-${index}`
+                                  ]?.isBEMax || false
+                                }
+                                onChange={(e) =>
+                                  handleDistributionChange(
+                                    country,
+                                    index,
+                                    "",
+                                    e.target.checked,
+                                  )
+                                }
+                              />
+                            }
+                            label="BE/Max"
+                          />
+                        </div>
+                      </TableCell>
+                    ))}
                   </TableRow>
                 ))}
               </TableBody>

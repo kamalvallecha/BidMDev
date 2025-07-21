@@ -1,15 +1,15 @@
-modules = ["python-3.12", "cpp-clang14", "nodejs-20", "c-clang14", "postgresql-16"]
+modules = ["nodejs-20", "python-3.12", "web", "postgresql-16"]
 run = "npm run dev"
 
 [nix]
 channel = "stable-24_05"
+packages = ["glibcLocales", "libxcrypt"]
 
 [deployment]
-run = ["sh", "-c", "python backend/main.py"]
-build = ["sh", "-c", "npm run build"]
+run = ["sh", "-c", "npm run dev"]
 
 [workflows]
-runButton = "Full Stack"
+runButton = "Backend Only"
 
 [[workflows.workflow]]
 name = "Frontend Dev"
@@ -73,3 +73,11 @@ externalPort = 3002
 [[ports]]
 localPort = 5000
 externalPort = 5000
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
+
+[[ports]]
+localPort = 5002
+externalPort = 4200

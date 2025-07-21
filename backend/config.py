@@ -4,9 +4,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Config:
-    # Database configuration - use Replit's DATABASE_URL or construct from env vars
-    DATABASE_URL = os.getenv('DATABASE_URL') or f"postgresql://{os.getenv('PGUSER', 'postgres')}:{os.getenv('PGPASSWORD', 'root123')}@{os.getenv('PGHOST', 'localhost')}:{os.getenv('PGPORT', '5432')}/{os.getenv('PGDATABASE', 'BidM')}"
+    # Database configuration - Use Replit DB
+    USE_REPLIT_DB = True
+    DATABASE_URL = os.getenv('DATABASE_URL', 'replit://default')
 
     # JWT configuration
     SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key')
