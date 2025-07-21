@@ -58,6 +58,36 @@ args = "cd backend && pip install -r requirements.txt && python main.py"
 task = "shell.exec"
 args = "npm install && npm run dev"
 
+[[workflows.workflow]]
+name = "Backend Only"
+author = 38348679
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Full Stack Dev"
+author = 38348679
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && pip install -r requirements.txt && python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install && npm run dev"
+
 [[ports]]
 localPort = 3000
 externalPort = 80
