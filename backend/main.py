@@ -5011,7 +5011,7 @@ def submit_partner_link_response(token):
                 ON CONFLICT (bid_id, partner_id, loi)
                 DO UPDATE SET pmf = EXCLUDED.pmf, currency = EXCLUDED.currency, updated_at = CURRENT_TIMESTAMP
                 RETURNING id
-            """, (bid_id, partner_id, loi, pmf, currency))
+            """, (bid_id, partner_id, loi, pmf, currency))</old_str>
             partner_response_id = cur.fetchone()[0]
             for audience_id, aud_data in audiences.items():
                 timeline = aud_data.get('timeline')
@@ -5031,13 +5031,13 @@ def submit_partner_link_response(token):
                     # Upsert into partner_audience_responses
                     cur.execute(
                         """
-                        INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                        INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         ON CONFLICT (bid_id, partner_response_id, audience_id, country)
                         DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, updated_at = CURRENT_TIMESTAMP
                     """,
                         (bid_id, partner_response_id, audience_id, country,
-                         commitment_type, commitment, cpi, timeline, comments))
+                         commitment_type, commitment, cpi, timeline, comments))</old_str>
         conn.commit()
 
         # Send admin notification email
