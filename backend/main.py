@@ -5011,7 +5011,7 @@ def submit_partner_link_response(token):
                 ON CONFLICT (bid_id, partner_id, loi)
                 DO UPDATE SET pmf = EXCLUDED.pmf, currency = EXCLUDED.currency, updated_at = CURRENT_TIMESTAMP
                 RETURNING id
-            """, (bid_id, partner_id, loi, pmf, currency))</old_str>
+            """, (bid_id, partner_id, loi, pmf, currency))
             partner_response_id = cur.fetchone()[0]
             for audience_id, aud_data in audiences.items():
                 timeline = aud_data.get('timeline')
