@@ -1382,7 +1382,29 @@ def update_bid(bid_id):
         existing_audience_ids = [row[0] for row in cur.fetchall()]
         print("Existing audience IDs:", existing_audience_ids)
 
-        # 3. Update or insert target audiences
+        # 3. Handle deleted audiences first
+        deleted_audience_ids = data.get('deleted_audience_ids', [])
+        if deleted_audience_ids:
+            print(f"Deleting audiences with IDs: {deleted_audience_ids}")
+            # Delete partner audience responses first (foreign key constraint)
+            cur.execute("""
+                DELETE FROM partner_audience_responses 
+                WHERE audience_id = ANY(%s) AND bid_id = %s
+            """, (deleted_audience_ids, bid_id))
+            
+            # Delete audience countries
+            cur.execute("""
+                DELETE FROM bid_audience_countries 
+                WHERE audience_id = ANY(%s)
+            """, (deleted_audience_ids,))
+            
+            # Delete the audiences themselves
+            cur.execute("""
+                DELETE FROM bid_target_audiences 
+                WHERE id = ANY(%s) AND bid_id = %s
+            """, (deleted_audience_ids, bid_id))
+
+        # 4. Update or insert target audiences
         updated_audience_ids = set()  # Track which audience IDs have been updated
         for idx, audience in enumerate(data['target_audiences']):
             print(f"Processing audience {idx}: {audience}")

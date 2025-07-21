@@ -527,10 +527,28 @@ function BasicDetails() {
   };
 
   const removeTargetAudience = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      target_audiences: prev.target_audiences.filter((_, i) => i !== index),
-    }));
+    setFormData((prev) => {
+      const audienceToRemove = prev.target_audiences[index];
+      
+      // If this audience has an ID (exists in database), track it for deletion
+      if (audienceToRemove.id && isEditMode) {
+        setDeletedAudienceIds(prevDeleted => [...prevDeleted, audienceToRemove.id]);
+      }
+      
+      // Remove the audience from the array and renumber remaining audiences
+      const updatedAudiences = prev.target_audiences
+        .filter((_, i) => i !== index)
+        .map((audience, newIndex) => ({
+          ...audience,
+          name: `Audience - ${newIndex + 1}`,
+          uniqueId: `audience-${newIndex}`
+        }));
+      
+      return {
+        ...prev,
+        target_audiences: updatedAudiences,
+      };
+    });
   };
 
   const handleMultipleSelect = (e) => {
@@ -801,6 +819,7 @@ function BasicDetails() {
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
         ...formData,
+        deleted_audience_ids: deletedAudienceIds, // Include deleted audience IDs
         target_audiences: formData.target_audiences.map((audience, index) => ({
           ...audience,
           sample_required: audience.is_best_efforts
@@ -832,6 +851,8 @@ function BasicDetails() {
             "Content-Type": "application/json",
           },
         });
+        // Clear deleted audience IDs after successful update
+        setDeletedAudienceIds([]);
         navigate(`/bids/partner/${bidId}`);
       } else {
         // Add user information for new bids
