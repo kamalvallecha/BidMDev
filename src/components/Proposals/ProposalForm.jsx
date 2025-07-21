@@ -19,10 +19,12 @@ import {
   Checkbox
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ProposalForm = () => {
   const { proposalId } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [bids, setBids] = useState([]);
   const [selectedBidId, setSelectedBidId] = useState('');
@@ -44,28 +46,35 @@ const ProposalForm = () => {
     const fetchBidsAndProposals = async () => {
       try {
         const [bidsRes, proposalsRes] = await Promise.all([
-          axios.get('/api/bids'),
+          axios.get('/api/bids', {
+            headers: {
+              'X-User-Id': currentUser?.id,
+              'X-User-Team': currentUser?.team,
+              'X-User-Role': currentUser?.role,
+              'X-User-Name': currentUser?.name,
+            }
+          }),
           axios.get('/api/proposals')
         ]);
-        setBids(bidsRes.data);
+        setBids(bidsRes.data.bids || []);
         setProposals(proposalsRes.data);
+        // Debug logs after fetching
+        console.log('DEBUG fetched bids:', bidsRes.data.bids);
+        console.log('DEBUG fetched proposals:', proposalsRes.data);
       } catch (error) {
         console.error('Error fetching bids or proposals:', error);
       }
     };
     fetchBidsAndProposals();
-  }, []);
+  }, [currentUser]);
 
-  // Filter bids for dropdown: exclude bids that already have a proposal
-  const usedBidIds = new Set(proposals.map(p => Number(p.bid_id)));
-  const availableBids = bids.filter(bid => !usedBidIds.has(Number(bid.id)));
+  // Show all bids in the dropdown, regardless of proposals
+  const safeBids = Array.isArray(bids) ? bids : [];
+  const availableBids = safeBids;
   // When editing, always show the current bid
-  const dropdownBids = (!proposalId || proposalId === 'new') ? availableBids : bids.filter(bid => Number(bid.id) === Number(selectedBidId));
+  const dropdownBids = (!proposalId || proposalId === 'new') ? availableBids : safeBids.filter(bid => Number(bid.id) === Number(selectedBidId));
 
-  // Debug logs
-  console.log('DEBUG bids:', bids);
-  console.log('DEBUG proposals:', proposals);
-  console.log('DEBUG usedBidIds:', Array.from(usedBidIds));
+  // Debug logs for dropdown logic
   console.log('DEBUG availableBids:', availableBids);
   console.log('DEBUG dropdownBids:', dropdownBids);
 

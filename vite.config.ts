@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -18,7 +17,8 @@ export default defineConfig({
     },
     allowedHosts: [
       "*.replit.dev",
-      "*.replit.app"
+      "*.replit.app",
+      "8625dedb-d1a2-49bb-8222-c076d4157e3f-00-2lpxq2k5704t1.pike.replit.dev"
     ],
   },
   preview: {

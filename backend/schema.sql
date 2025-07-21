@@ -198,6 +198,28 @@ CREATE TABLE proposals (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Bid Access Table
+CREATE TABLE bid_access (
+    id SERIAL PRIMARY KEY,
+    bid_id INTEGER REFERENCES bids(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id), -- nullable if granting by team
+    team VARCHAR(100), -- nullable if granting by user
+    granted_by INTEGER REFERENCES users(id),
+    granted_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (bid_id, user_id, team)
+);
+
+-- Bid Access Requests Table
+CREATE TABLE bid_access_requests (
+    id SERIAL PRIMARY KEY,
+    bid_id INTEGER REFERENCES bids(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id), -- nullable if requesting by team
+    team VARCHAR(100), -- nullable if requesting by user
+    requested_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'pending', -- pending, granted, denied
+    UNIQUE (bid_id, user_id, team)
+);
+
 -- Indexes
 CREATE INDEX idx_bids_client ON bids(client);
 CREATE INDEX idx_bids_sales_contact ON bids(sales_contact);

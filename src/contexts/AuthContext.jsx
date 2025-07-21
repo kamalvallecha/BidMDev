@@ -31,10 +31,15 @@ export const AuthProvider = ({ children }) => {
     const login = async (credentials) => {
         try {
             const response = await axios.post('/api/login', credentials);
-            // Save token and user data to localStorage
+            // Debug: Log the user object received from backend
             console.log('Login response user data:', response.data.user);
+            // Debug: Log the full response
+            console.log('Full login response:', response.data);
+            // Save token and user data to localStorage
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
+            // Debug: Log what is being stored in localStorage
+            console.log('User object stored in localStorage:', JSON.parse(localStorage.getItem('user')));
             setUser(response.data.user);
             setIsAuthenticated(true);
             return response.data;
@@ -52,7 +57,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     if (loading) {
-        return null;
+        return (
+            <AuthContext.Provider value={{ 
+                user: null, 
+                isAuthenticated: false,
+                login: () => Promise.reject('Loading...'), 
+                logout: () => {} 
+            }}>
+                {children}
+            </AuthContext.Provider>
+        );
     }
 
     return (
