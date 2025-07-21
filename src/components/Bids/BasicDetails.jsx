@@ -356,6 +356,7 @@ function BasicDetails() {
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [sampleDistribution, setSampleDistribution] = useState({});
   const [loading, setLoading] = useState(true);
+  const [deletedAudienceIds, setDeletedAudienceIds] = useState([]);
 
   // Filter VM contacts to only show those from the current user's team
   const filteredVMContacts = vmContacts.filter(
@@ -430,10 +431,6 @@ function BasicDetails() {
               "Loading audiences with IDs:",
               processedAudiences.map((a) => ({ name: a.name, id: a.id })),
             );
-            console.log(
-              "Initial deletedAudienceIds before setting formData:",
-              deletedAudienceIds,
-            );
 
             setFormData((prevData) => ({
               ...prevData,
@@ -445,10 +442,7 @@ function BasicDetails() {
                 : [],
             }));
 
-            console.log(
-              "FormData set in edit mode, current deletedAudienceIds:",
-              deletedAudienceIds,
-            );
+            console.log("FormData set in edit mode");
 
             // Set selected partners and LOIs
             setSelectedPartners(partnersArray);
@@ -833,7 +827,7 @@ function BasicDetails() {
       console.log("Sending updated form data:", updatedFormData);
 
       if (isEditMode) {
-        await axios.put(`/api/bids/${bidId}`, requestPayload, {
+        await axios.put(`/api/bids/${bidId}`, updatedFormData, {
           headers: {
             "Content-Type": "application/json",
           },
