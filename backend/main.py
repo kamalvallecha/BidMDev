@@ -136,7 +136,7 @@ def check_expiring_links():
                     Bid Management Team
                     """
 
-                    mail.send(msg)
+                    #mail.send(msg)
 
                     # Mark notification as sent
                     cur.execute(
