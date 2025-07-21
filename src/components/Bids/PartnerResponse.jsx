@@ -208,16 +208,47 @@ function PartnerResponse() {
 
       console.log('Data being sent:', responsesToSend);
 
-      const response = await axios.put(`/api/bids/${bidId}/partner-responses`, {
-        responses: responsesToSend
+      // Create a custom axios instance with longer timeout for this specific request
+      const saveRequest = axios.create({
+        timeout: 60000, // 60 seconds instead of 30
+        baseURL: axios.defaults.baseURL
       });
+
+      // Add the same interceptors as the main axios instance
+      const userData = localStorage.getItem('user');
+      const headers = {};
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          headers['X-User-Id'] = user.id;
+          headers['X-User-Team'] = user.team;
+          headers['X-User-Role'] = user.role;
+          headers['X-User-Name'] = user.name;
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+        }
+      }
+
+      const response = await saveRequest.put(`/api/bids/${bidId}/partner-responses`, {
+        responses: responsesToSend
+      }, { headers });
 
       console.log('Save response:', response.data);
       alert('Partner responses saved successfully');
     } catch (error) {
       console.error('Error saving partner responses:', error);
       console.error('Error details:', error.response?.data);
-      alert(`Failed to save partner responses: ${error.response?.data?.error || error.message}`);
+      
+      let errorMessage = 'Failed to save partner responses';
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. The server may be processing a large amount of data. Please try again.';
+      } else if (error.response?.data?.error) {
+        errorMessage = `Failed to save partner responses: ${error.response.data.error}`;
+      } else if (error.message) {
+        errorMessage = `Failed to save partner responses: ${error.message}`;
+      }
+      
+      alert(errorMessage);
     }
   };
 

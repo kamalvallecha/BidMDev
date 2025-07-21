@@ -4204,125 +4204,134 @@ def update_partner_responses(bid_id):
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Process each partner response
+        # Start transaction
+        cur.execute("BEGIN")
+
+        print(f"Processing {len(responses)} partner responses for bid {bid_id}")
+
+        # Batch process partner responses
+        partner_response_ids = {}
+        
+        # First pass: Create or update all partner_responses
         for key, response_data in responses.items():
             partner_id = response_data.get('partner_id')
             loi = response_data.get('loi')
 
-            # Get or create partner_response record
+            if not partner_id or not loi:
+                continue
+
+            # Use ON CONFLICT to handle updates more efficiently
             cur.execute(
                 """
-                SELECT id FROM partner_responses 
-                WHERE bid_id = %s AND partner_id = %s AND loi = %s
-            """, (bid_id, partner_id, loi))
+                INSERT INTO partner_responses 
+                (bid_id, partner_id, loi, status, currency, pmf, created_at, updated_at)
+                VALUES (%s, %s, %s, 'draft', %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT (bid_id, partner_id, loi) 
+                DO UPDATE SET 
+                    pmf = EXCLUDED.pmf,
+                    currency = EXCLUDED.currency,
+                    updated_at = CURRENT_TIMESTAMP
+                RETURNING id
+            """, (bid_id, partner_id, loi,
+                  response_data.get('currency', 'USD'), 
+                  response_data.get('pmf', 0)))
+            
+            partner_response_id = cur.fetchone()['id']
+            partner_response_ids[key] = partner_response_id
 
-            partner_response = cur.fetchone()
-            if partner_response:
-                partner_response_id = partner_response['id']
-                # Update existing partner response with new PMF value
-                cur.execute(
-                    """
-                    UPDATE partner_responses 
-                    SET pmf = %s,
-                        currency = %s,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                """, (response_data.get(
-                        'pmf', 0), response_data.get(
-                            'currency', 'USD'), partner_response_id))
-            else:
-                cur.execute(
-                    """
-                    INSERT INTO partner_responses 
-                    (bid_id, partner_id, loi, status, currency, pmf)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    RETURNING id
-                """, (bid_id, partner_id, loi, 'draft',
-                      response_data.get('currency',
-                                        'USD'), response_data.get('pmf', 0)))
-                partner_response_id = cur.fetchone()['id']
+        # Second pass: Process audience responses in batches
+        audience_updates = []
+        audience_inserts = []
 
-            # Process audience data
+        for key, response_data in responses.items():
+            partner_response_id = partner_response_ids.get(key)
+            if not partner_response_id:
+                continue
+
             audiences = response_data.get('audiences', {})
             for audience_key, audience_data in audiences.items():
-                # Accept both numeric and 'audience-<id>' keys
+                # Parse audience ID
                 try:
-                    if isinstance(audience_key,
-                                  int) or (isinstance(audience_key, str)
-                                           and audience_key.isdigit()):
+                    if isinstance(audience_key, int) or (isinstance(audience_key, str) and audience_key.isdigit()):
                         audience_id = int(audience_key)
-                    elif isinstance(
-                            audience_key,
-                            str) and audience_key.startswith('audience-'):
+                    elif isinstance(audience_key, str) and audience_key.startswith('audience-'):
                         audience_id = int(audience_key.split('-')[1])
                     else:
-                        print(f"Invalid audience key format: {audience_key}")
                         continue
                 except (IndexError, ValueError):
-                    print(f"Invalid audience key format: {audience_key}")
                     continue
 
                 timeline = audience_data.get('timeline', 0)
                 comments = audience_data.get('comments', '')
 
-                # Process each country in the audience
+                # Process countries
                 for country, country_data in audience_data.items():
                     if country in ('timeline', 'comments'):
                         continue
 
                     commitment = country_data.get('commitment', 0)
                     cpi = country_data.get('cpi', 0)
-                    commitment_type = country_data.get('commitment_type',
-                                                       'fixed')
+                    commitment_type = country_data.get('commitment_type', 'fixed')
                     is_best_efforts = commitment_type == 'be_max'
 
-                    # Check if response already exists
+                    # Prepare data for batch processing
+                    audience_data_tuple = (
+                        bid_id, partner_response_id, audience_id, country,
+                        commitment, cpi, timeline, comments, 
+                        commitment_type, is_best_efforts
+                    )
+                    
+                    # Check if exists first
                     cur.execute(
                         """
                         SELECT id FROM partner_audience_responses
-                        WHERE partner_response_id = %s 
-                        AND audience_id = %s 
-                        AND country = %s
+                        WHERE partner_response_id = %s AND audience_id = %s AND country = %s
                     """, (partner_response_id, audience_id, country))
-
-                    existing_response = cur.fetchone()
-
-                    if existing_response:
-                        # Update existing response
-                        cur.execute(
-                            """
-                            UPDATE partner_audience_responses 
-                            SET commitment = %s,
-                                cpi = %s,
-                                timeline_days = %s,
-                                comments = %s,
-                                commitment_type = %s,
-                                is_best_efforts = %s,
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE id = %s
-                        """, (commitment, cpi, timeline, comments,
-                              commitment_type, is_best_efforts,
-                              existing_response['id']))
+                    
+                    if cur.fetchone():
+                        audience_updates.append(audience_data_tuple)
                     else:
-                        # Insert new response
-                        cur.execute(
-                            """
-                            INSERT INTO partner_audience_responses 
-                            (bid_id, partner_response_id, audience_id, country, 
-                             commitment, cpi, timeline_days, comments, commitment_type, is_best_efforts, created_at)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                        """, (bid_id, partner_response_id, audience_id,
-                              country, commitment, cpi, timeline, comments,
-                              commitment_type, is_best_efforts))
+                        audience_inserts.append(audience_data_tuple)
+
+        # Batch update existing audience responses
+        if audience_updates:
+            for update_data in audience_updates:
+                cur.execute(
+                    """
+                    UPDATE partner_audience_responses 
+                    SET commitment = %s,
+                        cpi = %s,
+                        timeline_days = %s,
+                        comments = %s,
+                        commitment_type = %s,
+                        is_best_efforts = %s,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE bid_id = %s AND partner_response_id = %s 
+                    AND audience_id = %s AND country = %s
+                """, (update_data[4], update_data[5], update_data[6], 
+                      update_data[7], update_data[8], update_data[9],
+                      update_data[0], update_data[1], update_data[2], update_data[3]))
+
+        # Batch insert new audience responses
+        if audience_inserts:
+            cur.executemany(
+                """
+                INSERT INTO partner_audience_responses 
+                (bid_id, partner_response_id, audience_id, country, 
+                 commitment, cpi, timeline_days, comments, commitment_type, is_best_efforts, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            """, audience_inserts)
 
         conn.commit()
-        return jsonify({"message":
-                        "Partner responses updated successfully"}), 200
+        print(f"Successfully updated {len(responses)} partner responses, {len(audience_updates)} audience updates, {len(audience_inserts)} audience inserts")
+        return jsonify({"message": "Partner responses updated successfully"}), 200
 
     except Exception as e:
         if 'conn' in locals():
             conn.rollback()
         print(f"Error updating partner responses: {str(e)}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals():
