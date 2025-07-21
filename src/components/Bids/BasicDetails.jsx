@@ -527,14 +527,14 @@ function BasicDetails() {
   };
 
   const removeTargetAudience = (index) => {
+    const audienceToRemove = formData.target_audiences[index];
+    
+    // If this audience has an ID (exists in database), track it for deletion
+    if (audienceToRemove.id && isEditMode) {
+      setDeletedAudienceIds(prevDeleted => [...prevDeleted, audienceToRemove.id]);
+    }
+    
     setFormData((prev) => {
-      const audienceToRemove = prev.target_audiences[index];
-      
-      // If this audience has an ID (exists in database), track it for deletion
-      if (audienceToRemove.id && isEditMode) {
-        setDeletedAudienceIds(prevDeleted => [...prevDeleted, audienceToRemove.id]);
-      }
-      
       // Remove the audience from the array and renumber remaining audiences
       const updatedAudiences = prev.target_audiences
         .filter((_, i) => i !== index)
