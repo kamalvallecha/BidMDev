@@ -195,6 +195,8 @@ function PartnerResponse() {
 
   const handleSave = async () => {
     try {
+      console.log('Saving partner responses for bid:', bidId);
+      
       // Convert empty PMF to 0 before sending to backend
       const responsesToSend = {};
       Object.entries(responses).forEach(([key, response]) => {
@@ -204,13 +206,18 @@ function PartnerResponse() {
         };
       });
 
-      await axios.put(`/api/bids/${bidId}/partner-responses`, {
+      console.log('Data being sent:', responsesToSend);
+
+      const response = await axios.put(`/api/bids/${bidId}/partner-responses`, {
         responses: responsesToSend
       });
+
+      console.log('Save response:', response.data);
       alert('Partner responses saved successfully');
     } catch (error) {
       console.error('Error saving partner responses:', error);
-      alert('Failed to save partner responses');
+      console.error('Error details:', error.response?.data);
+      alert(`Failed to save partner responses: ${error.response?.data?.error || error.message}`);
     }
   };
 
