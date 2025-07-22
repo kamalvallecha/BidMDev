@@ -5761,10 +5761,13 @@ def request_access():
         ''', (bid_id, user_id, user_team))
         
         existing_request = cur.fetchone()
+        request_created_or_updated = False
         
         if existing_request:
             if existing_request[0] == 'pending':
                 print(f"Access request already pending for bid {bid_id}, user {user_id}, team {user_team}")
+                # Request already exists and is pending, no action needed
+                request_created_or_updated = False
             elif existing_request[0] == 'denied':
                 # Update the denied request to pending (allow re-request)
                 print(f"Updating denied request to pending for bid {bid_id}, user {user_id}, team {user_team}")
@@ -5774,21 +5777,28 @@ def request_access():
                     SET status = 'pending', requested_on = CURRENT_TIMESTAMP
                     WHERE bid_id = %s AND user_id = %s AND team = %s
                 ''', (bid_id, user_id, user_team))
+                request_created_or_updated = True
             elif existing_request[0] == 'granted':
                 print(f"Access already granted for bid {bid_id}, user {user_id}, team {user_team}")
+                # Request already granted, no action needed
+                request_created_or_updated = False
         else:
             # Insert new access request
+            print(f"Creating new access request for bid {bid_id}, user {user_id}, team {user_team}")
             cur.execute(
                 '''
                 INSERT INTO bid_access_requests (bid_id, user_id, team, status)
                 VALUES (%s, %s, %s, 'pending')
             ''', (bid_id, user_id, user_team))
+            request_created_or_updated = True
         conn.commit()
         cur.close()
         conn.close()
 
-        # Send email notifications to multiple recipients
-        try:
+        # Only send email notifications if a request was actually created or updated
+        if request_created_or_updated:
+            # Send email notifications to multiple recipients
+            try:
             conn_email = get_db_connection()
             cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
             
@@ -5930,8 +5940,15 @@ This is an automated notification. Please do not reply to this email."""
             import traceback
             print(f"Email error traceback: {traceback.format_exc()}")
 
-        return jsonify({'message':
-                        'Access request submitted successfully'}), 200
+        if request_created_or_updated:
+            return jsonify({'message': 'Access request submitted successfully'}), 200
+        else:
+            if existing_request and existing_request[0] == 'pending':
+                return jsonify({'message': 'Access request already pending'}), 200
+            elif existing_request and existing_request[0] == 'granted':
+                return jsonify({'message': 'Access already granted'}), 200
+            else:
+                return jsonify({'message': 'Access request processed'}), 200
 
     except Exception as e:
         print(f"Error in request_access: {str(e)}")

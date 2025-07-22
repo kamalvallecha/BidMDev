@@ -261,29 +261,26 @@ function BidList() {
         userTeam: currentUser?.team,
       });
       
-      if (response.data.warning) {
-        setAccessRequestStatus('Request received (email not configured)');
-      } else if (response.data.error) {
-        setAccessRequestStatus('Request received (email failed)');
-      } else {
-        setAccessRequestStatus('Request sent successfully!');
-      }
+      // Set status message based on response
+      setAccessRequestStatus(response.data.message || 'Request sent successfully!');
 
-      // Refresh pending requests count to update the grant access icon
-      setTimeout(() => {
-        const fetchUpdatedPendingRequests = async () => {
-          try {
-            const res = await axios.get(`/api/bids/pending-requests?bid_ids=${bid.id}`);
-            setBidsPendingRequests(prev => ({
-              ...prev,
-              [bid.id]: res.data[bid.id] || 0
-            }));
-          } catch (error) {
-            console.error('Error refreshing pending requests:', error);
-          }
-        };
-        fetchUpdatedPendingRequests();
-      }, 1000);
+      // Always refresh pending requests count after request attempt
+      const fetchUpdatedPendingRequests = async () => {
+        try {
+          const res = await axios.get(`/api/bids/pending-requests?bid_ids=${bid.id}`);
+          setBidsPendingRequests(prev => ({
+            ...prev,
+            [bid.id]: res.data[bid.id] || 0
+          }));
+          console.log('Updated pending requests count for bid', bid.id, ':', res.data[bid.id] || 0);
+        } catch (error) {
+          console.error('Error refreshing pending requests:', error);
+        }
+      };
+      
+      // Refresh immediately and also after a short delay
+      await fetchUpdatedPendingRequests();
+      setTimeout(fetchUpdatedPendingRequests, 1000);
 
     } catch (error) {
       console.error('Error requesting access:', error);
