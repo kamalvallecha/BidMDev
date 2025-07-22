@@ -97,7 +97,7 @@ const Layout = () => {
           {user && user.name ? user.name : 'User'} ({user && user.role ? user.role : 'admin'})▼
         </div>
       </header>
-      
+
       <div className="container">
         <nav className="sidebar">
           {visibleMenuItems.map((item) => (
@@ -114,7 +114,7 @@ const Layout = () => {
                       {openMenuId === item.id ? '▼' : '▶'}
                     </span>
                   </div>
-                  
+
                   {openMenuId === item.id && (
                     <div className="submenu">
                       {item.subItems.map((subItem, subIndex) => (
@@ -142,7 +142,7 @@ const Layout = () => {
             </div>
           ))}
         </nav>
-        
+
         <main className="main-content">
           <Outlet />
         </main>
@@ -151,4 +151,4 @@ const Layout = () => {
   );
 };
 
-export default Layout; 
+export default Layout;

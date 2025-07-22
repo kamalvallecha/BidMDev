@@ -162,10 +162,173 @@ def check_expiring_links():
                 conn.close()
 
 
+def send_daily_access_request_digest():
+    """Send daily digest of pending access requests to admins"""
+    with app.app_context():
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+
+            # Get all pending access requests
+            cur.execute("""
+                SELECT 
+                    bar.id,
+                    bar.bid_id,
+                    bar.user_id,
+                    bar.team,
+                    bar.requested_on,
+                    b.bid_number,
+                    b.study_name,
+                    u.email as requester_email,
+                    u.name as requester_name,
+                    owner.email as owner_email,
+                    owner.name as owner_name
+                FROM bid_access_requests bar
+                JOIN bids b ON bar.bid_id = b.id
+                LEFT JOIN users u ON bar.user_id = u.id
+                LEFT JOIN users owner ON b.created_by = owner.id
+                WHERE bar.status = 'pending'
+                ORDER BY bar.requested_on DESC
+            """)
+
+            pending_requests = cur.fetchall()
+
+            if not pending_requests:
+                print("No pending access requests found for daily digest")
+                cur.close()
+                conn.close()
+                return
+
+            # Get all admin users
+            cur.execute("""
+                SELECT email, name 
+                FROM users 
+                WHERE role IN ('admin', 'super_admin')
+            """)
+            admin_users = cur.fetchall()
+
+            # Prepare recipient list
+            recipients = []
+            if ADMIN_NOTIFICATION_EMAIL:
+                recipients.append(ADMIN_NOTIFICATION_EMAIL)
+            
+            for admin in admin_users:
+                if admin['email'] not in recipients:
+                    recipients.append(admin['email'])
+
+            if not recipients:
+                print("No admin recipients found for daily digest")
+                cur.close()
+                conn.close()
+                return
+
+            # Create HTML table for requests
+            table_html = '''
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr style="background-color: #1976d2; color: white;">
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Bid #</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Study Name</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Requester</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Team</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Requested On</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Bid Owner</th>
+                </tr>
+            '''
+            
+            for req in pending_requests:
+                table_html += f'''
+                <tr style="{'background-color: #f8f9fa;' if pending_requests.index(req) % 2 == 0 else ''}">
+                    <td style="padding: 10px; border: 1px solid #ddd;">{req['bid_number']}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{req['study_name'][:50]}{'...' if len(req['study_name']) > 50 else ''}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{req['requester_name'] or 'Unknown'}<br><small>{req['requester_email'] or 'No email'}</small></td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{req['team']}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{req['requested_on'].strftime('%Y-%m-%d %H:%M')}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{req['owner_name'] or 'Unknown'}<br><small>{req['owner_email'] or 'No email'}</small></td>
+                </tr>
+                '''
+            
+            table_html += '</table>'
+
+            # Send digest email
+            base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
+            
+            msg = Message(
+                f'📊 Daily Digest: {len(pending_requests)} Pending Bid Access Requests',
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=recipients
+            )
+
+            msg.body = f"""
+Daily Bid Access Request Digest
+
+Total Pending Requests: {len(pending_requests)}
+
+Please log into the bid management system to review and approve/deny these requests.
+
+Access the system: {base_url}
+
+This is an automated daily digest sent every morning at 9 AM.
+
+Best regards,
+Bid Management System
+            """
+
+            msg.html = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                <h2 style="color: #1976d2; margin-bottom: 20px;">📊 Daily Bid Access Request Digest</h2>
+                
+                <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <strong>Summary:</strong> You have {len(pending_requests)} pending bid access requests that require your attention.
+                </div>
+                
+                <h3 style="color: #333; margin-bottom: 15px;">Pending Requests:</h3>
+                {table_html}
+                
+                <div style="background-color: #e3f2fd; border: 1px solid #90caf9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                    <h3 style="color: #1976d2; margin-bottom: 10px;">Action Required:</h3>
+                    <p style="margin: 0;">Please log into the bid management system to review and approve/deny these requests.</p>
+                </div>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <a href="{base_url}" style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                        Access Bid Management System
+                    </a>
+                </div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                <p style="font-size: 12px; color: #666; margin: 0;">
+                    This is an automated daily digest sent every morning at 9 AM. Please do not reply to this email.
+                </p>
+            </div>
+            """
+
+            mail.send(msg)
+            print(f"Daily digest sent to {len(recipients)} recipients for {len(pending_requests)} pending requests")
+
+            cur.close()
+            conn.close()
+
+        except Exception as e:
+            print(f"Error sending daily digest: {str(e)}")
+            import traceback
+            print(f"Daily digest error traceback: {traceback.format_exc()}")
+        finally:
+            if 'cur' in locals():
+                cur.close()
+            if 'conn' in locals():
+                conn.close()
+
+
 # Schedule the task to run daily at midnight
 scheduler.add_job(check_expiring_links,
                   CronTrigger(hour=0, minute=0),
                   id='check_expiring_links',
+                  replace_existing=True)
+
+# Schedule daily digest at 9 AM
+scheduler.add_job(send_daily_access_request_digest,
+                  CronTrigger(hour=9, minute=0),
+                  id='daily_access_request_digest',
                   replace_existing=True)
 
 # Start the scheduler when the app starts
@@ -5601,11 +5764,12 @@ def request_access():
         cur.close()
         conn.close()
 
-        # Send email notification to bid owner
+        # Send email notifications to multiple recipients
         try:
-            # Get bid owner email
             conn_email = get_db_connection()
             cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
+            
+            # Get bid owner email
             cur_email.execute(
                 '''
                 SELECT u.email, u.name 
@@ -5615,28 +5779,259 @@ def request_access():
             ''', (bid_id, ))
             bid_owner = cur_email.fetchone()
 
+            # Get all admin users for additional notification
+            cur_email.execute(
+                '''
+                SELECT email, name 
+                FROM users 
+                WHERE role IN ('admin', 'super_admin')
+            ''')
+            admin_users = cur_email.fetchall()
+
+            # Create recipient list
+            recipients = []
+            recipient_names = []
+            
             if bid_owner:
-                msg = Message('Bid Access Request',
+                recipients.append(bid_owner['email'])
+                recipient_names.append(bid_owner['name'])
+                
+            # Add admin notification email if configured
+            if ADMIN_NOTIFICATION_EMAIL and ADMIN_NOTIFICATION_EMAIL not in recipients:
+                recipients.append(ADMIN_NOTIFICATION_EMAIL)
+                recipient_names.append('Admin')
+                
+            # Add admin users (avoid duplicates)
+            for admin in admin_users:
+                if admin['email'] not in recipients:
+                    recipients.append(admin['email'])
+                    recipient_names.append(admin['name'])
+
+            # Send notification to all recipients
+            if recipients:
+                base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
+
+
+@app.route('/api/notifications/count', methods=['GET'])
+def get_notification_count():
+    """Get notification count for current user"""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        user_role = (request.headers.get('X-User-Role') or '').lower()
+        user_name = (request.headers.get('X-User-Name') or '').lower()
+        
+        if not user_id:
+            return jsonify({'count': 0}), 200
+            
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        notification_count = 0
+        
+        # Check if user is super admin or admin or Kamal (by name)
+        is_admin = user_role in ['admin', 'super_admin'] or 'kamal vallecha' in user_name
+        
+        if is_admin:
+            # Count all pending access requests for bids they own or all bids if admin
+            cur.execute('''
+                SELECT COUNT(DISTINCT bar.id)
+                FROM bid_access_requests bar
+                LEFT JOIN bids b ON bar.bid_id = b.id
+                WHERE bar.status = 'pending'
+                AND (b.created_by = %s OR %s = true)
+            ''', (user_id, is_admin))
+            result = cur.fetchone()
+            notification_count = result[0] if result else 0
+        else:
+            # Count pending requests for bids they own
+            cur.execute('''
+                SELECT COUNT(*)
+                FROM bid_access_requests bar
+                JOIN bids b ON bar.bid_id = b.id
+                WHERE bar.status = 'pending'
+                AND b.created_by = %s
+            ''', (user_id,))
+            result = cur.fetchone()
+            notification_count = result[0] if result else 0
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({'count': notification_count}), 200
+        
+    except Exception as e:
+        print(f"Error getting notification count: {str(e)}")
+        return jsonify({'count': 0}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
+
+
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    """Get detailed notifications for current user"""
+    try:
+        user_id = request.headers.get('X-User-Id')
+        user_role = (request.headers.get('X-User-Role') or '').lower()
+        user_name = (request.headers.get('X-User-Name') or '').lower()
+        
+        if not user_id:
+            return jsonify({'notifications': []}), 200
+            
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Check if user is super admin or admin or Kamal (by name)
+        is_admin = user_role in ['admin', 'super_admin'] or 'kamal vallecha' in user_name
+        
+        if is_admin:
+            # Get all pending access requests for bids they own or all bids if admin
+            cur.execute('''
+                SELECT DISTINCT
+                    bar.id,
+                    bar.bid_id,
+                    bar.user_id,
+                    bar.team,
+                    bar.requested_on,
+                    b.bid_number,
+                    b.study_name,
+                    u.email,
+                    u.name as requester_name
+                FROM bid_access_requests bar
+                LEFT JOIN bids b ON bar.bid_id = b.id
+                LEFT JOIN users u ON bar.user_id = u.id
+                WHERE bar.status = 'pending'
+                AND (b.created_by = %s OR %s = true)
+                ORDER BY bar.requested_on DESC
+            ''', (user_id, is_admin))
+        else:
+            # Get pending requests for bids they own
+            cur.execute('''
+                SELECT 
+                    bar.id,
+                    bar.bid_id,
+                    bar.user_id,
+                    bar.team,
+                    bar.requested_on,
+                    b.bid_number,
+                    b.study_name,
+                    u.email,
+                    u.name as requester_name
+                FROM bid_access_requests bar
+                JOIN bids b ON bar.bid_id = b.id
+                LEFT JOIN users u ON bar.user_id = u.id
+                WHERE bar.status = 'pending'
+                AND b.created_by = %s
+                ORDER BY bar.requested_on DESC
+            ''', (user_id,))
+        
+        notifications = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({'notifications': notifications}), 200
+        
+    except Exception as e:
+        print(f"Error getting notifications: {str(e)}")
+        return jsonify({'notifications': []}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
+
+
+                if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
+                    base_url = f"https://{request.host.split(':')[0]}"
+
+                msg = Message('🔔 Bid Access Request - Action Required',
                               sender=app.config['MAIL_DEFAULT_SENDER'],
-                              recipients=[bid_owner['email']])
+                              recipients=recipients)
 
-                msg.body = f"""Dear {bid_owner['name']},
+                msg.body = f"""URGENT: New Bid Access Request
 
-A user has requested access to bid {bid_number} ({study_name}).
+A user has requested access to a bid and requires your approval.
 
-Request Details:
-- User: {user_name} ({user_email})
-- Team: {user_team}
-- Bid Number: {bid_number}
-- Study Name: {study_name}
+📋 REQUEST DETAILS:
+• Bid Number: {bid_number}
+• Study Name: {study_name}
+• Requester: {user_name} ({user_email})
+• Team: {user_team}
+• Request Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-Please review and grant/deny access through the bid management system.
+🎯 ACTION REQUIRED:
+Please log into the bid management system to review and approve/deny this request.
+
+Access the system: {base_url}
+
+⚠️ Note: This request is pending your approval. The user cannot access the bid until you grant permission.
 
 Best regards,
-Bid Management System"""
+Bid Management System
+---
+This is an automated notification. Please do not reply to this email."""
+
+                msg.html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2 style="color: #d32f2f; margin-bottom: 20px;">🔔 Bid Access Request - Action Required</h2>
+                    
+                    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <strong>URGENT:</strong> A user has requested access to a bid and requires your approval.
+                    </div>
+                    
+                    <h3 style="color: #333; margin-bottom: 15px;">📋 Request Details:</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Bid Number:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{bid_number}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Study Name:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{study_name}</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Requester:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{user_name} ({user_email})</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Team:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{user_team}</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Request Time:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</td>
+                        </tr>
+                    </table>
+                    
+                    <div style="background-color: #e3f2fd; border: 1px solid #90caf9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h3 style="color: #1976d2; margin-bottom: 10px;">🎯 Action Required:</h3>
+                        <p style="margin: 0;">Please log into the bid management system to review and approve/deny this request.</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 20px 0;">
+                        <a href="{base_url}" style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                            Access Bid Management System
+                        </a>
+                    </div>
+                    
+                    <div style="background-color: #ffebee; border: 1px solid #ffcdd2; padding: 10px; border-radius: 5px; margin-top: 20px;">
+                        <small style="color: #d32f2f;">
+                            ⚠️ <strong>Note:</strong> This request is pending your approval. The user cannot access the bid until you grant permission.
+                        </small>
+                    </div>
+                    
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                    <p style="font-size: 12px; color: #666; margin: 0;">
+                        This is an automated notification from the Bid Management System. Please do not reply to this email.
+                    </p>
+                </div>
+                """
 
                 mail.send(msg)
-                print(f"Access request email sent to {bid_owner['email']}")
+                print(f"Access request email sent to {len(recipients)} recipients: {', '.join(recipients)}")
 
             cur_email.close()
             conn_email.close()
@@ -5937,17 +6332,23 @@ def get_access_requests(bid_id):
 def grant_access_request(bid_id, request_id):
     try:
         conn = get_db_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         # Get the request info
         cur.execute(
-            'SELECT user_id, team FROM bid_access_requests WHERE id = %s AND bid_id = %s',
-            (request_id, bid_id))
+            '''
+            SELECT bar.user_id, bar.team, u.email, u.name, b.bid_number, b.study_name
+            FROM bid_access_requests bar
+            LEFT JOIN users u ON bar.user_id = u.id
+            JOIN bids b ON bar.bid_id = b.id
+            WHERE bar.id = %s AND bar.bid_id = %s
+            ''', (request_id, bid_id))
         req = cur.fetchone()
         if not req:
             cur.close()
             conn.close()
             return jsonify({'error': 'Request not found'}), 404
-        user_id, team = req
+        
+        user_id, team, user_email, user_name, bid_number, study_name = req['user_id'], req['team'], req['email'], req['name'], req['bid_number'], req['study_name']
 
         print(
             f"DEBUG: Granting access for bid_id={bid_id}, user_id={user_id}, team={team}"
@@ -5972,6 +6373,83 @@ def grant_access_request(bid_id, request_id):
             (bid_id, user_id, team))
         access_record = cur.fetchone()
         print(f"DEBUG: Access record after grant: {access_record}")
+
+        # Send email notification to the user who requested access
+        try:
+            if user_email:
+                base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
+                if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
+                    base_url = f"https://{request.host.split(':')[0]}"
+
+                msg = Message('✅ Bid Access Granted - You Can Now Access the Bid',
+                              sender=app.config['MAIL_DEFAULT_SENDER'],
+                              recipients=[user_email])
+
+                msg.body = f"""Good news! Your bid access request has been approved.
+
+📋 ACCESS GRANTED FOR:
+• Bid Number: {bid_number}
+• Study Name: {study_name}
+• Granted Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+🎯 NEXT STEPS:
+You can now access this bid in the system. You have full viewing and copying permissions for this bid.
+
+Access the system: {base_url}
+
+Thank you for using the Bid Management System!
+
+Best regards,
+Bid Management Team
+---
+This is an automated notification. Please do not reply to this email."""
+
+                msg.html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2 style="color: #4caf50; margin-bottom: 20px;">✅ Bid Access Granted</h2>
+                    
+                    <div style="background-color: #e8f5e8; border: 1px solid #4caf50; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <strong>Good news!</strong> Your bid access request has been approved.
+                    </div>
+                    
+                    <h3 style="color: #333; margin-bottom: 15px;">📋 Access Granted For:</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Bid Number:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{bid_number}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Study Name:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{study_name}</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Granted Time:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</td>
+                        </tr>
+                    </table>
+                    
+                    <div style="background-color: #e3f2fd; border: 1px solid #90caf9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h3 style="color: #1976d2; margin-bottom: 10px;">🎯 Next Steps:</h3>
+                        <p style="margin: 0;">You can now access this bid in the system. You have full viewing and copying permissions for this bid.</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 20px 0;">
+                        <a href="{base_url}" style="background-color: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                            Access Bid Management System
+                        </a>
+                    </div>
+                    
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                    <p style="font-size: 12px; color: #666; margin: 0;">
+                        This is an automated notification from the Bid Management System. Please do not reply to this email.
+                    </p>
+                </div>
+                """
+
+                mail.send(msg)
+                print(f"Access granted email sent to {user_email}")
+        except Exception as email_error:
+            print(f"Error sending access granted email: {str(email_error)}")
 
         cur.close()
         conn.close()
