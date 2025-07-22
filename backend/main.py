@@ -5803,7 +5803,7 @@ def request_access():
                 conn_email = get_db_connection()
                 cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
 
-                # Get bid owner email (only send to bid creator)
+                # Get bid owner email
                 cur_email.execute(
                     '''
                     SELECT u.email, u.name 
@@ -5821,7 +5821,7 @@ def request_access():
 
                     msg = Message('🔔 Bid Access Request - Action Required',
                                   sender=app.config['MAIL_DEFAULT_SENDER'],
-                                  recipients=[bid_owner['email']])  # Send to only one recipient
+                                  recipients=[bid_owner['email']])
 
                     msg.body = f"""URGENT: New Bid Access Request
 
@@ -5903,17 +5903,17 @@ This is an automated notification. Please do not reply to this email."""
                     """
 
                     mail.send(msg)
-                    print(f"Access request email sent to {len(recipients)} recipients: {', '.join(recipients)}")
+                    print(f"Access request email sent to bid creator: {bid_owner['email']}")
 
             except Exception as email_error:
-                    print(f"Error sending access request email: {str(email_error)}")
-                    import traceback
-                    print(f"Email error traceback: {traceback.format_exc()}")
-                finally:
-                    if cur_email:
-                        cur_email.close()
-                    if conn_email:
-                        conn_email.close()
+                print(f"Error sending access request email: {str(email_error)}")
+                import traceback
+                print(f"Email error traceback: {traceback.format_exc()}")
+            finally:
+                if cur_email:
+                    cur_email.close()
+                if conn_email:
+                    conn_email.close()
 
         return jsonify({'message': 'Access request submitted successfully'}), 200
 
