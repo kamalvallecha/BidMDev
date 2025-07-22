@@ -3605,8 +3605,12 @@ def get_dashboard_data():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Get bids data from PostgreSQL
-        cur.execute("SELECT id, status, client FROM bids")
+        # Get bids data from PostgreSQL with user team information
+        cur.execute("""
+            SELECT b.id, b.status, b.client, b.created_by, u.team 
+            FROM bids b
+            LEFT JOIN users u ON b.created_by = u.id
+        """)
         bids_data = cur.fetchall()
 
         # Get clients data from PostgreSQL
@@ -3727,13 +3731,54 @@ def get_dashboard_data():
         # Sort by total_bids descending
         client_summary.sort(key=lambda x: x['total_bids'], reverse=True)
 
+        # Calculate team statistics
+        team_summary = []
+        team_metrics = {}
+
+        # Process each bid to calculate team metrics
+        for bid in bids_data:
+            team = bid.get('team', 'Unknown Team') if bid.get('team') else 'Unknown Team'
+            status = bid.get('status', 'draft').lower()
+            
+            if team not in team_metrics:
+                team_metrics[team] = {
+                    'total_bids': 0,
+                    'bids_in_field': 0,
+                    'bids_closed': 0,
+                    'bids_invoiced': 0
+                }
+            
+            team_metrics[team]['total_bids'] += 1
+            
+            # Count by status
+            if status == 'infield':
+                team_metrics[team]['bids_in_field'] += 1
+            elif status in ['closure', 'completed']:
+                team_metrics[team]['bids_closed'] += 1
+            elif status in ['ready_for_invoice', 'invoiced']:
+                team_metrics[team]['bids_invoiced'] += 1
+
+        # Build final team summary
+        for team, metrics in team_metrics.items():
+            team_summary.append({
+                'team': team,
+                'total_bids': metrics['total_bids'],
+                'bids_in_field': metrics['bids_in_field'],
+                'bids_closed': metrics['bids_closed'],
+                'bids_invoiced': metrics['bids_invoiced']
+            })
+
+        # Sort by total_bids descending
+        team_summary.sort(key=lambda x: x['total_bids'], reverse=True)
+
         dashboard_data = {
             "total_bids": total_bids,
             "active_bids": active_bids,
             "total_savings": 0,  # TODO: Calculate from partner responses
             "avg_turnaround_time": 0,  # TODO: Calculate from bid dates
             "bids_by_status": status_counts,
-            "client_summary": client_summary
+            "client_summary": client_summary,
+            "team_summary": team_summary
         }
 
         cur.close()

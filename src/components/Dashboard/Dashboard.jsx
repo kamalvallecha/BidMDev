@@ -20,9 +20,47 @@ const Dashboard = () => {
             Completed: 0,
             Rejected: 0
         },
-        client_summary: []
+        client_summary: [],
+        team_summary: []
     });
     const [loading, setLoading] = useState(true);
+
+    const teamColumns = [
+        {
+            title: 'Team',
+            dataIndex: 'team',
+            key: 'team',
+            width: '25%',
+        },
+        {
+            title: 'No. of Bids',
+            dataIndex: 'total_bids',
+            key: 'total_bids',
+            align: 'right',
+            width: '25%',
+        },
+        {
+            title: 'Bids In Field',
+            dataIndex: 'bids_in_field',
+            key: 'bids_in_field',
+            align: 'right',
+            width: '25%',
+        },
+        {
+            title: 'Bids Closed',
+            dataIndex: 'bids_closed',
+            key: 'bids_closed',
+            align: 'right',
+            width: '25%',
+        },
+        {
+            title: 'Bid Invoiced',
+            dataIndex: 'bids_invoiced',
+            key: 'bids_invoiced',
+            align: 'right',
+            width: '25%',
+        },
+    ];
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -165,11 +203,22 @@ const Dashboard = () => {
                 </Col>
             </Row>
 
-            {/* Pie Chart */}
+            {/* Pie Chart and Team Summary */}
             <Row gutter={[16, 16]} style={{ marginTop: '20px' }}>
-                <Col xs={24} md={12} offset={6}>
+                <Col xs={24} md={12}>
                     <Card title="Bids by Status">
                         <PieChart data={data.bids_by_status} />
+                    </Card>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Card title="Bids by Team (POD)">
+                        <Table
+                            columns={teamColumns}
+                            dataSource={data.team_summary || []}
+                            pagination={false}
+                            size="small"
+                            rowKey="team"
+                        />
                     </Card>
                 </Col>
             </Row>
