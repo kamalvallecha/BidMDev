@@ -3675,14 +3675,14 @@ def get_dashboard_data():
                 'total_bids': count
             })
 
-        # Get VM data with teams for team summary
-        cur.execute("SELECT id, vm_name, team FROM vendor_managers")
-        vm_records = cur.fetchall()
-        vm_data = {}
-        for vm in vm_records:
-            vm_data[str(vm['id'])] = {
-                'vm_name': vm['vm_name'],
-                'team': vm['team']
+        # Get user data with teams for team summary (link via created_by)
+        cur.execute("SELECT id, name, team FROM users")
+        user_records = cur.fetchall()
+        user_data = {}
+        for user in user_records:
+            user_data[str(user['id'])] = {
+                'name': user['name'],
+                'team': user['team']
             }
 
         # Create team summary by counting bids per team and status
@@ -3690,10 +3690,10 @@ def get_dashboard_data():
         team_counts = {}
 
         for bid in bids_data:
-            vm_id = bid.get('vm_contact')
+            created_by_id = bid.get('created_by')
             team = 'Unknown Team'
-            if vm_id and str(vm_id) in vm_data:
-                team = vm_data[str(vm_id)].get('team', 'Unknown Team')
+            if created_by_id and str(created_by_id) in user_data:
+                team = user_data[str(created_by_id)].get('team', 'Unknown Team')
             
             status = bid.get('status', 'draft').lower()
             
@@ -3714,24 +3714,12 @@ def get_dashboard_data():
             elif status in ['ready_for_invoice', 'invoiced']:
                 team_counts[team]['bid_invoiced'] += 1
 
-        # Create team summary for all teams found, or POD 1-4 as default
-        if team_counts:
-            for team_name, team_data in team_counts.items():
-                if team_name != 'Unknown Team':
-                    team_summary.append({
-                        'team': team_name,
-                        **team_data
-                    })
-        else:
-            # Fallback: Create POD 1-4 with zeros if no team data found
-            for i in range(1, 5):
-                pod_name = f'POD {i}'
+        # Create team summary for all teams found
+        for team_name, team_data in team_counts.items():
+            if team_name and team_name != 'Unknown Team':
                 team_summary.append({
-                    'team': pod_name,
-                    'total_bids': 0,
-                    'bids_in_field': 0,
-                    'bids_closed': 0,
-                    'bid_invoiced': 0
+                    'team': team_name,
+                    **team_data
                 })
 
         dashboard_data = {
