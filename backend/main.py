@@ -3652,28 +3652,80 @@ def get_dashboard_data():
             if status in active_statuses:
                 active_bids += 1
 
-        # Create client summary
+        # Create detailed client summary with status breakdown
         client_summary = []
-        client_bid_counts = {}
+        client_metrics = {}
 
+        # Process each bid to calculate client metrics
         for bid in bids_data:
-            client_id = str(bid.get('client',
-                                    '')) if bid.get('client') else 'unknown'
-            if client_id in client_bid_counts:
-                client_bid_counts[client_id] += 1
-            else:
-                client_bid_counts[client_id] = 1
+            client_id = str(bid.get('client', '')) if bid.get('client') else 'unknown'
+            status = bid.get('status', 'draft').lower()
+            
+            if client_id not in client_metrics:
+                client_metrics[client_id] = {
+                    'total_bids': 0,
+                    'bids_in_field': 0,
+                    'bid_closed': 0,
+                    'bid_invoiced': 0,
+                    'bids_rejected': 0,
+                    'total_amount': 0,
+                    'closed_bids': 0  # For conversion rate calculation
+                }
+            
+            client_metrics[client_id]['total_bids'] += 1
+            
+            # Count by status
+            if status == 'infield':
+                client_metrics[client_id]['bids_in_field'] += 1
+            elif status in ['closure', 'completed']:
+                client_metrics[client_id]['bid_closed'] += 1
+                client_metrics[client_id]['closed_bids'] += 1
+            elif status in ['ready_for_invoice', 'invoiced']:
+                client_metrics[client_id]['bid_invoiced'] += 1
+                client_metrics[client_id]['closed_bids'] += 1
+            elif status == 'rejected':
+                client_metrics[client_id]['bids_rejected'] += 1
 
-        for client_id, count in client_bid_counts.items():
+        # Get invoice amounts for clients (simplified - you may need to adjust based on your invoice structure)
+        cur.execute("""
+            SELECT 
+                b.client,
+                SUM(COALESCE(pr.invoice_amount, 0)) as total_amount
+            FROM bids b
+            LEFT JOIN partner_responses pr ON b.id = pr.bid_id
+            WHERE pr.invoice_amount IS NOT NULL AND pr.invoice_amount > 0
+            GROUP BY b.client
+        """)
+        
+        invoice_amounts = {}
+        for row in cur.fetchall():
+            if row['client']:
+                invoice_amounts[str(row['client'])] = float(row['total_amount'] or 0)
+
+        # Build final client summary
+        for client_id, metrics in client_metrics.items():
             client_name = 'Unknown Client'
             if client_id in clients_data:
-                client_name = clients_data[client_id].get(
-                    'client_name', 'Unknown Client')
-
+                client_name = clients_data[client_id].get('client_name', 'Unknown Client')
+            
+            # Calculate conversion rate
+            conversion_rate = 0
+            if metrics['total_bids'] > 0:
+                conversion_rate = round((metrics['closed_bids'] / metrics['total_bids']) * 100, 2)
+            
             client_summary.append({
                 'client_name': client_name,
-                'total_bids': count
+                'total_bids': metrics['total_bids'],
+                'bids_in_field': metrics['bids_in_field'],
+                'bid_closed': metrics['bid_closed'],
+                'bid_invoiced': metrics['bid_invoiced'],
+                'bids_rejected': metrics['bids_rejected'],
+                'total_amount': invoice_amounts.get(client_id, 0),
+                'conversion_rate': conversion_rate
             })
+
+        # Sort by total_bids descending
+        client_summary.sort(key=lambda x: x['total_bids'], reverse=True)
 
         dashboard_data = {
             "total_bids": total_bids,
