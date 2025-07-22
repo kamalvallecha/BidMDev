@@ -5730,6 +5730,11 @@ def find_similar_bids():
 
 @app.route('/api/bids/request-access', methods=['POST'])
 def request_access():
+    conn = None
+    cur = None
+    conn_email = None
+    cur_email = None
+
     try:
         data = request.json
         bid_id = data.get('bidId')
@@ -5745,24 +5750,25 @@ def request_access():
 
         conn = get_db_connection()
         cur = conn.cursor()
+
         # Look up user_id by email
         user_id = None
         if user_email:
-            cur.execute('SELECT id FROM users WHERE email = %s',
-                        (user_email, ))
+            cur.execute('SELECT id FROM users WHERE email = %s', (user_email,))
             user_row = cur.fetchone()
             if user_row:
                 user_id = user_row[0]
+
         # Check if there's already a request for this bid/user/team combination
         cur.execute(
             '''
             SELECT status FROM bid_access_requests 
             WHERE bid_id = %s AND user_id = %s AND team = %s
         ''', (bid_id, user_id, user_team))
-        
+
         existing_request = cur.fetchone()
         request_created_or_updated = False
-        
+
         if existing_request:
             if existing_request[0] == 'pending':
                 print(f"Access request already pending for bid {bid_id}, user {user_id}, team {user_team}")
@@ -5791,9 +5797,8 @@ def request_access():
                 VALUES (%s, %s, %s, 'pending')
             ''', (bid_id, user_id, user_team))
             request_created_or_updated = True
+
         conn.commit()
-        cur.close()
-        conn.close()
 
         # Only send email notifications if a request was actually created or updated
         if request_created_or_updated:
@@ -5801,56 +5806,56 @@ def request_access():
             try:
                 conn_email = get_db_connection()
                 cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
-                
+
                 # Get bid owner email
                 cur_email.execute(
-                '''
-                SELECT u.email, u.name 
-                FROM bids b 
-                JOIN users u ON b.created_by = u.id 
-                WHERE b.id = %s
-            ''', (bid_id, ))
-            bid_owner = cur_email.fetchone()
+                    '''
+                    SELECT u.email, u.name 
+                    FROM bids b 
+                    JOIN users u ON b.created_by = u.id 
+                    WHERE b.id = %s
+                ''', (bid_id,))
+                bid_owner = cur_email.fetchone()
 
-            # Get all admin users for additional notification
-            cur_email.execute(
-                '''
-                SELECT email, name 
-                FROM users 
-                WHERE role IN ('admin', 'super_admin')
-            ''')
-            admin_users = cur_email.fetchall()
+                # Get all admin users for additional notification
+                cur_email.execute(
+                    '''
+                    SELECT email, name 
+                    FROM users 
+                    WHERE role IN ('admin', 'super_admin')
+                ''')
+                admin_users = cur_email.fetchall()
 
-            # Create recipient list
-            recipients = []
-            recipient_names = []
-            
-            if bid_owner:
-                recipients.append(bid_owner['email'])
-                recipient_names.append(bid_owner['name'])
-                
-            # Add admin notification email if configured
-            if ADMIN_NOTIFICATION_EMAIL and ADMIN_NOTIFICATION_EMAIL not in recipients:
-                recipients.append(ADMIN_NOTIFICATION_EMAIL)
-                recipient_names.append('Admin')
-                
-            # Add admin users (avoid duplicates)
-            for admin in admin_users:
-                if admin['email'] not in recipients:
-                    recipients.append(admin['email'])
-                    recipient_names.append(admin['name'])
+                # Create recipient list
+                recipients = []
+                recipient_names = []
 
-            # Send notification to all recipients
-            if recipients:
-                base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
-                if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
-                    base_url = f"https://{request.host.split(':')[0]}"
+                if bid_owner:
+                    recipients.append(bid_owner['email'])
+                    recipient_names.append(bid_owner['name'])
 
-                msg = Message('🔔 Bid Access Request - Action Required',
-                              sender=app.config['MAIL_DEFAULT_SENDER'],
-                              recipients=recipients)
+                # Add admin notification email if configured
+                if 'ADMIN_NOTIFICATION_EMAIL' in globals() and ADMIN_NOTIFICATION_EMAIL and ADMIN_NOTIFICATION_EMAIL not in recipients:
+                    recipients.append(ADMIN_NOTIFICATION_EMAIL)
+                    recipient_names.append('Admin')
 
-                msg.body = f"""URGENT: New Bid Access Request
+                # Add admin users (avoid duplicates)
+                for admin in admin_users:
+                    if admin['email'] not in recipients:
+                        recipients.append(admin['email'])
+                        recipient_names.append(admin['name'])
+
+                # Send notification to all recipients
+                if recipients:
+                    base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
+                    if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
+                        base_url = f"https://{request.host.split(':')[0]}"
+
+                    msg = Message('🔔 Bid Access Request - Action Required',
+                                  sender=app.config['MAIL_DEFAULT_SENDER'],
+                                  recipients=recipients)
+
+                    msg.body = f"""URGENT: New Bid Access Request
 
 A user has requested access to a bid and requires your approval.
 
@@ -5873,90 +5878,84 @@ Bid Management System
 ---
 This is an automated notification. Please do not reply to this email."""
 
-                msg.html = f"""
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                    <h2 style="color: #d32f2f; margin-bottom: 20px;">🔔 Bid Access Request - Action Required</h2>
-                    
-                    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                        <strong>URGENT:</strong> A user has requested access to a bid and requires your approval.
-                    </div>
-                    
-                    <h3 style="color: #333; margin-bottom: 15px;">📋 Request Details:</h3>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                        <tr style="background-color: #f8f9fa;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Bid Number:</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">{bid_number}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Study Name:</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">{study_name}</td>
-                        </tr>
-                        <tr style="background-color: #f8f9fa;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Requester:</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">{user_name} ({user_email})</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Team:</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">{user_team}</td>
-                        </tr>
-                        <tr style="background-color: #f8f9fa;">
-                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Request Time:</td>
-                            <td style="padding: 10px; border: 1px solid #ddd;">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</td>
-                        </tr>
-                    </table>
-                    
-                    <div style="background-color: #e3f2fd; border: 1px solid #90caf9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                        <h3 style="color: #1976d2; margin-bottom: 10px;">🎯 Action Required:</h3>
-                        <p style="margin: 0;">Please log into the bid management system to review and approve/deny this request.</p>
-                    </div>
-                    
-                    <div style="text-align: center; margin: 20px 0;">
-                        <a href="{base_url}" style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                            Access Bid Management System
-                        </a>
-                    </div>
-                    
-                    <div style="background-color: #ffebee; border: 1px solid #ffcdd2; padding: 10px; border-radius: 5px; margin-top: 20px;">
-                        <small style="color: #d32f2f;">
-                            ⚠️ <strong>Note:</strong> This request is pending your approval. The user cannot access the bid until you grant permission.
-                        </small>
-                    </div>
-                    
-                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-                    <p style="font-size: 12px; color: #666; margin: 0;">
-                        This is an automated notification from the Bid Management System. Please do not reply to this email.
-                    </p>
-                </div>
-                """
+                    msg.html = f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                        <h2 style="color: #d32f2f; margin-bottom: 20px;">🔔 Bid Access Request - Action Required</h2>
 
-                mail.send(msg)
-                print(f"Access request email sent to {len(recipients)} recipients: {', '.join(recipients)}")
+                        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                            <strong>URGENT:</strong> A user has requested access to a bid and requires your approval.
+                        </div>
 
-            cur_email.close()
-            conn_email.close()
+                        <h3 style="color: #333; margin-bottom: 15px;">📋 Request Details:</h3>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                            <tr style="background-color: #f8f9fa;">
+                                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Bid Number:</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">{bid_number}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Study Name:</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">{study_name}</td>
+                            </tr>
+                            <tr style="background-color: #f8f9fa;">
+                                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Requester:</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">{user_name} ({user_email})</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Team:</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">{user_team}</td>
+                            </tr>
+                            <tr style="background-color: #f8f9fa;">
+                                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Request Time:</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</td>
+                            </tr>
+                        </table>
 
-        except Exception as email_error:
-            print(f"Error sending access request email: {str(email_error)}")
-            import traceback
-            print(f"Email error traceback: {traceback.format_exc()}")
+                        <div style="background-color: #e3f2fd; border: 1px solid #90caf9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                            <h3 style="color: #1976d2; margin-bottom: 10px;">🎯 Action Required:</h3>
+                            <p style="margin: 0;">Please log into the bid management system to review and approve/deny this request.</p>
+                        </div>
 
-        if request_created_or_updated:
-            return jsonify({'message': 'Access request submitted successfully'}), 200
-        else:
-            if existing_request and existing_request[0] == 'pending':
-                return jsonify({'message': 'Access request already pending'}), 200
-            elif existing_request and existing_request[0] == 'granted':
-                return jsonify({'message': 'Access already granted'}), 200
-            else:
-                return jsonify({'message': 'Access request processed'}), 200
+                        <div style="text-align: center; margin: 20px 0;">
+                            <a href="{base_url}" style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                                Access Bid Management System
+                            </a>
+                        </div>
+
+                        <div style="background-color: #ffebee; border: 1px solid #ffcdd2; padding: 10px; border-radius: 5px; margin-top: 20px;">
+                            <small style="color: #d32f2f;">
+                                ⚠️ <strong>Note:</strong> This request is pending your approval. The user cannot access the bid until you grant permission.
+                            </small>
+                        </div>
+
+                        <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                        <p style="font-size: 12px; color: #666; margin: 0;">
+                            This is an automated notification from the Bid Management System. Please do not reply to this email.
+                        </p>
+                    </div>
+                    """
+
+                    mail.send(msg)
+                    print(f"Access request email sent to {len(recipients)} recipients: {', '.join(recipients)}")
+
+            except Exception as email_error:
+                print(f"Error sending access request email: {str(email_error)}")
+                import traceback
+                print(f"Email error traceback: {traceback.format_exc()}")
+            finally:
+                if cur_email:
+                    cur_email.close()
+                if conn_email:
+                    conn_email.close()
+
+        return jsonify({'message': 'Access request submitted successfully'}), 200
 
     except Exception as e:
         print(f"Error in request_access: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
-        if 'cur' in locals():
+        if cur:
             cur.close()
-        if 'conn' in locals():
+        if conn:
             conn.close()
 
 @app.route('/api/notifications/count', methods=['GET'])
