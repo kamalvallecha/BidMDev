@@ -5810,7 +5810,114 @@ def request_access():
             # Send notification to all recipients
             if recipients:
                 base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
-                try:
+                if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
+                    base_url = f"https://{request.host.split(':')[0]}"
+
+                msg = Message('🔔 Bid Access Request - Action Required',
+                              sender=app.config['MAIL_DEFAULT_SENDER'],
+                              recipients=recipients)
+
+                msg.body = f"""URGENT: New Bid Access Request
+
+A user has requested access to a bid and requires your approval.
+
+📋 REQUEST DETAILS:
+• Bid Number: {bid_number}
+• Study Name: {study_name}
+• Requester: {user_name} ({user_email})
+• Team: {user_team}
+• Request Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+🎯 ACTION REQUIRED:
+Please log into the bid management system to review and approve/deny this request.
+
+Access the system: {base_url}
+
+⚠️ Note: This request is pending your approval. The user cannot access the bid until you grant permission.
+
+Best regards,
+Bid Management System
+---
+This is an automated notification. Please do not reply to this email."""
+
+                msg.html = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+                    <h2 style="color: #d32f2f; margin-bottom: 20px;">🔔 Bid Access Request - Action Required</h2>
+                    
+                    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <strong>URGENT:</strong> A user has requested access to a bid and requires your approval.
+                    </div>
+                    
+                    <h3 style="color: #333; margin-bottom: 15px;">📋 Request Details:</h3>
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Bid Number:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{bid_number}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Study Name:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{study_name}</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Requester:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{user_name} ({user_email})</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Team:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{user_team}</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Request Time:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</td>
+                        </tr>
+                    </table>
+                    
+                    <div style="background-color: #e3f2fd; border: 1px solid #90caf9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h3 style="color: #1976d2; margin-bottom: 10px;">🎯 Action Required:</h3>
+                        <p style="margin: 0;">Please log into the bid management system to review and approve/deny this request.</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 20px 0;">
+                        <a href="{base_url}" style="background-color: #1976d2; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                            Access Bid Management System
+                        </a>
+                    </div>
+                    
+                    <div style="background-color: #ffebee; border: 1px solid #ffcdd2; padding: 10px; border-radius: 5px; margin-top: 20px;">
+                        <small style="color: #d32f2f;">
+                            ⚠️ <strong>Note:</strong> This request is pending your approval. The user cannot access the bid until you grant permission.
+                        </small>
+                    </div>
+                    
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                    <p style="font-size: 12px; color: #666; margin: 0;">
+                        This is an automated notification from the Bid Management System. Please do not reply to this email.
+                    </p>
+                </div>
+                """
+
+                mail.send(msg)
+                print(f"Access request email sent to {len(recipients)} recipients: {', '.join(recipients)}")
+
+            cur_email.close()
+            conn_email.close()
+
+        except Exception as email_error:
+            print(f"Error sending access request email: {str(email_error)}")
+            import traceback
+            print(f"Email error traceback: {traceback.format_exc()}")
+
+        return jsonify({'message':
+                        'Access request submitted successfully'}), 200
+
+    except Exception as e:
+        print(f"Error in request_access: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
                     msg.send()
                     print(f"Notification email sent to: {', '.join(recipient_names)}")
                 except Exception as e:
