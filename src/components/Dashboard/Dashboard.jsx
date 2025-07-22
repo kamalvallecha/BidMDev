@@ -30,7 +30,7 @@ const Dashboard = () => {
                 setLoading(true);
                 console.log('Fetching dashboard data...');
                 const response = await axios.get('/api/dashboard');
-                
+
                 console.log('Received dashboard data:', response.data);
                 setData(response.data);
             } catch (error) {
@@ -116,7 +116,7 @@ const Dashboard = () => {
     return (
         <div className="dashboard-container">
             <h1>Dashboard</h1>
-            
+
             {/* Summary Cards */}
             <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} lg={6}>
@@ -165,11 +165,62 @@ const Dashboard = () => {
                 </Col>
             </Row>
 
-            {/* Pie Chart */}
+            {/* Pie Chart and Team Summary */}
             <Row gutter={[16, 16]} style={{ marginTop: '20px' }}>
-                <Col xs={24} md={12} offset={6}>
+                <Col xs={24} lg={12}>
                     <Card title="Bids by Status">
                         <PieChart data={data.bids_by_status} />
+                    </Card>
+                </Col>
+                <Col xs={24} lg={12}>
+                    <Card title="Team Summary">
+                        <Table
+                            columns={[
+                                {
+                                    title: 'Team',
+                                    dataIndex: 'team',
+                                    key: 'team',
+                                    width: '25%',
+                                },
+                                {
+                                    title: 'No. of Bids',
+                                    dataIndex: 'total_bids',
+                                    key: 'total_bids',
+                                    align: 'center',
+                                    width: '25%',
+                                },
+                                {
+                                    title: 'Bids In Field',
+                                    dataIndex: 'bids_in_field',
+                                    key: 'bids_in_field',
+                                    align: 'center',
+                                    width: '25%',
+                                },
+                                {
+                                    title: 'Bids Closed',
+                                    dataIndex: 'bids_closed',
+                                    key: 'bids_closed',
+                                    align: 'center',
+                                    width: '25%',
+                                },
+                                {
+                                    title: 'Bid Invoiced',
+                                    dataIndex: 'bid_invoiced',
+                                    key: 'bid_invoiced',
+                                    align: 'center',
+                                    width: '25%',
+                                }
+                            ]}
+                            dataSource={data.team_summary || [
+                                { team: 'POD 1', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 },
+                                { team: 'POD 2', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 },
+                                { team: 'POD 3', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 },
+                                { team: 'POD 4', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 }
+                            ]}
+                            pagination={false}
+                            size="small"
+                            rowKey="team"
+                        />
                     </Card>
                 </Col>
             </Row>
@@ -193,4 +244,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard; 
+export default Dashboard;
