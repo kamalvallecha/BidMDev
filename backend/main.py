@@ -5807,7 +5807,7 @@ def request_access():
                 conn_email = get_db_connection()
                 cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
 
-                # Get bid owner email
+                # Get bid owner email (only send to bid creator)
                 cur_email.execute(
                     '''
                     SELECT u.email, u.name 
@@ -5817,33 +5817,13 @@ def request_access():
                 ''', (bid_id,))
                 bid_owner = cur_email.fetchone()
 
-                # Get all admin users for additional notification
-                cur_email.execute(
-                    '''
-                    SELECT email, name 
-                    FROM users 
-                    WHERE role IN ('admin', 'super_admin')
-                ''')
-                admin_users = cur_email.fetchall()
-
-                # Create recipient list
+                # Create recipient list - only bid creator
                 recipients = []
                 recipient_names = []
 
                 if bid_owner:
                     recipients.append(bid_owner['email'])
                     recipient_names.append(bid_owner['name'])
-
-                # Add admin notification email if configured
-                if 'ADMIN_NOTIFICATION_EMAIL' in globals() and ADMIN_NOTIFICATION_EMAIL and ADMIN_NOTIFICATION_EMAIL not in recipients:
-                    recipients.append(ADMIN_NOTIFICATION_EMAIL)
-                    recipient_names.append('Admin')
-
-                # Add admin users (avoid duplicates)
-                for admin in admin_users:
-                    if admin['email'] not in recipients:
-                        recipients.append(admin['email'])
-                        recipient_names.append(admin['name'])
 
                 # Send notification to all recipients
                 if recipients:
@@ -5974,31 +5954,16 @@ def get_notification_count():
         
         notification_count = 0
         
-        # Check if user is super admin or admin or Kamal (by name)
-        is_admin = user_role in ['admin', 'super_admin'] or 'kamal vallecha' in user_name
-        
-        if is_admin:
-            # Count all pending access requests for bids they own or all bids if admin
-            cur.execute('''
-                SELECT COUNT(DISTINCT bar.id)
-                FROM bid_access_requests bar
-                LEFT JOIN bids b ON bar.bid_id = b.id
-                WHERE bar.status = 'pending'
-                AND (b.created_by = %s OR %s = true)
-            ''', (user_id, is_admin))
-            result = cur.fetchone()
-            notification_count = result[0] if result else 0
-        else:
-            # Count pending requests for bids they own
-            cur.execute('''
-                SELECT COUNT(*)
-                FROM bid_access_requests bar
-                JOIN bids b ON bar.bid_id = b.id
-                WHERE bar.status = 'pending'
-                AND b.created_by = %s
-            ''', (user_id,))
-            result = cur.fetchone()
-            notification_count = result[0] if result else 0
+        # Count pending requests only for bids they created
+        cur.execute('''
+            SELECT COUNT(*)
+            FROM bid_access_requests bar
+            JOIN bids b ON bar.bid_id = b.id
+            WHERE bar.status = 'pending'
+            AND b.created_by = %s
+        ''', (user_id,))
+        result = cur.fetchone()
+        notification_count = result[0] if result else 0
         
         cur.close()
         conn.close()
@@ -6029,49 +5994,25 @@ def get_notifications():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        # Check if user is super admin or admin or Kamal (by name)
-        is_admin = user_role in ['admin', 'super_admin'] or 'kamal vallecha' in user_name
-        
-        if is_admin:
-            # Get all pending access requests for bids they own or all bids if admin
-            cur.execute('''
-                SELECT DISTINCT
-                    bar.id,
-                    bar.bid_id,
-                    bar.user_id,
-                    bar.team,
-                    bar.requested_on,
-                    b.bid_number,
-                    b.study_name,
-                    u.email,
-                    u.name as requester_name
-                FROM bid_access_requests bar
-                LEFT JOIN bids b ON bar.bid_id = b.id
-                LEFT JOIN users u ON bar.user_id = u.id
-                WHERE bar.status = 'pending'
-                AND (b.created_by = %s OR %s = true)
-                ORDER BY bar.requested_on DESC
-            ''', (user_id, is_admin))
-        else:
-            # Get pending requests for bids they own
-            cur.execute('''
-                SELECT 
-                    bar.id,
-                    bar.bid_id,
-                    bar.user_id,
-                    bar.team,
-                    bar.requested_on,
-                    b.bid_number,
-                    b.study_name,
-                    u.email,
-                    u.name as requester_name
-                FROM bid_access_requests bar
-                JOIN bids b ON bar.bid_id = b.id
-                LEFT JOIN users u ON bar.user_id = u.id
-                WHERE bar.status = 'pending'
-                AND b.created_by = %s
-                ORDER BY bar.requested_on DESC
-            ''', (user_id,))
+        # Get pending requests only for bids they created
+        cur.execute('''
+            SELECT 
+                bar.id,
+                bar.bid_id,
+                bar.user_id,
+                bar.team,
+                bar.requested_on,
+                b.bid_number,
+                b.study_name,
+                u.email,
+                u.name as requester_name
+            FROM bid_access_requests bar
+            JOIN bids b ON bar.bid_id = b.id
+            LEFT JOIN users u ON bar.user_id = u.id
+            WHERE bar.status = 'pending'
+            AND b.created_by = %s
+            ORDER BY bar.requested_on DESC
+        ''', (user_id,))
         
         notifications = cur.fetchall()
         
