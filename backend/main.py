@@ -5799,8 +5799,8 @@ def request_access():
         if request_created_or_updated:
             # Send email notifications to multiple recipients
             try:
-            conn_email = get_db_connection()
-            cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
+                conn_email = get_db_connection()
+                cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
             
             # Get bid owner email
             cur_email.execute(
