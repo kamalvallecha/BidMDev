@@ -5753,13 +5753,36 @@ def request_access():
             user_row = cur.fetchone()
             if user_row:
                 user_id = user_row[0]
-        # Insert access request if not already present and pending
+        # Check if there's already a request for this bid/user/team combination
         cur.execute(
             '''
-            INSERT INTO bid_access_requests (bid_id, user_id, team, status)
-            VALUES (%s, %s, %s, 'pending')
-            ON CONFLICT (bid_id, user_id, team) DO NOTHING
+            SELECT status FROM bid_access_requests 
+            WHERE bid_id = %s AND user_id = %s AND team = %s
         ''', (bid_id, user_id, user_team))
+        
+        existing_request = cur.fetchone()
+        
+        if existing_request:
+            if existing_request[0] == 'pending':
+                print(f"Access request already pending for bid {bid_id}, user {user_id}, team {user_team}")
+            elif existing_request[0] == 'denied':
+                # Update the denied request to pending (allow re-request)
+                print(f"Updating denied request to pending for bid {bid_id}, user {user_id}, team {user_team}")
+                cur.execute(
+                    '''
+                    UPDATE bid_access_requests 
+                    SET status = 'pending', requested_on = CURRENT_TIMESTAMP
+                    WHERE bid_id = %s AND user_id = %s AND team = %s
+                ''', (bid_id, user_id, user_team))
+            elif existing_request[0] == 'granted':
+                print(f"Access already granted for bid {bid_id}, user {user_id}, team {user_team}")
+        else:
+            # Insert new access request
+            cur.execute(
+                '''
+                INSERT INTO bid_access_requests (bid_id, user_id, team, status)
+                VALUES (%s, %s, %s, 'pending')
+            ''', (bid_id, user_id, user_team))
         conn.commit()
         cur.close()
         conn.close()
