@@ -207,14 +207,10 @@ def send_daily_access_request_digest():
             """)
             admin_users = cur.fetchall()
 
-            # Prepare recipient list
+            # Send only to designated admin notification email
             recipients = []
             if ADMIN_NOTIFICATION_EMAIL:
                 recipients.append(ADMIN_NOTIFICATION_EMAIL)
-            
-            for admin in admin_users:
-                if admin['email'] not in recipients:
-                    recipients.append(admin['email'])
 
             if not recipients:
                 print("No admin recipients found for daily digest")
@@ -5817,23 +5813,15 @@ def request_access():
                 ''', (bid_id,))
                 bid_owner = cur_email.fetchone()
 
-                # Create recipient list - only bid creator
-                recipients = []
-                recipient_names = []
-
-                if bid_owner:
-                    recipients.append(bid_owner['email'])
-                    recipient_names.append(bid_owner['name'])
-
-                # Send notification to all recipients
-                if recipients:
+                # Send notification only to bid creator
+                if bid_owner and bid_owner['email']:
                     base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
                     if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
                         base_url = f"https://{request.host.split(':')[0]}"
 
                     msg = Message('🔔 Bid Access Request - Action Required',
                                   sender=app.config['MAIL_DEFAULT_SENDER'],
-                                  recipients=recipients)
+                                  recipients=[bid_owner['email']])  # Send to only one recipient
 
                     msg.body = f"""URGENT: New Bid Access Request
 
@@ -5918,14 +5906,14 @@ This is an automated notification. Please do not reply to this email."""
                     print(f"Access request email sent to {len(recipients)} recipients: {', '.join(recipients)}")
 
             except Exception as email_error:
-                print(f"Error sending access request email: {str(email_error)}")
-                import traceback
-                print(f"Email error traceback: {traceback.format_exc()}")
-            finally:
-                if cur_email:
-                    cur_email.close()
-                if conn_email:
-                    conn_email.close()
+                    print(f"Error sending access request email: {str(email_error)}")
+                    import traceback
+                    print(f"Email error traceback: {traceback.format_exc()}")
+                finally:
+                    if cur_email:
+                        cur_email.close()
+                    if conn_email:
+                        conn_email.close()
 
         return jsonify({'message': 'Access request submitted successfully'}), 200
 
