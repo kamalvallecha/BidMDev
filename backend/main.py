@@ -5810,7 +5810,16 @@ def request_access():
             # Send notification to all recipients
             if recipients:
                 base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
-
+                try:
+                    msg.send()
+                    print(f"Notification email sent to: {', '.join(recipient_names)}")
+                except Exception as e:
+                    print(f"Error sending notification email: {str(e)}")
+                finally:
+                    if 'cur' in locals():
+                        cur.close()
+                    if 'conn' in locals():
+                        conn.close()
 
 @app.route('/api/notifications/count', methods=['GET'])
 def get_notification_count():
