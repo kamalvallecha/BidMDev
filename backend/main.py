@@ -5918,15 +5918,6 @@ This is an automated notification. Please do not reply to this email."""
             cur.close()
         if 'conn' in locals():
             conn.close()
-                    msg.send()
-                    print(f"Notification email sent to: {', '.join(recipient_names)}")
-                except Exception as e:
-                    print(f"Error sending notification email: {str(e)}")
-                finally:
-                    if 'cur' in locals():
-                        cur.close()
-                    if 'conn' in locals():
-                        conn.close()
 
 @app.route('/api/notifications/count', methods=['GET'])
 def get_notification_count():
