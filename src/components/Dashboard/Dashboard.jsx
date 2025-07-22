@@ -30,35 +30,35 @@ const Dashboard = () => {
             title: 'Team',
             dataIndex: 'team',
             key: 'team',
-            width: '25%',
+            width: '20%',
         },
         {
             title: 'No. of Bids',
             dataIndex: 'total_bids',
             key: 'total_bids',
             align: 'right',
-            width: '25%',
+            width: '20%',
         },
         {
             title: 'Bids In Field',
             dataIndex: 'bids_in_field',
             key: 'bids_in_field',
             align: 'right',
-            width: '25%',
+            width: '20%',
         },
         {
             title: 'Bids Closed',
             dataIndex: 'bids_closed',
             key: 'bids_closed',
             align: 'right',
-            width: '25%',
+            width: '20%',
         },
         {
             title: 'Bid Invoiced',
             dataIndex: 'bids_invoiced',
             key: 'bids_invoiced',
             align: 'right',
-            width: '25%',
+            width: '20%',
         },
     ];
 
@@ -70,6 +70,7 @@ const Dashboard = () => {
                 const response = await axios.get('/api/dashboard');
                 
                 console.log('Received dashboard data:', response.data);
+                console.log('Team summary data:', response.data.team_summary);
                 setData(response.data);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -214,10 +215,11 @@ const Dashboard = () => {
                     <Card title="Bids by Team (POD)">
                         <Table
                             columns={teamColumns}
-                            dataSource={data.team_summary || []}
+                            dataSource={data.team_summary && data.team_summary.length > 0 ? data.team_summary : []}
                             pagination={false}
                             size="small"
                             rowKey="team"
+                            locale={{ emptyText: data.team_summary && data.team_summary.length === 0 ? 'No team data available' : 'Loading...' }}
                         />
                     </Card>
                 </Col>
