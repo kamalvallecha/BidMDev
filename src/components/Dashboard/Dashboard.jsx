@@ -211,12 +211,7 @@ const Dashboard = () => {
                                     width: '25%',
                                 }
                             ]}
-                            dataSource={data.team_summary || [
-                                { team: 'POD 1', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 },
-                                { team: 'POD 2', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 },
-                                { team: 'POD 3', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 },
-                                { team: 'POD 4', total_bids: 0, bids_in_field: 0, bids_closed: 0, bid_invoiced: 0 }
-                            ]}
+                            dataSource={data.team_summary || []}
                             pagination={false}
                             size="small"
                             rowKey="team"

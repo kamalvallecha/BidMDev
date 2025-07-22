@@ -3675,13 +3675,57 @@ def get_dashboard_data():
                 'total_bids': count
             })
 
+        # Create team summary by counting bids per team and status
+        team_summary = []
+        team_counts = {}
+
+        for bid in bids_data:
+            vm_id = bid.get('vm_contact')
+            team = 'Unknown Team'
+            if vm_id and str(vm_id) in vm_data:
+                team = vm_data[str(vm_id)].get('team', 'Unknown Team')
+            
+            status = bid.get('status', 'draft').lower()
+            
+            if team not in team_counts:
+                team_counts[team] = {
+                    'total_bids': 0,
+                    'bids_in_field': 0,
+                    'bids_closed': 0,
+                    'bid_invoiced': 0
+                }
+            
+            team_counts[team]['total_bids'] += 1
+            
+            if status == 'infield':
+                team_counts[team]['bids_in_field'] += 1
+            elif status in ['closure', 'completed']:
+                team_counts[team]['bids_closed'] += 1
+            elif status in ['ready_for_invoice', 'invoiced']:
+                team_counts[team]['bid_invoiced'] += 1
+
+        # Create team summary for POD 1-4
+        for i in range(1, 5):
+            pod_name = f'POD {i}'
+            team_data = team_counts.get(pod_name, {
+                'total_bids': 0,
+                'bids_in_field': 0,
+                'bids_closed': 0,
+                'bid_invoiced': 0
+            })
+            team_summary.append({
+                'team': pod_name,
+                **team_data
+            })
+
         dashboard_data = {
             "total_bids": total_bids,
             "active_bids": active_bids,
             "total_savings": 0,  # TODO: Calculate from partner responses
             "avg_turnaround_time": 0,  # TODO: Calculate from bid dates
             "bids_by_status": status_counts,
-            "client_summary": client_summary
+            "client_summary": client_summary,
+            "team_summary": team_summary
         }
 
         cur.close()
