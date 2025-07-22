@@ -5294,7 +5294,7 @@ Link: {base_url}/partner-response/{token}
 <p>You can view the full response by clicking the link below:<br>
 <a href='{base_url}/partner-response/{token}'>Link: {base_url}/partner-response/{token}</a></p>
                 """
-                mail.send(msg)
+                #mail.send(msg)
             except Exception as e:
                 print(f"Error sending admin notification: {str(e)}")
         return jsonify({"success": True})
