@@ -5801,9 +5801,9 @@ def request_access():
             try:
                 conn_email = get_db_connection()
                 cur_email = conn_email.cursor(cursor_factory=RealDictCursor)
-            
-            # Get bid owner email
-            cur_email.execute(
+                
+                # Get bid owner email
+                cur_email.execute(
                 '''
                 SELECT u.email, u.name 
                 FROM bids b 
