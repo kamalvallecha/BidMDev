@@ -3652,124 +3652,28 @@ def get_dashboard_data():
             if status in active_statuses:
                 active_bids += 1
 
-        # Create client summary with status breakdown
+        # Create client summary
         client_summary = []
-        client_data = {}
+        client_bid_counts = {}
 
-        # Initialize client data structure
         for bid in bids_data:
-            client_id = str(bid.get('client', '')) if bid.get('client') else 'unknown'
+            client_id = str(bid.get('client',
+                                    '')) if bid.get('client') else 'unknown'
+            if client_id in client_bid_counts:
+                client_bid_counts[client_id] += 1
+            else:
+                client_bid_counts[client_id] = 1
+
+        for client_id, count in client_bid_counts.items():
             client_name = 'Unknown Client'
             if client_id in clients_data:
-                client_name = clients_data[client_id].get('client_name', 'Unknown Client')
-            
-            if client_name not in client_data:
-                client_data[client_name] = {
-                    'client_name': client_name,
-                    'total_bids': 0,
-                    'in_field': 0,
-                    'closed': 0,
-                    'invoiced': 0,
-                    'rejected': 0,
-                    'total_amount': 0,
-                    'conversion_rate': 0
-                }
-            
-            # Count bids by status
-            client_data[client_name]['total_bids'] += 1
-            status = bid.get('status', 'draft').lower()
-            
-            if status == 'infield':
-                client_data[client_name]['in_field'] += 1
-            elif status in ['closure', 'completed']:
-                client_data[client_name]['closed'] += 1
-            elif status in ['ready_for_invoice', 'invoiced']:
-                client_data[client_name]['invoiced'] += 1
-            elif status == 'rejected':
-                client_data[client_name]['rejected'] += 1
+                client_name = clients_data[client_id].get(
+                    'client_name', 'Unknown Client')
 
-        # Get financial data for clients
-        cur.execute("""
-            WITH client_financials AS (
-                SELECT 
-                    c.client_name,
-                    SUM(COALESCE(par.final_cost, par.n_delivered * COALESCE(par.final_cpi, par.cpi))) as total_amount,
-                    COUNT(DISTINCT b.id) as completed_bids,
-                    COUNT(DISTINCT CASE WHEN b.status IN ('completed', 'invoiced') THEN b.id END) as successful_bids
-                FROM clients c
-                LEFT JOIN bids b ON c.id = b.client
-                LEFT JOIN partner_responses pr ON b.id = pr.bid_id
-                LEFT JOIN partner_audience_responses par ON pr.id = par.partner_response_id AND par.n_delivered > 0
-                GROUP BY c.client_name
-            )
-            SELECT 
-                client_name,
-                COALESCE(total_amount, 0) as total_amount,
-                CASE 
-                    WHEN completed_bids > 0 THEN ROUND((successful_bids::DECIMAL / completed_bids * 100), 2)
-                    ELSE 0 
-                END as conversion_rate
-            FROM client_financials
-        """)
-        
-        financial_data = cur.fetchall()
-        financial_map = {row['client_name']: row for row in financial_data}
-        
-        # Update client data with financial information
-        for client_name, data in client_data.items():
-            if client_name in financial_map:
-                financial_info = financial_map[client_name]
-                data['total_amount'] = float(financial_info['total_amount']) if financial_info['total_amount'] else 0
-                data['conversion_rate'] = float(financial_info['conversion_rate']) if financial_info['conversion_rate'] else 0
-            
-        client_summary = list(client_data.values())
-
-        # Get user data with teams for team summary (link via created_by)
-        cur.execute("SELECT id, name, team FROM users")
-        user_records = cur.fetchall()
-        user_data = {}
-        for user in user_records:
-            user_data[str(user['id'])] = {
-                'name': user['name'],
-                'team': user['team']
-            }
-
-        # Create team summary by counting bids per team and status
-        team_summary = []
-        team_counts = {}
-
-        for bid in bids_data:
-            created_by_id = bid.get('created_by')
-            team = 'Unknown Team'
-            if created_by_id and str(created_by_id) in user_data:
-                team = user_data[str(created_by_id)].get('team', 'Unknown Team')
-            
-            status = bid.get('status', 'draft').lower()
-            
-            if team not in team_counts:
-                team_counts[team] = {
-                    'total_bids': 0,
-                    'bids_in_field': 0,
-                    'bids_closed': 0,
-                    'bid_invoiced': 0
-                }
-            
-            team_counts[team]['total_bids'] += 1
-            
-            if status == 'infield':
-                team_counts[team]['bids_in_field'] += 1
-            elif status in ['closure', 'completed']:
-                team_counts[team]['bids_closed'] += 1
-            elif status in ['ready_for_invoice', 'invoiced']:
-                team_counts[team]['bid_invoiced'] += 1
-
-        # Create team summary for all teams found
-        for team_name, team_data in team_counts.items():
-            if team_name and team_name != 'Unknown Team':
-                team_summary.append({
-                    'team': team_name,
-                    **team_data
-                })
+            client_summary.append({
+                'client_name': client_name,
+                'total_bids': count
+            })
 
         dashboard_data = {
             "total_bids": total_bids,
@@ -3777,8 +3681,7 @@ def get_dashboard_data():
             "total_savings": 0,  # TODO: Calculate from partner responses
             "avg_turnaround_time": 0,  # TODO: Calculate from bid dates
             "bids_by_status": status_counts,
-            "client_summary": client_summary,
-            "team_summary": team_summary
+            "client_summary": client_summary
         }
 
         cur.close()
