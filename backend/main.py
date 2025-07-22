@@ -5037,7 +5037,7 @@ def submit_partner_link_response(token):
                         DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, updated_at = CURRENT_TIMESTAMP
                     """,
                         (bid_id, partner_response_id, audience_id, country,
-                         commitment_type, commitment, cpi, timeline, comments))</old_str>
+                         commitment_type, commitment, cpi, timeline, comments))
         conn.commit()
 
         # Send admin notification email
