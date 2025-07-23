@@ -6682,8 +6682,8 @@ if __name__ == '__main__':
         port = int(os.environ.get('PORT', 5000))
         print(f"Starting server on port {port}...")
 
-        # Use Flask dev server with proper host binding
-        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+        # Use Flask in production mode
+        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False, threaded=True)
 
     except Exception as e:
         print(f"Error starting server: {str(e)}")
@@ -6748,9 +6748,6 @@ def serve_react(path):
             os.path.dirname(os.path.abspath(__file__)))
         dist_dir = os.path.join(project_root, 'dist')
 
-        print(f"Looking for dist directory at: {dist_dir}")
-        print(f"Dist directory exists: {os.path.exists(dist_dir)}")
-
         # Skip API routes
         if path.startswith('api/'):
             return "API route not found", 404
@@ -6766,7 +6763,7 @@ def serve_react(path):
         if os.path.exists(index_path):
             return send_from_directory(dist_dir, 'index.html')
 
-        return "React app not built. Please run 'npm run build' from the project root first.", 404
+        return "React app not built. Please run 'npm run build' first.", 404
 
     except Exception as e:
         print(f"Error serving file: {str(e)}")
