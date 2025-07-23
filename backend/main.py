@@ -6669,8 +6669,8 @@ def get_granted_counts_batch():
         return jsonify({}), 500
 
 
-@app.before_first_request
 def create_tables():
+    """Create additional tables if they don't exist"""
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -6807,6 +6807,7 @@ if __name__ == '__main__':
         print("Initializing application...")
         # Initialize database when app starts
         init_db()
+        create_tables()
         add_field_close_date_column()
         standardize_invoice_status()
         print("Database initialization completed")
