@@ -6743,32 +6743,34 @@ def create_tables():
 @app.route('/<path:path>')
 def serve_react(path):
     try:
-        # Look for dist directory in the project root (parent of backend)
+        # Skip API routes first
+        if path.startswith('api/'):
+            return "API route not found", 404
+
+        # Look for dist directory in the project root
         backend_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(backend_dir)
         dist_dir = os.path.join(project_root, 'dist')
 
-        print(f"Backend dir: {backend_dir}")
-        print(f"Project root: {project_root}")
+        print(f"Serving path: {path}")
         print(f"Dist dir: {dist_dir}")
         print(f"Dist exists: {os.path.exists(dist_dir)}")
 
-        # Skip API routes
-        if path.startswith('api/'):
-            return "API route not found", 404
+        if not os.path.exists(dist_dir):
+            return "React app not built. The 'dist' directory doesn't exist.", 404
 
-        # For non-empty paths, try to serve the specific file
-        if path and not path.startswith('api'):
+        # For specific files (like CSS, JS, images), try to serve them directly
+        if path and '.' in path:
             file_path = os.path.join(dist_dir, path)
             if os.path.exists(file_path) and os.path.isfile(file_path):
                 return send_from_directory(dist_dir, path)
 
-        # For root path or if specific file not found, serve index.html
+        # For all other routes (including root), serve index.html for React Router
         index_path = os.path.join(dist_dir, 'index.html')
         if os.path.exists(index_path):
             return send_from_directory(dist_dir, 'index.html')
 
-        return "React app not built. Please run 'npm run build' first.", 404
+        return "React app index.html not found.", 404
 
     except Exception as e:
         print(f"Error serving file: {str(e)}")
