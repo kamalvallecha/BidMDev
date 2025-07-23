@@ -6743,10 +6743,15 @@ def create_tables():
 @app.route('/<path:path>')
 def serve_react(path):
     try:
-        # Look for dist directory in the parent directory (project root)
-        project_root = os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__)))
+        # Look for dist directory in the project root (parent of backend)
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(backend_dir)
         dist_dir = os.path.join(project_root, 'dist')
+
+        print(f"Backend dir: {backend_dir}")
+        print(f"Project root: {project_root}")
+        print(f"Dist dir: {dist_dir}")
+        print(f"Dist exists: {os.path.exists(dist_dir)}")
 
         # Skip API routes
         if path.startswith('api/'):
