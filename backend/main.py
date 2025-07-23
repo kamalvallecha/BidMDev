@@ -6669,40 +6669,6 @@ def get_granted_counts_batch():
         return jsonify({}), 500
 
 
-# Move app.run to the end after all routes are defined
-if __name__ == '__main__':
-    try:
-        print("Initializing application...")
-        # Initialize database when app starts
-        init_db()
-        add_field_close_date_column()
-        standardize_invoice_status()
-        print("Database initialization completed")
-
-        port = int(os.environ.get('PORT', 5000))
-        print(f"Starting server on port {port}...")
-
-        # Use Flask in production mode
-        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False, threaded=True)
-
-    except Exception as e:
-        print(f"Error starting server: {str(e)}")
-        import traceback
-        print(f"Full traceback: {traceback.format_exc()}")
-
-        # Try alternative port if 5000 is busy
-        try:
-            alt_port = 5001
-            print(f"Trying alternative port {alt_port}...")
-            app.run(host='0.0.0.0',
-                    port=alt_port,
-                    debug=False,
-                    use_reloader=False)
-        except Exception as fallback_error:
-            print(f"Fallback server also failed: {str(fallback_error)}")
-            raise
-
-
 @app.before_first_request
 def create_tables():
     conn = get_db_connection()
@@ -6833,3 +6799,37 @@ def reset_admin_password():
             cur.close()
         if 'conn' in locals():
             conn.close()
+
+
+# Move app.run to the end after all routes are defined
+if __name__ == '__main__':
+    try:
+        print("Initializing application...")
+        # Initialize database when app starts
+        init_db()
+        add_field_close_date_column()
+        standardize_invoice_status()
+        print("Database initialization completed")
+
+        port = int(os.environ.get('PORT', 5000))
+        print(f"Starting server on port {port}...")
+
+        # Use Flask in production mode
+        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False, threaded=True)
+
+    except Exception as e:
+        print(f"Error starting server: {str(e)}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+
+        # Try alternative port if 5000 is busy
+        try:
+            alt_port = 5001
+            print(f"Trying alternative port {alt_port}...")
+            app.run(host='0.0.0.0',
+                    port=alt_port,
+                    debug=False,
+                    use_reloader=False)
+        except Exception as fallback_error:
+            print(f"Fallback server also failed: {str(fallback_error)}")
+            raise
