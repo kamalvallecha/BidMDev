@@ -6,7 +6,8 @@ channel = "stable-24_05"
 packages = ["glibcLocales", "libxcrypt"]
 
 [deployment]
-run = ["sh", "-c", "npm run dev"]
+run = ["sh", "-c", "cd backend && python main.py"]
+build = ["sh", "-c", "npm run build && cd backend && pip install -r requirements.txt"]
 
 [workflows]
 runButton = "Backend Only"
