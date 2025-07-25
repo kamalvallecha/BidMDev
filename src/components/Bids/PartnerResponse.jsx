@@ -105,12 +105,12 @@ function PartnerResponse() {
               
               // Check if either:
               // 1. It's BE/Max (commitment_type is 'be_max')
-              // 2. It has a valid commitment value > 0
+              // 2. It has a valid commitment value >= 0
               const hasValidCommitment = countryResponse.commitment_type === 'be_max' || 
-                                       (countryResponse.commitment > 0);
+                                       (countryResponse.commitment >= 0);
               
-              // CPI must always be > 0
-              const hasValidCPI = countryResponse.cpi > 0;
+              // CPI must be >= 0 (allowing 0 for pass scenarios)
+              const hasValidCPI = countryResponse.cpi >= 0;
               
               return hasValidCommitment && hasValidCPI;
             }
@@ -574,9 +574,9 @@ function PartnerResponse() {
                                       type="number"
                                       size="small"
                                       inputProps={{ min: 0 }}
-                                      value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment || ''}
+                                      value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment ?? ''}
                                       onChange={(e) => {
-                                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);  // Convert empty string to 0
+                                        const value = e.target.value === '' ? '' : parseFloat(e.target.value);
                                         setResponses(prev => ({
                                           ...prev,
                                           [`${currentPartner.id}-${selectedLOI}`]: {
@@ -605,9 +605,9 @@ function PartnerResponse() {
                                     type="number"
                                     size="small"
                                     inputProps={{ min: 0 }}
-                                    value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi || ''}
+                                    value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi ?? ''}
                                     onChange={(e) => {
-                                      const value = parseFloat(e.target.value);
+                                      const value = e.target.value === '' ? '' : parseFloat(e.target.value);
                                       setResponses(prev => ({
                                         ...prev,
                                         [`${currentPartner.id}-${selectedLOI}`]: {
