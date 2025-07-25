@@ -110,12 +110,14 @@ function PartnerResponse() {
                                        (countryResponse.commitment !== undefined && 
                                         countryResponse.commitment !== null && 
                                         countryResponse.commitment !== '' && 
+                                        Number.isFinite(countryResponse.commitment) &&
                                         countryResponse.commitment >= 0);
               
               // CPI must be >= 0 (allowing 0 for pass scenarios)
               const hasValidCPI = countryResponse.cpi !== undefined && 
                                  countryResponse.cpi !== null && 
                                  countryResponse.cpi !== '' && 
+                                 Number.isFinite(countryResponse.cpi) &&
                                  countryResponse.cpi >= 0;
               
               return hasValidCommitment && hasValidCPI;
@@ -582,7 +584,16 @@ function PartnerResponse() {
                                       inputProps={{ min: 0, step: 1 }}
                                       value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment ?? ''}
                                       onChange={(e) => {
-                                        const value = e.target.value === '' ? '' : (e.target.value === '0' ? 0 : parseFloat(e.target.value));
+                                        const rawValue = e.target.value;
+                                        let value;
+                                        
+                                        if (rawValue === '') {
+                                          value = '';
+                                        } else {
+                                          const numValue = parseFloat(rawValue);
+                                          value = isNaN(numValue) ? '' : numValue;
+                                        }
+                                        
                                         setResponses(prev => ({
                                           ...prev,
                                           [`${currentPartner.id}-${selectedLOI}`]: {
@@ -613,7 +624,16 @@ function PartnerResponse() {
                                     inputProps={{ min: 0, step: 0.01 }}
                                     value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi ?? ''}
                                     onChange={(e) => {
-                                      const value = e.target.value === '' ? '' : (e.target.value === '0' ? 0 : parseFloat(e.target.value));
+                                      const rawValue = e.target.value;
+                                      let value;
+                                      
+                                      if (rawValue === '') {
+                                        value = '';
+                                      } else {
+                                        const numValue = parseFloat(rawValue);
+                                        value = isNaN(numValue) ? '' : numValue;
+                                      }
+                                      
                                       setResponses(prev => ({
                                         ...prev,
                                         [`${currentPartner.id}-${selectedLOI}`]: {
