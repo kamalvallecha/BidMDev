@@ -47,6 +47,11 @@ def import_bids_only():
         # Create database connection
         engine = create_engine(get_db_connection_string())
         
+        # Remove the 'id' column if it exists (database will auto-generate it)
+        if 'id' in df.columns:
+            df = df.drop('id', axis=1)
+            print("Removed 'id' column - database will auto-generate it")
+        
         # Import to bids table
         df.to_sql('bids', engine, if_exists='append', index=False)
         
