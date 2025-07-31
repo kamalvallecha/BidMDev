@@ -28,9 +28,9 @@ def read_csv_with_encoding(file_path):
     return None
 
 def import_bids_only():
-    """Import only bids data from Data Uploads/bids.csv"""
+    """Import/Update bids data from Data Uploads/bids.csv with team information"""
     try:
-        print("Starting bids import...")
+        print("Starting bids import/update...")
         print("=" * 40)
         
         # Read the bids CSV file
@@ -47,20 +47,69 @@ def import_bids_only():
         # Create database connection
         engine = create_engine(get_db_connection_string())
         
-        # Remove the 'id' column if it exists (database will auto-generate it)
-        if 'id' in df.columns:
-            df = df.drop('id', axis=1)
-            print("Removed 'id' column - database will auto-generate it")
+        # Check if we have bid_number column to identify existing records
+        if 'bid_number' not in df.columns:
+            print("Error: bid_number column not found in CSV")
+            return
         
-        # Import to bids table
-        df.to_sql('bids', engine, if_exists='append', index=False)
+        # Connect directly to execute updates
+        import psycopg2
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        conn = psycopg2.connect(os.environ['DATABASE_URL'])
+        cur = conn.cursor()
+        
+        updated_count = 0
+        inserted_count = 0
+        
+        for index, row in df.iterrows():
+            bid_number = row['bid_number']
+            
+            # Check if bid exists
+            cur.execute("SELECT id FROM bids WHERE bid_number = %s", (bid_number,))
+            existing_bid = cur.fetchone()
+            
+            if existing_bid:
+                # Update existing bid with team information
+                update_fields = []
+                update_values = []
+                
+                # Only update fields that exist in CSV and are not None/empty
+                for col in df.columns:
+                    if col != 'id' and pd.notna(row[col]) and str(row[col]).strip() != '':
+                        update_fields.append(f"{col} = %s")
+                        update_values.append(row[col])
+                
+                if update_fields:
+                    update_values.append(bid_number)  # for WHERE clause
+                    update_query = f"UPDATE bids SET {', '.join(update_fields)} WHERE bid_number = %s"
+                    cur.execute(update_query, update_values)
+                    updated_count += 1
+                    print(f"Updated bid {bid_number}")
+            else:
+                # Insert new bid
+                columns = [col for col in df.columns if col != 'id']
+                values = [row[col] if pd.notna(row[col]) else None for col in columns]
+                
+                placeholders = ', '.join(['%s'] * len(columns))
+                insert_query = f"INSERT INTO bids ({', '.join(columns)}) VALUES ({placeholders})"
+                cur.execute(insert_query, values)
+                inserted_count += 1
+                print(f"Inserted new bid {bid_number}")
+        
+        conn.commit()
+        cur.close()
+        conn.close()
         
         print("=" * 40)
-        print("Bids imported successfully!")
-        print(f"Imported {len(df)} records to bids table")
+        print("Bids processing completed!")
+        print(f"Updated {updated_count} existing records")
+        print(f"Inserted {inserted_count} new records")
+        print(f"Total processed: {len(df)} records")
         
     except Exception as e:
-        print(f"Error during bids import: {str(e)}")
+        print(f"Error during bids import/update: {str(e)}")
         raise e
 
 if __name__ == "__main__":
