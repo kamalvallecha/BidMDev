@@ -2339,18 +2339,24 @@ def get_closure_bids():
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Modified query to correctly calculate total N-delivered
+        # Modified query to correctly calculate total N-delivered and quality rejects
         cur.execute("""
             WITH metrics AS (
                 SELECT 
                     pr.bid_id,
                     SUM(COALESCE(par.n_delivered, 0)) as total_delivered,
                     SUM(COALESCE(par.quality_rejects, 0)) as total_rejects,
-                    AVG(COALESCE(par.final_loi, 0)) as avg_loi,
-                    AVG(COALESCE(par.final_ir, 0)) as avg_ir
+                    CASE 
+                        WHEN COUNT(par.final_loi) > 0 THEN AVG(par.final_loi)
+                        ELSE AVG(COALESCE(par.final_loi, 0))
+                    END as avg_loi,
+                    CASE 
+                        WHEN COUNT(par.final_ir) > 0 THEN AVG(par.final_ir)
+                        ELSE AVG(COALESCE(par.final_ir, 0))
+                    END as avg_ir
                 FROM partner_responses pr
                 JOIN partner_audience_responses par ON par.partner_response_id = pr.id
-                WHERE par.allocation > 0
+                WHERE par.allocation > 0 AND par.n_delivered > 0
                 GROUP BY pr.bid_id
             )
             SELECT DISTINCT ON (b.id)
