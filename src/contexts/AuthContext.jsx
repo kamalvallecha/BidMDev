@@ -13,19 +13,28 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         const userData = localStorage.getItem('user');
         
+        console.log('AuthContext: Checking authentication on mount');
+        console.log('AuthContext: Token exists:', !!token);
+        console.log('AuthContext: User data exists:', !!userData);
+        
         if (token && userData) {
             try {
                 const parsedUserData = JSON.parse(userData);
-                console.log('Loaded user from localStorage:', parsedUserData);
+                console.log('AuthContext: Loaded user from localStorage:', parsedUserData);
                 setUser(parsedUserData);
                 setIsAuthenticated(true);
+                console.log('AuthContext: Authentication state set to true');
             } catch (error) {
-                console.error('Error parsing user data:', error);
+                console.error('AuthContext: Error parsing user data:', error);
                 localStorage.removeItem('user');
                 localStorage.removeItem('token');
+                console.log('AuthContext: Cleared invalid localStorage data');
             }
+        } else {
+            console.log('AuthContext: No token or user data found, staying unauthenticated');
         }
         setLoading(false);
+        console.log('AuthContext: Loading state set to false');
     }, []);
 
     const login = async (credentials) => {

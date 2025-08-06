@@ -337,21 +337,17 @@ def get_db_connection():
     from psycopg2.extras import RealDictCursor
 
     try:
-        DATABASE_URL = os.getenv('DATABASE_URL')
+        # Use the configuration from config.py
+        DATABASE_URL = Config.DATABASE_URL
         if not DATABASE_URL:
-            raise Exception("DATABASE_URL environment variable not set")
+            raise Exception("DATABASE_URL not configured in config.py")
 
         conn = psycopg2.connect(DATABASE_URL)
         return conn
     except Exception as e:
         print(f"Database connection error: {str(e)}")
-        print(
-            f"Available environment variables: DATABASE_URL={'SET' if os.getenv('DATABASE_URL') else 'NOT SET'}"
-        )
-        print(f"PGHOST={os.getenv('PGHOST', 'NOT SET')}")
-        print(f"PGDATABASE={os.getenv('PGDATABASE', 'NOT SET')}")
-        print(f"PGUSER={os.getenv('PGUSER', 'NOT SET')}")
-        print(f"PGPORT={os.getenv('PGPORT', 'NOT SET')}")
+        print(f"Using DATABASE_URL from config: {Config.DATABASE_URL}")
+        print(f"USE_REPLIT_DB setting: {Config.USE_REPLIT_DB}")
         raise e
 
 
@@ -2111,7 +2107,8 @@ def get_field_data(bid_id):
                 par.commitment,
                 par.commitment_type,
                 par.cpi,
-                par.allocation
+                par.allocation,
+                par.pass
             FROM bid_target_audiences bta
             JOIN bid_audience_countries bac ON bta.id = bac.audience_id
             LEFT JOIN partner_responses pr ON pr.bid_id = bta.bid_id
@@ -2182,7 +2179,9 @@ def get_field_data(bid_id):
                     'cpi':
                     float(row['cpi']) if row['cpi'] is not None else 0,
                     'allocation':
-                    row['allocation'] or 0
+                    row['allocation'] or 0,
+                    'pass':
+                    row['pass'] if 'pass' in row else False
                 })
 
         result = {
@@ -2226,7 +2225,8 @@ def update_field_allocation(bid_id):
                     par.commitment,
                     par.commitment_type,
                     par.cpi,
-                    par.allocation
+                    par.allocation,
+                    par.pass
                 FROM bid_target_audiences bta
                 JOIN bid_audience_countries bac ON bta.id = bac.audience_id
                 LEFT JOIN partner_responses pr ON pr.bid_id = bta.bid_id
@@ -2271,7 +2271,8 @@ def update_field_allocation(bid_id):
                             or 'fixed',
                             'cpi':
                             float(row['cpi']) if row['cpi'] is not None else 0,
-                            'allocation': row['allocation'] or 0
+                            'allocation': row['allocation'] or 0,
+                            'pass': row['pass'] or False
                         }
 
             return jsonify(list(audiences.values()))
@@ -2555,7 +2556,7 @@ def get_bid_audiences(bid_id):
         print(f"Fetching data for bid {bid_id}, partner {partner}, LOI {loi}"
               )  # Debug log
 
-        # Modified query to only get records where allocation > 0
+        # Modified query to only get records where allocation > 0 and include partner response quality_rejects
         cur.execute(
             """
             WITH valid_responses AS (
@@ -2573,6 +2574,7 @@ def get_bid_audiences(bid_id):
                     par.n_delivered as delivered,
                     par.field_close_date,
                     pr.id as partner_response_id,
+                    pr.quality_rejects as partner_quality_rejects,
                     par.final_loi as "finalLOI",
                     par.final_ir as "finalIR",
                     par.final_timeline as "finalTimeline",
@@ -2580,7 +2582,8 @@ def get_bid_audiences(bid_id):
                     par.communication as "communication",
                     par.engagement as "engagement",
                     par.problem_solving as "problemSolving",
-                    par.additional_feedback as "additionalFeedback"
+                    par.additional_feedback as "additionalFeedback",
+                    par.pass as "pass"
                 FROM bid_target_audiences bta
                 JOIN partner_audience_responses par ON par.audience_id = bta.id
                 JOIN partner_responses pr ON pr.id = par.partner_response_id
@@ -2589,6 +2592,7 @@ def get_bid_audiences(bid_id):
                 AND p.partner_name = %s
                 AND pr.loi = %s
                 AND par.allocation > 0  -- Only get records with allocation > 0
+                AND par.pass = false  -- Exclude Pass countries
             )
             SELECT *
             FROM valid_responses vr
@@ -2629,7 +2633,7 @@ def get_bid_audiences(bid_id):
                         'finalLOI': row['finalLOI'],
                         'finalIR': row['finalIR'],
                         'finalTimeline': row['finalTimeline'],
-                        'qualityRejects': row['qualityRejects'],
+                        'qualityRejects': row['partner_quality_rejects'],
                         'communication': row['communication'],
                         'engagement': row['engagement'],
                         'problemSolving': row['problemSolving'],
@@ -2649,7 +2653,11 @@ def get_bid_audiences(bid_id):
                     'allocation':
                     row['allocation'],
                     'delivered':
-                    row['delivered']
+                    row['delivered'],
+                    'quality_rejects':
+                    row['qualityRejects'],
+                    'pass':
+                    row['pass']
                 })
 
         # Filter out audiences with no countries (all had allocation = 0)
@@ -3897,13 +3905,19 @@ def update_closure(bid_id):
             metrics = audience.get('metrics', {})
             field_close_date = audience.get('field_close_date')
 
-            # Get n_delivered values from the countries array
-            n_delivered_values = {
-                country['name']: country['delivered']
-                for country in audience.get('countries', [])
-            }
+            # Get n_delivered and quality_rejects values from the countries array
+            n_delivered_values = {}
+            quality_rejects_values = {}
+            total_quality_rejects = 0
+            
+            for country in audience.get('countries', []):
+                n_delivered_values[country['name']] = country['delivered']
+                quality_rejects_values[country['name']] = country.get('qualityRejects', 0)
+                total_quality_rejects += int(country.get('qualityRejects', 0) or 0)
 
             print(f"N delivered values: {n_delivered_values}")
+            print(f"Quality rejects values: {quality_rejects_values}")
+            print(f"Total quality rejects: {total_quality_rejects}")
 
             # First, check if a record exists
             cur.execute(
@@ -3929,8 +3943,9 @@ def update_closure(bid_id):
                 # Update each country record
                 for record_id, country in records:
                     n_delivered = n_delivered_values.get(country)
+                    quality_rejects = quality_rejects_values.get(country, 0)
                     print(
-                        f"Updating n_delivered for country {country}: {n_delivered}"
+                        f"Updating n_delivered for country {country}: {n_delivered}, quality_rejects: {quality_rejects}"
                     )
 
                     cur.execute(
@@ -3939,28 +3954,93 @@ def update_closure(bid_id):
                         SET 
                             field_close_date = %s::date,
                             n_delivered = %s,
+                            quality_rejects = %s,
                             final_loi = %s,
                             final_ir = %s,
                             final_timeline = %s,
-                            quality_rejects = %s,
                             communication = %s,
                             engagement = %s,
                             problem_solving = %s,
                             additional_feedback = %s
                         WHERE par.id = %s
-                    """, (field_close_date, n_delivered,
+                    """, (field_close_date, n_delivered, quality_rejects,
                           metrics.get('finalLOI'), metrics.get('finalIR'),
                           metrics.get('finalTimeline'),
-                          metrics.get('qualityRejects'),
                           metrics.get('communication'),
                           metrics.get('engagement'),
                           metrics.get('problemSolving'),
                           metrics.get('additionalFeedback'), record_id))
                     print(
-                        f"Updated metrics and n_delivered for audience {audience['id']}, country {country}"
+                        f"Updated metrics, n_delivered, and quality_rejects for audience {audience['id']}, country {country}"
                     )
+                
             else:
                 print(f"No record found for audience {audience['id']}")
+
+        # Calculate total quality rejects for this partner and LOI across all audiences
+        # This should be done after all individual country updates are complete
+        print(f"Calculating total quality rejects for partner {data['partner']}, LOI {data['loi']}, bid {bid_id}")
+        
+        cur.execute(
+            """
+            SELECT SUM(par.quality_rejects) as total_quality_rejects
+            FROM partner_audience_responses par
+            JOIN partner_responses pr ON par.partner_response_id = pr.id
+            JOIN partners p ON pr.partner_id = p.id
+            WHERE par.bid_id = %s 
+            AND p.partner_name = %s
+            AND pr.loi = %s
+            AND par.allocation > 0
+            """, (bid_id, data['partner'], data['loi']))
+        
+        result = cur.fetchone()
+        total_quality_rejects_for_partner = result[0] if result and result[0] else 0
+        print(f"Calculated total quality rejects: {total_quality_rejects_for_partner}")
+        
+        # Update the partner_responses table with the sum of quality rejects
+        print(f"Updating partner_responses with quality_rejects = {total_quality_rejects_for_partner}")
+        cur.execute(
+            """
+            UPDATE partner_responses pr
+            SET quality_rejects = %s
+            FROM partners p
+            WHERE pr.partner_id = p.id
+            AND pr.bid_id = %s
+            AND p.partner_name = %s
+            AND pr.loi = %s
+            """, (total_quality_rejects_for_partner, bid_id, data['partner'], data['loi']))
+        
+        # Check how many rows were affected
+        rows_affected = cur.rowcount
+        print(f"Updated {rows_affected} rows in partner_responses for partner {data['partner']}, LOI {data['loi']}: {total_quality_rejects_for_partner}")
+
+        # Also update bid_target_audiences with the sum for each audience
+        for audience in data['audienceData']:
+            # Calculate sum for this specific audience
+            cur.execute(
+                """
+                SELECT SUM(par.quality_rejects) as total_quality_rejects
+                FROM partner_audience_responses par
+                JOIN partner_responses pr ON par.partner_response_id = pr.id
+                JOIN partners p ON pr.partner_id = p.id
+                WHERE par.bid_id = %s 
+                AND par.audience_id = %s
+                AND p.partner_name = %s
+                AND pr.loi = %s
+                AND par.allocation > 0
+                """, (bid_id, audience['id'], data['partner'], data['loi']))
+            
+            result = cur.fetchone()
+            audience_quality_rejects_sum = result[0] if result and result[0] else 0
+            
+            # Update bid_target_audiences
+            cur.execute(
+                """
+                UPDATE bid_target_audiences 
+                SET quality_rejects_sum = %s
+                WHERE bid_id = %s AND id = %s
+                """, (audience_quality_rejects_sum, bid_id, audience['id']))
+            print(f"Updated quality_rejects_sum for audience {audience['id']}: {audience_quality_rejects_sum}")
 
         conn.commit()
         return jsonify({"message": "Closure data updated successfully"})
@@ -4535,12 +4615,21 @@ def update_partner_responses(bid_id):
                     cpi = country_data.get('cpi', 0)
                     commitment_type = country_data.get('commitment_type', 'fixed')
                     is_best_efforts = commitment_type == 'be_max'
+                    pass_country = country_data.get('pass', False)
+                    
+                    # Convert empty strings to None for integer fields
+                    if commitment == '':
+                        commitment = None
+                    if cpi == '':
+                        cpi = None
+                    if timeline == '':
+                        timeline = None
 
                     # Prepare data for batch processing
                     audience_data_tuple = (
                         bid_id, partner_response_id, audience_id, country,
                         commitment, cpi, timeline, comments, 
-                        commitment_type, is_best_efforts
+                        commitment_type, is_best_efforts, pass_country
                     )
                     
                     # Check if exists first
@@ -4558,31 +4647,55 @@ def update_partner_responses(bid_id):
         # Batch update existing audience responses
         if audience_updates:
             for update_data in audience_updates:
+                # Convert empty strings to None for integer fields in update data
+                commitment = update_data[4] if update_data[4] != '' else None
+                cpi = update_data[5] if update_data[5] != '' else None
+                timeline_days = update_data[6] if update_data[6] != '' else None
+                
+                print(f"UPDATE Debug - Original values: commitment='{update_data[4]}', cpi='{update_data[5]}', timeline='{update_data[6]}'")
+                print(f"UPDATE Debug - Converted values: commitment={commitment}, cpi={cpi}, timeline_days={timeline_days}")
+                
                 cur.execute(
-                    """
-                    UPDATE partner_audience_responses 
-                    SET commitment = %s,
-                        cpi = %s,
-                        timeline_days = %s,
-                        comments = %s,
-                        commitment_type = %s,
-                        is_best_efforts = %s,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE bid_id = %s AND partner_response_id = %s 
-                    AND audience_id = %s AND country = %s
-                """, (update_data[4], update_data[5], update_data[6], 
-                      update_data[7], update_data[8], update_data[9],
-                      update_data[0], update_data[1], update_data[2], update_data[3]))
+                        """
+                        UPDATE partner_audience_responses 
+                        SET commitment = %s,
+                            cpi = %s,
+                            timeline_days = %s,
+                            comments = %s,
+                            commitment_type = %s,
+                            is_best_efforts = %s,
+                            pass = %s,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE bid_id = %s AND partner_response_id = %s 
+                        AND audience_id = %s AND country = %s
+                    """, (commitment, cpi, timeline_days, 
+                          update_data[7], update_data[8], update_data[9], update_data[10],
+                          update_data[0], update_data[1], update_data[2], update_data[3]))
 
         # Batch insert new audience responses
         if audience_inserts:
+            # Convert empty strings to None for integer fields in insert data
+            converted_inserts = []
+            for insert_data in audience_inserts:
+                print(f"INSERT Debug - Original values: commitment='{insert_data[4]}', cpi='{insert_data[5]}', timeline='{insert_data[6]}'")
+                # Convert empty strings to None for integer fields (indices 4, 5, 6)
+                converted_data = list(insert_data)
+                if converted_data[4] == '':  # commitment
+                    converted_data[4] = None
+                if converted_data[5] == '':  # cpi
+                    converted_data[5] = None
+                if converted_data[6] == '':  # timeline_days
+                    converted_data[6] = None
+                print(f"INSERT Debug - Converted values: commitment={converted_data[4]}, cpi={converted_data[5]}, timeline={converted_data[6]}")
+                converted_inserts.append(tuple(converted_data))
+            
             cur.executemany(
                 """
                 INSERT INTO partner_audience_responses 
                 (bid_id, partner_response_id, audience_id, country, 
-                 commitment, cpi, timeline_days, comments, commitment_type, is_best_efforts, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-            """, audience_inserts)
+                 commitment, cpi, timeline_days, comments, commitment_type, is_best_efforts, pass, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            """, converted_inserts)
 
         conn.commit()
         print(f"Successfully updated {len(responses)} partner responses, {len(audience_updates)} audience updates, {len(audience_inserts)} audience inserts")
@@ -5271,6 +5384,7 @@ def submit_partner_link_response(token):
                     commitment_type = country_data.get('commitment_type')
                     commitment = country_data.get('commitment')
                     cpi = country_data.get('cpi')
+                    pass_country = country_data.get('pass', False)
                     # Convert empty string to None for numeric fields
                     if commitment == '':
                         commitment = None
@@ -5281,13 +5395,13 @@ def submit_partner_link_response(token):
                     # Upsert into partner_audience_responses
                     cur.execute(
                         """
-                        INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, pass, created_at, updated_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         ON CONFLICT (bid_id, partner_response_id, audience_id, country)
-                        DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, updated_at = CURRENT_TIMESTAMP
+                        DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, pass = EXCLUDED.pass, updated_at = CURRENT_TIMESTAMP
                     """,
                         (bid_id, partner_response_id, audience_id, country,
-                         commitment_type, commitment, cpi, timeline, comments))
+                         commitment_type, commitment, cpi, timeline, comments, pass_country))
         conn.commit()
 
         # Send admin notification email
@@ -5434,7 +5548,7 @@ def get_partner_responses_summary(bid_id):
         # Get all partner audience responses for this bid (with is_best_efforts and commitment_type)
         cur.execute(
             """
-            SELECT pr.partner_id, pr.loi, par.audience_id, par.country, par.commitment, par.cpi, pr.status, pr.updated_at, par.is_best_efforts, par.commitment_type
+            SELECT pr.partner_id, pr.loi, par.audience_id, par.country, par.commitment, par.cpi, pr.status, pr.updated_at, par.is_best_efforts, par.commitment_type, par.pass
             FROM partner_responses pr
             LEFT JOIN partner_audience_responses par ON pr.id = par.partner_response_id
             WHERE pr.bid_id = %s
@@ -5454,6 +5568,7 @@ def get_partner_responses_summary(bid_id):
             updated_at = row['updated_at']
             is_best_efforts = row['is_best_efforts']
             commitment_type = row['commitment_type']
+            pass_country = row['pass']
             if partner_id is None or loi is None:
                 continue
             partner_loi_map.setdefault(partner_id, {})
@@ -5471,17 +5586,21 @@ def get_partner_responses_summary(bid_id):
                 aud = partner_loi_map[partner_id][loi]['audiences'].setdefault(
                     audience_id, {'countries': []})
                 # Use is_best_efforts and commitment_type from partner response
-                c_type = 'be_max' if (commitment_type == 'be_max'
-                                      or is_best_efforts) else 'commitment'
-                # For BE/Max, count as complete if cpi is not None and cpi > 0 (ignore commitment)
-                # For Commitment, count as complete if commitment > 0 AND cpi is not None and cpi > 0
-                if c_type == 'be_max':
-                    c_status = 'complete' if (cpi is not None
-                                              and cpi > 0) else 'missing'
+                if pass_country:
+                    c_type = 'pass'
+                    c_status = 'complete'  # Pass is considered complete
                 else:
-                    c_status = 'complete' if (commitment and commitment > 0
-                                              and cpi is not None
-                                              and cpi > 0) else 'missing'
+                    c_type = 'be_max' if (commitment_type == 'be_max'
+                                          or is_best_efforts) else 'commitment'
+                    # For BE/Max, count as complete if cpi is not None and cpi > 0 (ignore commitment)
+                    # For Commitment, count as complete if commitment > 0 AND cpi is not None and cpi > 0
+                    if c_type == 'be_max':
+                        c_status = 'complete' if (cpi is not None
+                                                  and cpi > 0) else 'missing'
+                    else:
+                        c_status = 'complete' if (commitment and commitment > 0
+                                                  and cpi is not None
+                                                  and cpi > 0) else 'missing'
                 aud['countries'].append({
                     'name': country,
                     'status': c_status,
@@ -6819,7 +6938,7 @@ if __name__ == '__main__':
 
         # Try alternative port if 5000 is busy
         try:
-            alt_port = 5001
+            alt_port = 5002
             print(f"Trying alternative port {alt_port}...")
             app.run(host='0.0.0.0',
                     port=alt_port,

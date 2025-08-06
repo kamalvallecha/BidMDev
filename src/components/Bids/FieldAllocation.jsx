@@ -200,9 +200,11 @@ function FieldAllocation() {
                           {countryData.is_best_efforts ? 'BE/Max' : countryData.sample_size}
                         </TableCell>
                         <TableCell>
-                          {response.commitment_type === 'be_max'
-                            ? 'BE/Max'
-                            : (response.commitment !== undefined && response.commitment !== null && response.commitment !== '' ? response.commitment : '-')}
+                          {response.pass 
+                            ? 'Pass'
+                            : response.commitment_type === 'be_max'
+                              ? 'BE/Max'
+                              : (response.commitment !== undefined && response.commitment !== null && response.commitment !== '' ? response.commitment : '-')}
                         </TableCell>
                         <TableCell>{response.cpi || '-'}</TableCell>
                         <TableCell>
@@ -218,6 +220,7 @@ function FieldAllocation() {
                               countryData.country,
                               e.target.value
                             )}
+                            disabled={response.pass}
                             inputProps={{
                               min: 0,
                               step: 1

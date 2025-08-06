@@ -1,0 +1,6 @@
+id,partner_id,partner_name,contact_person,contact_email,contact_phone,website,company_address,specialized,geographic_coverage,created_at,updated_at
+2,CSi_Partner_2,Rakuten,Kapil Bajaj,kapil.bajaj@rakuten.com,9319199513,www.insight.rakuten.com,"LOGIX PARK, A - 4 & 5, 2nd Floor,Sector – 16, NOIDA,Uttar Pradesh – 201301, INDIA O: 91-120-4111258","{B2B,B2C}",{India},2025-04-07 18:41:14.166666,2025-04-07 18:41:14.166666
+3,CSi_Partner_3,Dynata India,Hemant Deo,Hemant.Deo@Dynata.com,9848788808,www.dynata.com,"Dynata, 10th Floor, Building 14-B DLF  |  Gurgaon, HR,  122002, India
+","{B2B,B2C}",{India},2025-04-07 18:41:52.312808,2025-04-07 20:36:44.171793
+1,CSi_Partner_1,Toluna,Barnali Saikia,barnali.saikia@toluna.com,9711745582,www.tolunacorporate.com,"9th Floor IT SEZ Park, Sector 59, Gurugram, Haryana India
+","{B2B,B2C,""HC - HCP""}",{India},2025-04-07 18:36:27.200507,2025-04-09 01:24:04.179347

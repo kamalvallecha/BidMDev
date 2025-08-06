@@ -6,9 +6,9 @@ load_dotenv()
 
 
 class Config:
-    # Database configuration - Use Replit DB
-    USE_REPLIT_DB = True
-    DATABASE_URL = os.getenv('DATABASE_URL', 'replit://default')
+    # Database configuration - Use Local PostgreSQL
+    USE_REPLIT_DB = False
+    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:root123@localhost:5432/BidM')
 
     # JWT configuration
     SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key')

@@ -103,6 +103,11 @@ function PartnerResponse() {
               const countryResponse = audienceResponse[country];
               if (!countryResponse) return false;
               
+              // Check if country is passed - if so, it's valid
+              if (countryResponse.pass === true) {
+                return true;
+              }
+              
               // Check if either:
               // 1. It's BE/Max (commitment_type is 'be_max')
               // 2. It has a valid commitment value >= 0 (including 0)
@@ -124,9 +129,21 @@ function PartnerResponse() {
             }
           );
 
-          const hasTimeline = audienceResponse.timeline > 0;
+          // Check if all countries are passed for this audience
+          const allCountriesPassed = Object.entries(audience.country_samples || {}).every(
+            ([country]) => {
+              const countryResponse = audienceResponse[country];
+              return countryResponse && countryResponse.pass === true;
+            }
+          );
+          
+          // If all countries are passed, timeline can be 0
+          // Otherwise, timeline must be > 0
+          const hasValidTimeline = allCountriesPassed ? 
+            (audienceResponse.timeline !== undefined && audienceResponse.timeline !== null && audienceResponse.timeline !== '') :
+            (audienceResponse.timeline > 0);
 
-          return allCountriesComplete && hasTimeline;
+          return allCountriesComplete && hasValidTimeline;
         });
 
         return allAudiencesComplete;
@@ -521,32 +538,143 @@ function PartnerResponse() {
                       inputProps={{ min: 0, step: 0.1 }}
                       value={partnerSettings[currentPartner.id]?.pmf || ''}
                       onChange={(e) => handlePMFChange(currentPartner.id, e.target.value)}
+                      disabled={(() => {
+                        // Check if any audience has all countries passed
+                        return bidData.target_audiences.some(audience => {
+                          const countries = Object.keys(audience.country_samples || {});
+                          return countries.length > 0 && countries.every(country => 
+                            responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass
+                          );
+                        });
+                      })()}
+                      sx={{
+                        '& .MuiInputBase-root.Mui-disabled': {
+                          backgroundColor: '#f5f5f5',
+                          color: '#666'
+                        }
+                      }}
                     />
                   </div>
 
                   {bidData.target_audiences.map((audience, audienceIndex) => (
                     <div key={audience.id} className="audience-section">
-                      <Typography variant="subtitle1" className="audience-title" sx={{ fontWeight: 'bold' }}>
-                        Audience: {audience.ta_category} - {audience.broader_category} - {audience.mode} - IR {audience.ir}%
-                      </Typography>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="subtitle1" className="audience-title" sx={{ fontWeight: 'bold' }}>
+                          Audience: {audience.ta_category} - {audience.broader_category} - {audience.mode} - IR {audience.ir}%
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Typography variant="body2" fontSize="small">Pass All Countries</Typography>
+                          <input
+                            type="checkbox"
+                            checked={(() => {
+                              const countries = Object.keys(audience.country_samples || {});
+                              return countries.length > 0 && countries.every(country => 
+                                responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass
+                              );
+                            })()}
+                            onChange={(e) => {
+                              const countries = Object.keys(audience.country_samples || {});
+                              const newPassValue = e.target.checked;
+                              
+                                                            setResponses(prev => ({
+                                ...prev,
+                                [`${currentPartner.id}-${selectedLOI}`]: {
+                                  ...prev[`${currentPartner.id}-${selectedLOI}`],
+                                  partner_id: currentPartner.id,
+                                  loi: selectedLOI,
+                                  audiences: {
+                                    ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
+                                    [audience.id]: {
+                                      ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id],
+                                      timeline: newPassValue ? 0 : (prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.timeline || ''),
+                                      comments: newPassValue ? 'NA' : (prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.comments || ''),
+                                      ...countries.reduce((acc, country) => ({
+                                        ...acc,
+                                        [country]: {
+                                          ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country],
+                                          pass: newPassValue,
+                                          commitment: newPassValue ? '' : (prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment || ''),
+                                          cpi: newPassValue ? '' : (prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi || '')
+                                        }
+                                      }), {})
+                                    }
+                                  }
+                                }
+                              }));
+                              
+                              // Also update PMF to 0 when all countries are passed
+                              if (newPassValue) {
+                                setPartnerSettings(prev => ({
+                                  ...prev,
+                                  [currentPartner.id]: { 
+                                    ...prev[currentPartner.id], 
+                                    pmf: 0 
+                                  }
+                                }));
+                                
+                                // Also update all responses for this partner with PMF = 0
+                                setResponses(prev => {
+                                  const updated = { ...prev };
+                                  Object.keys(updated).forEach(key => {
+                                    if (key.startsWith(`${currentPartner.id}-`)) {
+                                      updated[key] = {
+                                        ...updated[key],
+                                        pmf: 0
+                                      };
+                                    }
+                                  });
+                                  return updated;
+                                });
+                              }
+                            }}
+                          />
+                        </Box>
+                      </Box>
 
                       <TableContainer>
                         <Table>
                           <TableHead>
                             <TableRow>
                               <TableCell>Country</TableCell>
-                              <TableCell align="right">Required</TableCell>
-                              <TableCell align="right">Commitment</TableCell>
-                              <TableCell align="right">CPI</TableCell>
+                              <TableCell>Required</TableCell>
+                              <TableCell>Pass</TableCell>
+                              <TableCell>Commitment</TableCell>
+                              <TableCell>CPI</TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
                             {Object.entries(audience.country_samples || {}).map(([country, sample], idx) => (
                               <TableRow key={`${audience.id}-${country}`}>
                                 <TableCell>{country}</TableCell>
-                                <TableCell align="right">{sample.is_best_efforts ? "BE/Max" : sample.sample_size}</TableCell>
-                                <TableCell align="right">
-                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'flex-end' }}>
+                                <TableCell>{sample.is_best_efforts ? "BE/Max" : sample.sample_size}</TableCell>
+                                <TableCell>
+                                  <input
+                                    type="checkbox"
+                                    checked={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass || false}
+                                    onChange={(e) => {
+                                      setResponses(prev => ({
+                                        ...prev,
+                                        [`${currentPartner.id}-${selectedLOI}`]: {
+                                          ...prev[`${currentPartner.id}-${selectedLOI}`],
+                                          partner_id: currentPartner.id,
+                                          loi: selectedLOI,
+                                          audiences: {
+                                            ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences,
+                                            [audience.id]: {
+                                              ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id],
+                                              [country]: {
+                                                ...prev[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country],
+                                                pass: e.target.checked
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }));
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <FormControl size="small">
                                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                         <Typography variant="body2" sx={{ mr: 1 }}>BE/Max</Typography>
@@ -582,7 +710,7 @@ function PartnerResponse() {
                                       type="number"
                                       size="small"
                                       inputProps={{ min: 0, step: 1 }}
-                                      value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment ?? ''}
+                                      value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment === 0 ? '' : (responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment ?? '')}
                                       onChange={(e) => {
                                         const rawValue = e.target.value;
                                         let value;
@@ -613,17 +741,30 @@ function PartnerResponse() {
                                           }
                                         }));
                                       }}
-                                      disabled={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment_type === 'be_max'}
+                                                                            disabled={Boolean(responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.commitment_type === 'be_max' || responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass)}
+                                      sx={{
+                                        '& .MuiInputBase-root.Mui-disabled': {
+                                          backgroundColor: '#f5f5f5',
+                                          color: '#666'
+                                        }
+                                      }}
                                     />
                                   </Box>
                                 </TableCell>
-                                <TableCell align="right">
+                                                                <TableCell>
                                   <TextField
-                                    type="number"
-                                    size="small"
-                                    inputProps={{ min: 0, step: 0.01 }}
-                                    value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi ?? ''}
-                                    onChange={(e) => {
+                                      type="number"
+                                      size="small"
+                                      inputProps={{ min: 0, step: 0.01 }}
+                                      value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi === 0 ? '' : (responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.cpi ?? '')}
+                                                                            disabled={Boolean(responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass)}
+                                      sx={{
+                                        '& .MuiInputBase-root.Mui-disabled': {
+                                          backgroundColor: '#f5f5f5',
+                                          color: '#666'
+                                        }
+                                      }}
+                                      onChange={(e) => {
                                       const rawValue = e.target.value;
                                       let value;
                                       
@@ -666,7 +807,15 @@ function PartnerResponse() {
                         type="number"
                         label="Bid Timeline (days)"
                         className="timeline-field"
-                        value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.timeline || ''}
+                        value={(() => {
+                          const timelineValue = responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.timeline;
+                          // If all countries are passed, show 0, otherwise show the actual value
+                          const countries = Object.keys(audience.country_samples || {});
+                          const allPassed = countries.length > 0 && countries.every(country => 
+                            responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass
+                          );
+                          return allPassed ? 0 : (timelineValue || '');
+                        })()}
                         onChange={(e) => setResponses(prev => ({
                           ...prev,
                           [`${currentPartner.id}-${selectedLOI}`]: {
@@ -680,6 +829,18 @@ function PartnerResponse() {
                             }
                           }
                         }))}
+                        disabled={(() => {
+                          const countries = Object.keys(audience.country_samples || {});
+                          return countries.length > 0 && countries.every(country => 
+                            responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass
+                          );
+                        })()}
+                        sx={{
+                          '& .MuiInputBase-root.Mui-disabled': {
+                            backgroundColor: '#f5f5f5',
+                            color: '#666'
+                          }
+                        }}
                       />
                       <TextField
                         fullWidth
@@ -701,6 +862,18 @@ function PartnerResponse() {
                             }
                           }
                         }))}
+                        disabled={(() => {
+                          const countries = Object.keys(audience.country_samples || {});
+                          return countries.length > 0 && countries.every(country => 
+                            responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.id]?.[country]?.pass
+                          );
+                        })()}
+                        sx={{
+                          '& .MuiInputBase-root.Mui-disabled': {
+                            backgroundColor: '#f5f5f5',
+                            color: '#666'
+                          }
+                        }}
                       />
                     </div>
                   ))}

@@ -23,7 +23,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import ReplayIcon from '@mui/icons-material/Replay';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import './Bids.css';
-import axios from 'axios';
+import axios from '../../api/axios';
 import { useAuth } from '../../contexts/AuthContext';
 
 function Closure() {
@@ -151,55 +151,66 @@ function Closure() {
                 <TableCell colSpan={11} align="center">No closure bids found</TableCell>
               </TableRow>
             ) : (
-              bids.map((bid) => (
-                <TableRow key={bid.id}>
-                  <TableCell>{bid.po_number}</TableCell>
-                  <TableCell>{bid.bid_number}</TableCell>
-                  <TableCell>{bid.study_name}</TableCell>
-                  <TableCell>{bid.client_name}</TableCell>
-                  <TableCell>{bid.total_delivered}</TableCell>
-                  <TableCell>{bid.quality_rejects}</TableCell>
-                  <TableCell>{Number(bid.avg_loi).toFixed(2)}</TableCell>
-                  <TableCell>{Number(bid.avg_ir).toFixed(2)}</TableCell>
-                  <TableCell>{bid.status}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {canEdit && (
-                        <Tooltip title="Edit">
-                          <IconButton onClick={() => handleEdit(bid.id)}>
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      {canEdit && (
-                        <Tooltip title="Back to InField">
-                          <IconButton 
-                            onClick={() => {
-                              if (window.confirm('Move this bid back to InField status?')) {
-                                handleBackToInField(bid.id);
-                              }
-                            }}
-                            color="secondary"
-                          >
-                            <ReplayIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                      {canEdit && (
-                        <Tooltip title="Move to Ready for Invoice">
-                          <IconButton
-                            onClick={() => handleMoveToInvoice(bid.id)}
-                            size="small"
-                            sx={{ color: 'purple' }}
-                          >
-                            <ReceiptIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
+              bids
+                .filter((bid) => {
+                  if (!searchTerm) return true;
+                  const searchLower = searchTerm.toLowerCase();
+                  return (
+                    (bid.po_number && bid.po_number.toString().toLowerCase().includes(searchLower)) ||
+                    (bid.bid_number && bid.bid_number.toString().toLowerCase().includes(searchLower)) ||
+                    (bid.study_name && bid.study_name.toLowerCase().includes(searchLower)) ||
+                    (bid.client_name && bid.client_name.toLowerCase().includes(searchLower))
+                  );
+                })
+                .map((bid) => (
+                  <TableRow key={bid.id}>
+                    <TableCell>{bid.po_number}</TableCell>
+                    <TableCell>{bid.bid_number}</TableCell>
+                    <TableCell>{bid.study_name}</TableCell>
+                    <TableCell>{bid.client_name}</TableCell>
+                    <TableCell>{bid.total_delivered}</TableCell>
+                    <TableCell>{bid.quality_rejects}</TableCell>
+                    <TableCell>{Number(bid.avg_loi).toFixed(2)}</TableCell>
+                    <TableCell>{Number(bid.avg_ir).toFixed(2)}</TableCell>
+                    <TableCell>{bid.status}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {canEdit && (
+                          <Tooltip title="Edit">
+                            <IconButton onClick={() => handleEdit(bid.id)}>
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {canEdit && (
+                          <Tooltip title="Back to InField">
+                            <IconButton 
+                              onClick={() => {
+                                if (window.confirm('Move this bid back to InField status?')) {
+                                  handleBackToInField(bid.id);
+                                }
+                              }}
+                              color="secondary"
+                            >
+                              <ReplayIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {canEdit && (
+                          <Tooltip title="Move to Ready for Invoice">
+                            <IconButton
+                              onClick={() => handleMoveToInvoice(bid.id)}
+                              size="small"
+                              sx={{ color: 'purple' }}
+                            >
+                              <ReceiptIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
             )}
           </TableBody>
         </Table>

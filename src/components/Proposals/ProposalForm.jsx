@@ -569,16 +569,22 @@ const ProposalForm = () => {
                                         />
                                       </TableCell>
                                       <TableCell>{partner.partner_name}</TableCell>
-                                      <TableCell>{resp.commitment_type === 'be_max' ? 'BE/Max' : (resp.commitment ?? '')}</TableCell>
                                       <TableCell>
-                                        <TextField
-                                          size="small"
-                                          value={alloc.allocation || ''}
-                                          onChange={e => handleInputChange(audience.id, country, partner.id, 'allocation', e.target.value)}
-                                          disabled={!alloc.selected}
-                                          sx={{ width: 80 }}
-                                        />
+                                        {resp.pass 
+                                          ? 'Pass'
+                                          : resp.commitment_type === 'be_max' 
+                                            ? 'BE/Max' 
+                                            : (resp.commitment ?? '')}
                                       </TableCell>
+                                                                              <TableCell>
+                                          <TextField
+                                            size="small"
+                                            value={alloc.allocation || ''}
+                                            onChange={e => handleInputChange(audience.id, country, partner.id, 'allocation', e.target.value)}
+                                            disabled={!alloc.selected || resp.pass}
+                                            sx={{ width: 80 }}
+                                          />
+                                        </TableCell>
                                       <TableCell>
                                         <TextField
                                           size="small"

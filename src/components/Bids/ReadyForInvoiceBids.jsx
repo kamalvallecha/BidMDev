@@ -23,7 +23,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../../api/axios";
 
 const ReadyForInvoiceBids = () => {
   const navigate = useNavigate();
@@ -96,10 +96,16 @@ const ReadyForInvoiceBids = () => {
   };
 
   const filteredBids = bids.filter(
-    (bid) =>
-      bid.bid_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bid.study_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      bid.client_name.toLowerCase().includes(searchTerm.toLowerCase()),
+    (bid) => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        (bid.po_number && bid.po_number.toString().toLowerCase().includes(searchLower)) ||
+        (bid.bid_number && bid.bid_number.toString().toLowerCase().includes(searchLower)) ||
+        (bid.study_name && bid.study_name.toLowerCase().includes(searchLower)) ||
+        (bid.client_name && bid.client_name.toLowerCase().includes(searchLower))
+      );
+    }
   );
 
   return (

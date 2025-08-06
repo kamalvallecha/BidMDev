@@ -8,11 +8,9 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: process.env.NODE_ENV === "production" 
-          ? "https://bidm-smartprocure.replit.app"
-          : "http://0.0.0.0:5000",
+        target: "http://localhost:5000",
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
     allowedHosts: [

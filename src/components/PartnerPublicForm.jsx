@@ -133,8 +133,9 @@ function PartnerPublicForm() {
               const par = parList.find(p => p.country === cs.country);
               initialForm[loi][aud.id].countries[cs.country] = {
                 commitment_type: par?.commitment_type === 'be_max' || cs.is_best_efforts ? 'be_max' : 'fixed',
-                commitment: par ? par.commitment ?? '' : '',
-                cpi: par ? par.cpi ?? '' : '',
+                commitment: par ? (par.commitment === 0 ? '' : par.commitment ?? '') : '',
+                cpi: par ? (par.cpi === 0 || par.cpi === 0.00 || par.cpi === '0' || par.cpi === '0.00' ? '' : par.cpi ?? '') : '',
+                pass: par ? par.pass ?? false : false,
               };
             });
           });
@@ -316,28 +317,93 @@ function PartnerPublicForm() {
             value={pmf}
             onChange={e => setPMF(e.target.value)}
             inputProps={{ min: 0, step: 0.1 }}
+            disabled={(() => {
+              // Check if any audience has all countries passed
+              return (data.audiences || []).some(aud => {
+                const countries = (data.country_samples || []).filter(cs => cs.audience_id === aud.id);
+                return countries.length > 0 && countries.every(cs => 
+                  form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass
+                );
+              });
+            })()}
+            sx={{
+              '& .MuiInputBase-root.Mui-disabled': {
+                backgroundColor: '#f5f5f5',
+                color: '#666'
+              }
+            }}
           />
         </Box>
         <form onSubmit={handleSubmit}>
           {(data.audiences || []).map(aud => (
             <Box key={aud.id} mb={4} p={2} style={{ background: '#fafafa', borderRadius: 8 }}>
-              <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-                {aud.audience_name} ({aud.ta_category})
-              </Typography>
-              <Typography variant="body2" gutterBottom>
-                Broader Category: {aud.broader_category} | Mode: {aud.mode} | IR: {aud.ir}%
-              </Typography>
-              {aud.exact_ta_definition && (
-                <Typography variant="body2" gutterBottom sx={{ fontStyle: 'italic', mb: 2 }}>
-                  <strong>Exact TA Definition:</strong> {aud.exact_ta_definition}
-                </Typography>
-              )}
+              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+                    {aud.audience_name} ({aud.ta_category})
+                  </Typography>
+                  <Typography variant="body2" gutterBottom>
+                    Broader Category: {aud.broader_category} | Mode: {aud.mode} | IR: {aud.ir}%
+                  </Typography>
+                  {aud.exact_ta_definition && (
+                    <Typography variant="body2" gutterBottom sx={{ fontStyle: 'italic', mb: 2 }}>
+                      <strong>Exact TA Definition:</strong> {aud.exact_ta_definition}
+                    </Typography>
+                  )}
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" fontSize="small">Pass All Countries</Typography>
+                  <input
+                    type="checkbox"
+                    checked={(() => {
+                      const countries = (data.country_samples || []).filter(cs => cs.audience_id === aud.id);
+                      return countries.length > 0 && countries.every(cs => 
+                        form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass
+                      );
+                    })()}
+                                                onChange={(e) => {
+                              const countries = (data.country_samples || []).filter(cs => cs.audience_id === aud.id);
+                              const newPassValue = e.target.checked;
+                              
+                              setForm(prev => ({
+                                ...prev,
+                                [selectedLOI]: {
+                                  ...prev[selectedLOI],
+                                  [aud.id]: {
+                                    ...prev[selectedLOI][aud.id],
+                                    timeline: newPassValue ? 0 : (prev[selectedLOI][aud.id]?.timeline || ''),
+                                    comments: newPassValue ? 'NA' : (prev[selectedLOI][aud.id]?.comments || ''),
+                                    countries: {
+                                      ...prev[selectedLOI][aud.id].countries,
+                                      ...countries.reduce((acc, cs) => ({
+                                        ...acc,
+                                        [cs.country]: {
+                                          ...prev[selectedLOI][aud.id]?.countries?.[cs.country],
+                                          pass: newPassValue,
+                                          commitment: newPassValue ? '' : (prev[selectedLOI][aud.id]?.countries?.[cs.country]?.commitment || ''),
+                                          cpi: newPassValue ? '' : (prev[selectedLOI][aud.id]?.countries?.[cs.country]?.cpi || '')
+                                        }
+                                      }), {})
+                                    }
+                                  }
+                                }
+                              }));
+                              
+                              // Also update PMF to 0 when all countries are passed
+                              if (newPassValue) {
+                                setPMF(0);
+                              }
+                            }}
+                  />
+                </Box>
+              </Box>
               <TableContainer>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Country</TableCell>
                       <TableCell>Required</TableCell>
+                      <TableCell>Pass</TableCell>
                       <TableCell>BE/Max</TableCell>
                       <TableCell>Commitment</TableCell>
                       <TableCell>CPI</TableCell>
@@ -351,6 +417,13 @@ function PartnerPublicForm() {
                         <TableCell>
                           <input
                             type="checkbox"
+                            checked={form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass || false}
+                            onChange={e => handleCountryChange(aud.id, cs.country, 'pass', e.target.checked)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <input
+                            type="checkbox"
                             checked={form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.commitment_type === 'be_max'}
                             onChange={e => handleCountryChange(aud.id, cs.country, 'commitment_type', e.target.checked ? 'be_max' : 'fixed')}
                           />
@@ -359,19 +432,44 @@ function PartnerPublicForm() {
                           <TextField
                             type="number"
                             size="small"
-                            value={form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.commitment || ''}
+                            value={(() => {
+                              const commitmentValue = form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.commitment;
+                              if (commitmentValue === 0 || commitmentValue === 0.00 || commitmentValue === '0' || commitmentValue === '0.00') {
+                                return '';
+                              }
+                              return commitmentValue ?? '';
+                            })()}
                             onChange={e => handleCountryChange(aud.id, cs.country, 'commitment', e.target.value)}
-                            disabled={form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.commitment_type === 'be_max'}
+                            disabled={Boolean(form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.commitment_type === 'be_max' || form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass)}
                             inputProps={{ min: 0 }}
+                            sx={{
+                              '& .MuiInputBase-root.Mui-disabled': {
+                                backgroundColor: '#f5f5f5',
+                                color: '#666'
+                              }
+                            }}
                           />
                         </TableCell>
                         <TableCell>
                           <TextField
                             type="number"
                             size="small"
-                            value={form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.cpi || ''}
+                            value={(() => {
+                              const cpiValue = form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.cpi;
+                              if (cpiValue === 0 || cpiValue === 0.00 || cpiValue === '0' || cpiValue === '0.00') {
+                                return '';
+                              }
+                              return cpiValue ?? '';
+                            })()}
                             onChange={e => handleCountryChange(aud.id, cs.country, 'cpi', e.target.value)}
+                            disabled={Boolean(form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass)}
                             inputProps={{ min: 0 }}
+                            sx={{
+                              '& .MuiInputBase-root.Mui-disabled': {
+                                backgroundColor: '#f5f5f5',
+                                color: '#666'
+                              }
+                            }}
                           />
                         </TableCell>
                       </TableRow>
@@ -384,8 +482,28 @@ function PartnerPublicForm() {
                   fullWidth
                   type="number"
                   label="Bid Timeline (days)"
-                  value={form[selectedLOI]?.[aud.id]?.timeline || ''}
+                  value={(() => {
+                    const timelineValue = form[selectedLOI]?.[aud.id]?.timeline;
+                    // If all countries are passed, show 0, otherwise show the actual value
+                    const countries = (data.country_samples || []).filter(cs => cs.audience_id === aud.id);
+                    const allPassed = countries.length > 0 && countries.every(cs => 
+                      form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass
+                    );
+                    return allPassed ? 0 : (timelineValue || '');
+                  })()}
                   onChange={e => handleTimelineChange(aud.id, e.target.value)}
+                  disabled={(() => {
+                    const countries = (data.country_samples || []).filter(cs => cs.audience_id === aud.id);
+                    return countries.length > 0 && countries.every(cs => 
+                      form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass
+                    );
+                  })()}
+                  sx={{
+                    '& .MuiInputBase-root.Mui-disabled': {
+                      backgroundColor: '#f5f5f5',
+                      color: '#666'
+                    }
+                  }}
                 />
               </Box>
               <TextField
@@ -395,6 +513,18 @@ function PartnerPublicForm() {
                 label="Comments"
                 value={form[selectedLOI]?.[aud.id]?.comments || ''}
                 onChange={e => handleCommentsChange(aud.id, e.target.value)}
+                disabled={(() => {
+                  const countries = (data.country_samples || []).filter(cs => cs.audience_id === aud.id);
+                  return countries.length > 0 && countries.every(cs => 
+                    form[selectedLOI]?.[aud.id]?.countries?.[cs.country]?.pass
+                  );
+                })()}
+                sx={{
+                  '& .MuiInputBase-root.Mui-disabled': {
+                    backgroundColor: '#f5f5f5',
+                    color: '#666'
+                  }
+                }}
               />
             </Box>
           ))}

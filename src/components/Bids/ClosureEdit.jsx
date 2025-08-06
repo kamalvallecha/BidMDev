@@ -85,10 +85,11 @@ function ClosureEdit() {
             const metricsKey = `metrics_${audience.id}_${selectedPartner}_${selectedLOI}`;
             newFormData[metricsKey] = audience.metrics;
             
-            // Set n_delivered values for each country
+            // Set n_delivered and quality_rejects values for each country
             audience.countries.forEach(country => {
               newFormData[`${audience.id}_${country.name}`] = {
-                delivered: country.delivered
+                delivered: country.delivered,
+                qualityRejects: country.quality_rejects
               };
             });
           });
@@ -161,6 +162,16 @@ function ClosureEdit() {
     }));
   };
 
+  const handleQualityRejectsChange = (audienceId, country, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [`${audienceId}_${country}`]: {
+        ...prev[`${audienceId}_${country}`],
+        qualityRejects: value
+      }
+    }));
+  };
+
   const handleMetricsChange = (audienceId, field, value) => {
     const metricsKey = `metrics_${audienceId}_${selectedPartner}_${selectedLOI}`;
     setFormData(prev => ({
@@ -191,10 +202,11 @@ function ClosureEdit() {
         audienceData: audienceData.map(audience => {
           const metricsKey = `metrics_${audience.id}_${selectedPartner}_${selectedLOI}`;
           
-          // Get n_delivered values for each country
+          // Get n_delivered and quality_rejects values for each country
           const countries = audience.countries.map(country => ({
             name: country.name,
-            delivered: Number(formData[`${audience.id}_${country.name}`]?.delivered || country.delivered || 0)
+            delivered: Number(formData[`${audience.id}_${country.name}`]?.delivered || country.delivered || 0),
+            qualityRejects: Number(formData[`${audience.id}_${country.name}`]?.qualityRejects || country.quality_rejects || 0)
           }));
 
           const data = {
@@ -323,6 +335,7 @@ function ClosureEdit() {
                   <TableCell sx={{ color: 'white' }}>Required</TableCell>
                   <TableCell sx={{ color: 'white' }}>Allocation</TableCell>
                   <TableCell sx={{ color: 'white' }}>N Delivered</TableCell>
+                  <TableCell sx={{ color: 'white' }}>Quality Rejects</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -337,6 +350,15 @@ function ClosureEdit() {
                         type="number"
                         value={formData[`${audience.id}_${country.name}`]?.delivered ?? country.delivered ?? ''}
                         onChange={(e) => handleDeliveredChange(audience.id, country.name, e.target.value)}
+                        sx={{ width: 100 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={formData[`${audience.id}_${country.name}`]?.qualityRejects ?? country.quality_rejects ?? ''}
+                        onChange={(e) => handleQualityRejectsChange(audience.id, country.name, e.target.value)}
                         sx={{ width: 100 }}
                       />
                     </TableCell>
@@ -378,8 +400,18 @@ function ClosureEdit() {
                 label="Quality Rejects"
                 size="small"
                 type="number"
-                value={formData[`metrics_${audience.id}_${selectedPartner}_${selectedLOI}`]?.qualityRejects ?? ''}
-                onChange={(e) => handleMetricsChange(audience.id, 'qualityRejects', e.target.value)}
+                value={(() => {
+                  // Calculate sum of quality rejects from all countries
+                  const sum = audience.countries.reduce((total, country) => {
+                    const qualityRejects = formData[`${audience.id}_${country.name}`]?.qualityRejects ?? country.quality_rejects ?? 0;
+                    return total + (parseInt(qualityRejects) || 0);
+                  }, 0);
+                  return sum;
+                })()}
+                InputProps={{
+                  readOnly: true,
+                }}
+                helperText="Auto-calculated sum from all countries"
               />
               <TextField
                 select
