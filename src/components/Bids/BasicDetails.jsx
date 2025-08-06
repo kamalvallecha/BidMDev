@@ -862,7 +862,19 @@ function BasicDetails() {
           team: currentUser?.team,
         };
 
-        const response = await axios.post("/api/bids", bidDataWithUser);
+        console.log("Creating bid with user data:", {
+          user_id: currentUser?.id,
+          team: currentUser?.team,
+          userData: localStorage.getItem('user')
+        });
+
+        const response = await axios.post("/api/bids", bidDataWithUser, {
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Id": currentUser?.id,
+            "X-User-Team": currentUser?.team,
+          },
+        });
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
