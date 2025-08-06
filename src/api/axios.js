@@ -21,18 +21,21 @@ const instance = axios.create({
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : {};
-
-  console.log('Axios interceptor - Adding headers to request:', {
-    url: config.url,
-    method: config.method,
-    hasToken: !!token,
-    userStr: userStr,
-    userExists: !!user.id,
-    userId: user.id,
-    userTeam: user.team,
-    existingHeaders: config.headers
+  
+  console.log('Axios interceptor - Raw localStorage data:', {
+    token: token ? 'exists' : 'missing',
+    userStr: userStr
   });
+
+  let user = {};
+  if (userStr) {
+    try {
+      user = JSON.parse(userStr);
+      console.log('Axios interceptor - Parsed user:', user);
+    } catch (e) {
+      console.error('Axios interceptor - Failed to parse user:', e);
+    }
+  }
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -42,12 +45,19 @@ instance.interceptors.request.use((config) => {
   if (user && user.id && user.team) {
     config.headers['X-User-Id'] = String(user.id);
     config.headers['X-User-Team'] = String(user.team);
-    console.log('Axios interceptor - Added user headers:', {
+    console.log('Axios interceptor - Successfully added user headers:', {
       'X-User-Id': config.headers['X-User-Id'],
-      'X-User-Team': config.headers['X-User-Team']
+      'X-User-Team': config.headers['X-User-Team'],
+      url: config.url,
+      method: config.method
     });
   } else {
-    console.error('Axios interceptor - User ID or team missing:', { user, userStr });
+    console.error('Axios interceptor - Cannot add user headers:', { 
+      hasUser: !!user, 
+      hasUserId: !!(user && user.id), 
+      hasUserTeam: !!(user && user.team),
+      user: user 
+    });
   }
 
   return config;

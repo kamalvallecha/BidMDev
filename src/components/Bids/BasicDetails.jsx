@@ -873,6 +873,12 @@ function BasicDetails() {
         console.log("Creating bid - LocalStorage user:", localStorage.getItem('user'));
         console.log("Creating bid - LocalStorage token:", localStorage.getItem('token'));
 
+        // Verify user data before making request
+        if (!currentUser?.id || !currentUser?.team) {
+          alert("User authentication error. Please refresh the page and try again.");
+          return;
+        }
+
         const response = await axios.post("/api/bids", bidDataWithUser);
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
@@ -935,9 +941,7 @@ function BasicDetails() {
                 name="bid_number"
                 value={formData.bid_number}
                 onChange={handleInputChange}
-                InputProps={{
-                  readOnly: false,
-                }}
+                placeholder="Enter bid number"
                 helperText={
                   !isEditMode ? "Enter a unique bid number manually" : ""
                 }
