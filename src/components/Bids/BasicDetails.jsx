@@ -528,12 +528,12 @@ function BasicDetails() {
 
   const removeTargetAudience = (index) => {
     const audienceToRemove = formData.target_audiences[index];
-    
+
     // If this audience has an ID (exists in database), track it for deletion
     if (audienceToRemove.id && isEditMode) {
       setDeletedAudienceIds(prevDeleted => [...prevDeleted, audienceToRemove.id]);
     }
-    
+
     setFormData((prev) => {
       // Remove the audience from the array and renumber remaining audiences
       const updatedAudiences = prev.target_audiences
@@ -543,7 +543,7 @@ function BasicDetails() {
           name: `Audience - ${newIndex + 1}`,
           uniqueId: `audience-${newIndex}`
         }));
-      
+
       return {
         ...prev,
         target_audiences: updatedAudiences,
