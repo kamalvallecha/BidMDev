@@ -17,45 +17,44 @@ const instance = axios.create({
   },
 });
 
-// Add request interceptor to include user headers
-instance.interceptors.request.use(
-  (config) => {
-    console.log('Making request to:', config.baseURL + config.url);
-    
-    // Get user data from localStorage
-    const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        config.headers['X-User-Id'] = user.id;
-        config.headers['X-User-Team'] = user.team;
-        config.headers['X-User-Role'] = user.role;
-        config.headers['X-User-Name'] = user.name;
-        console.log('Added user headers:', {
-          'X-User-Id': user.id,
-          'X-User-Team': user.team,
-          'X-User-Role': user.role,
-          'X-User-Name': user.name
-        });
-      } catch (error) {
-        console.error('Error parsing user data:', error);
-      }
-    }
-    
-    // Add token to Authorization header if available
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-      console.log('Added Authorization header with token');
-    }
-    
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+// Request interceptor to add authentication headers
+instance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : {};
+
+  console.log('Axios interceptor - Adding headers to request:', {
+    url: config.url,
+    method: config.method,
+    hasToken: !!token,
+    userStr: userStr,
+    userExists: !!user.id,
+    userId: user.id,
+    userTeam: user.team,
+    existingHeaders: config.headers
+  });
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+
+  // Always try to add user headers if we have user data
+  if (user && user.id && user.team) {
+    config.headers['X-User-Id'] = String(user.id);
+    config.headers['X-User-Team'] = String(user.team);
+    console.log('Axios interceptor - Added user headers:', {
+      'X-User-Id': config.headers['X-User-Id'],
+      'X-User-Team': config.headers['X-User-Team']
+    });
+  } else {
+    console.error('Axios interceptor - User ID or team missing:', { user, userStr });
+  }
+
+  return config;
+}, (error) => {
+  console.error('Axios interceptor error:', error);
+  return Promise.reject(error);
+});
 
 // Add response interceptor for better error handling
 instance.interceptors.response.use(
@@ -64,7 +63,7 @@ instance.interceptors.response.use(
     if (error.code === 'ERR_NETWORK') {
       console.error('Network error - backend server may not be running');
     }
-    
+
     // Handle authentication errors
     if (error.response && error.response.status === 401) {
       console.error('Authentication error - redirecting to login');
@@ -72,7 +71,7 @@ instance.interceptors.response.use(
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
-    
+
     return Promise.reject(error);
   }
 );
