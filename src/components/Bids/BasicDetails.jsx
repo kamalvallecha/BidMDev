@@ -868,12 +868,20 @@ function BasicDetails() {
           userData: localStorage.getItem('user')
         });
 
+        // Add extensive debugging for headers
+        const requestHeaders = {
+          "Content-Type": "application/json",
+          "X-User-Id": currentUser?.id,
+          "X-User-Team": currentUser?.team,
+        };
+        
+        console.log("Request headers being sent:", requestHeaders);
+        console.log("Current user object:", currentUser);
+        console.log("LocalStorage user:", localStorage.getItem('user'));
+        console.log("LocalStorage token:", localStorage.getItem('token'));
+
         const response = await axios.post("/api/bids", bidDataWithUser, {
-          headers: {
-            "Content-Type": "application/json",
-            "X-User-Id": currentUser?.id,
-            "X-User-Team": currentUser?.team,
-          },
+          headers: requestHeaders,
         });
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
