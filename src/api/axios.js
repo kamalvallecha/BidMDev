@@ -36,22 +36,15 @@ instance.interceptors.request.use(
         const user = JSON.parse(userData);
         console.log("Parsed user object:", user);
 
-        // Validate user data before setting headers
-        if (!user.id || !user.team) {
-          console.error("Invalid user data - missing id or team:", user);
-          // Don't set headers if user data is invalid
-          return config;
-        }
-
-        // Always set headers with actual values, not empty strings
-        config.headers["X-User-Id"] = String(user.id);
-        config.headers["X-User-Team"] = String(user.team);
+        // Always set headers with actual values
+        config.headers["X-User-Id"] = String(user.id || '');
+        config.headers["X-User-Team"] = String(user.team || '');
         config.headers["X-User-Role"] = String(user.role || 'user');
         config.headers["X-User-Name"] = String(user.name || 'Unknown');
-        
+
         console.log("Set headers:", {
           "X-User-Id": config.headers["X-User-Id"],
-          "X-User-Team": config.headers["X-User-Team"], 
+          "X-User-Team": config.headers["X-User-Team"],
           "X-User-Role": config.headers["X-User-Role"],
           "X-User-Name": config.headers["X-User-Name"]
         });

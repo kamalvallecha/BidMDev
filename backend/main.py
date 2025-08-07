@@ -1189,9 +1189,11 @@ def create_bid():
         print(f"DEBUG: Received headers - User-Id: '{user_id}', User-Team: '{user_team}'")
         print(f"DEBUG: All request headers: {dict(request.headers)}")
         
-        if not user_id or user_id == '0' or not user_team or user_team in ['Unknown', '']:
-            return jsonify({'error':
-                            'Missing or invalid user ID or team in headers'}), 400
+        if not user_id or user_id == '0':
+            return jsonify({'error': 'Missing or invalid user ID in headers. Please log in again.'}), 400
+        
+        if not user_team or user_team in ['Unknown', '']:
+            return jsonify({'error': 'Missing or invalid user team in headers. Please contact administrator.'}), 400
         
         # Convert to proper types and validate
         try:
