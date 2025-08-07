@@ -1185,7 +1185,11 @@ def create_bid():
         # Always enforce team and created_by from headers
         user_id = request.headers.get('X-User-Id')
         user_team = request.headers.get('X-User-Team')
-        if not user_id or not user_team:
+        
+        print(f"DEBUG: Received headers - User-Id: '{user_id}', User-Team: '{user_team}'")
+        print(f"DEBUG: All request headers: {dict(request.headers)}")
+        
+        if not user_id or not user_team or user_id == '' or user_team == '':
             return jsonify({'error':
                             'Missing user ID or team in headers'}), 400
         # Use only backend-determined values

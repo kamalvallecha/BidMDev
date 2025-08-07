@@ -36,11 +36,11 @@ instance.interceptors.request.use(
         const user = JSON.parse(userData);
         console.log("Parsed user object:", user);
 
-        // Always set headers, converting to string and providing defaults
-        config.headers["X-User-Id"] = String(user.id || "");
-        config.headers["X-User-Team"] = String(user.team || "");
-        config.headers["X-User-Role"] = String(user.role || "");
-        config.headers["X-User-Name"] = String(user.name || "");
+        // Always set headers with actual values, not empty strings
+        config.headers["X-User-Id"] = String(user.id);
+        config.headers["X-User-Team"] = String(user.team);
+        config.headers["X-User-Role"] = String(user.role);
+        config.headers["X-User-Name"] = String(user.name);
         
         console.log("Set headers:", {
           "X-User-Id": config.headers["X-User-Id"],
