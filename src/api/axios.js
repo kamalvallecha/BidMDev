@@ -24,60 +24,56 @@ instance.interceptors.request.use((config) => {
   
   console.log('Axios interceptor - Raw localStorage data:', {
     token: token ? 'exists' : 'missing',
-    userStr: userStr
+    userStr: userStr ? 'exists' : 'missing'
   });
-
-  let user = {};
-  if (userStr) {
-    try {
-      user = JSON.parse(userStr);
-      console.log('Axios interceptor - Parsed user:', user);
-    } catch (e) {
-      console.error('Axios interceptor - Failed to parse user:', e);
-      // If user data is corrupted, redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-      return Promise.reject(new Error('Invalid user data'));
-    }
-  }
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  // Check if we have valid user data before making API calls
-  if (user && user.id && user.team) {
-    config.headers['X-User-Id'] = String(user.id);
-    config.headers['X-User-Team'] = String(user.team);
-    config.headers['X-User-Role'] = String(user.role || '');
-    config.headers['X-User-Name'] = String(user.name || '');
-    console.log('Axios interceptor - Successfully added user headers:', {
-      'X-User-Id': config.headers['X-User-Id'],
-      'X-User-Team': config.headers['X-User-Team'],
-      'X-User-Role': config.headers['X-User-Role'],
-      'X-User-Name': config.headers['X-User-Name'],
-      url: config.url,
-      method: config.method
-    });
-  } else {
-    // For API calls that require authentication, reject if no user data
-    if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
-      console.error('Axios interceptor - Missing user authentication for API call:', { 
-        url: config.url,
-        hasUser: !!user, 
-        hasUserId: !!(user && user.id), 
-        hasUserTeam: !!(user && user.team),
-        user: user 
-      });
+  // Always try to add user headers if user data exists
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      console.log('Axios interceptor - Parsed user:', user);
       
-      // Redirect to login if not already there
-      if (!window.location.pathname.includes('/login')) {
+      if (user && user.id && user.team) {
+        config.headers['X-User-Id'] = String(user.id);
+        config.headers['X-User-Team'] = String(user.team);
+        config.headers['X-User-Role'] = String(user.role || '');
+        config.headers['X-User-Name'] = String(user.name || '');
+        console.log('Axios interceptor - Successfully added user headers:', {
+          'X-User-Id': config.headers['X-User-Id'],
+          'X-User-Team': config.headers['X-User-Team'],
+          'X-User-Role': config.headers['X-User-Role'],
+          'X-User-Name': config.headers['X-User-Name'],
+          url: config.url,
+          method: config.method
+        });
+      } else {
+        console.warn('Axios interceptor - User data incomplete:', user);
+        // For API calls that require authentication, show error but don't redirect
+        if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
+          console.error('Axios interceptor - Missing user authentication for API call:', { 
+            url: config.url,
+            user: user 
+          });
+        }
+      }
+    } catch (e) {
+      console.error('Axios interceptor - Failed to parse user data:', e);
+      // Only redirect on authentication-required endpoints
+      if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
+        return Promise.reject(new Error('Invalid user data'));
       }
-      return Promise.reject(new Error('Missing user authentication'));
+    }
+  } else {
+    // No user data found
+    if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
+      console.error('Axios interceptor - No user data found for API call:', config.url);
     }
   }
 

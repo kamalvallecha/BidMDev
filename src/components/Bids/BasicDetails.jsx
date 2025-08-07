@@ -817,6 +817,12 @@ function BasicDetails() {
       }
 
       // Verify user authentication before proceeding
+      if (!currentUser || !currentUser.id || !currentUser.team) {
+        alert("Authentication error. Please log in again.");
+        navigate('/login');
+        return;
+      }
+
       const storedUser = localStorage.getItem('user');
       const token = localStorage.getItem('token');
       
@@ -840,6 +846,9 @@ function BasicDetails() {
         navigate('/login');
         return;
       }
+
+      console.log("Pre-API call validation - Current user:", currentUser);
+      console.log("Pre-API call validation - Stored user:", user);
 
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
