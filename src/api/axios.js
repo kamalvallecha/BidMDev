@@ -27,16 +27,37 @@ instance.interceptors.request.use(
     
     // Get user data from localStorage
     const userData = localStorage.getItem('user');
+    console.log('User data from localStorage:', userData);
+    
     if (userData) {
       try {
         const user = JSON.parse(userData);
-        config.headers['X-User-Id'] = user.id;
-        config.headers['X-User-Team'] = user.team;
-        config.headers['X-User-Role'] = user.role;
-        config.headers['X-User-Name'] = user.name;
+        console.log('Parsed user object:', user);
+        
+        // Set headers only if user has the required fields
+        if (user.id) {
+          config.headers['X-User-Id'] = user.id;
+          console.log('Set X-User-Id header:', user.id);
+        }
+        if (user.team) {
+          config.headers['X-User-Team'] = user.team;
+          console.log('Set X-User-Team header:', user.team);
+        }
+        if (user.role) {
+          config.headers['X-User-Role'] = user.role;
+          console.log('Set X-User-Role header:', user.role);
+        }
+        if (user.name) {
+          config.headers['X-User-Name'] = user.name;
+          console.log('Set X-User-Name header:', user.name);
+        }
+        
+        console.log('Final request headers:', config.headers);
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
+    } else {
+      console.warn('No user data found in localStorage');
     }
     return config;
   },
