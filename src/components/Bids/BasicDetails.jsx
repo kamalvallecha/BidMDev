@@ -356,14 +356,13 @@ function BasicDetails() {
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [sampleDistribution, setSampleDistribution] = useState({});
   const [loading, setLoading] = useState(true);
-  const [deletedAudienceIds, setDeletedAudienceIds] = useState([]);
 
   // Filter VM contacts to only show those from the current user's team
   const filteredVMContacts = vmContacts.filter(
     (vm) =>
       vm.team &&
-      vm.team.toLowerCase().replace(/\s+/g, "") ===
-        currentUser.team.toLowerCase().replace(/\s+/g, ""),
+      vm.team.toLowerCase().replace(/\s+/g, '') ===
+        currentUser.team.toLowerCase().replace(/\s+/g, '')
   );
 
   useEffect(() => {
@@ -378,17 +377,17 @@ function BasicDetails() {
         );
 
         // Get next bid number first if it's a new bid
-        // if (!isEditMode) {
-        //   try {
-        //     const bidNumberResponse = await axios.get("/api/bids/next-number");
-        //     setFormData({
-        //       ...defaultFormData,
-        //       bid_number: bidNumberResponse.data.next_bid_number,
-        //     });
-        //   } catch (error) {
-        //     console.error("Error getting next bid number:", error);
-        //   }
-        // }
+        if (!isEditMode) {
+          try {
+            const bidNumberResponse = await axios.get("/api/bids/next-number");
+            setFormData({
+              ...defaultFormData,
+              bid_number: bidNumberResponse.data.next_bid_number,
+            });
+          } catch (error) {
+            console.error("Error getting next bid number:", error);
+          }
+        }
 
         if (isEditMode && bidId) {
           console.log("Fetching bid data for ID:", bidId);
@@ -414,24 +413,6 @@ function BasicDetails() {
 
             console.log("Processed partners array:", partnersArray);
 
-            // Sort audiences by ID to maintain consistent database order, then renumber sequentially
-            const sortedAudiences = (bidData.target_audiences || []).sort(
-              (a, b) => (a.id || 0) - (b.id || 0),
-            );
-            // Renumber audiences sequentially based on their sorted database ID order
-            const processedAudiences = sortedAudiences.map(
-              (audience, index) => ({
-                ...audience,
-                name: `Audience - ${index + 1}`,
-                uniqueId: `audience-${index}`, // Ensure uniqueId matches the new index
-              }),
-            );
-
-            console.log(
-              "Loading audiences with IDs:",
-              processedAudiences.map((a) => ({ name: a.name, id: a.id })),
-            );
-
             setFormData((prevData) => ({
               ...prevData,
               ...bidData,
@@ -441,8 +422,6 @@ function BasicDetails() {
                 ? bidData.countries
                 : [],
             }));
-
-            console.log("FormData set in edit mode");
 
             // Set selected partners and LOIs
             setSelectedPartners(partnersArray);
@@ -495,9 +474,7 @@ function BasicDetails() {
         ...newTargetAudiences[index],
         [field]: value,
         // Clear sample_required if best efforts is checked
-        ...(field === "is_best_efforts" && value === true
-          ? { sample_required: "" }
-          : {}),
+        ...(field === 'is_best_efforts' && value === true ? { sample_required: '' } : {})
       };
       return {
         ...prev,
@@ -527,28 +504,10 @@ function BasicDetails() {
   };
 
   const removeTargetAudience = (index) => {
-    const audienceToRemove = formData.target_audiences[index];
-    
-    // If this audience has an ID (exists in database), track it for deletion
-    if (audienceToRemove.id && isEditMode) {
-      setDeletedAudienceIds(prevDeleted => [...prevDeleted, audienceToRemove.id]);
-    }
-    
-    setFormData((prev) => {
-      // Remove the audience from the array and renumber remaining audiences
-      const updatedAudiences = prev.target_audiences
-        .filter((_, i) => i !== index)
-        .map((audience, newIndex) => ({
-          ...audience,
-          name: `Audience - ${newIndex + 1}`,
-          uniqueId: `audience-${newIndex}`
-        }));
-      
-      return {
-        ...prev,
-        target_audiences: updatedAudiences,
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      target_audiences: prev.target_audiences.filter((_, i) => i !== index),
+    }));
   };
 
   const handleMultipleSelect = (e) => {
@@ -594,35 +553,21 @@ function BasicDetails() {
     }
   };
 
-  const handleDistributionChange = (
-    country,
-    audienceIndex,
-    value,
-    isBEMax = false,
-  ) => {
+  const handleDistributionChange = (country, audienceIndex, value, isBEMax = false) => {
     setSampleDistribution((prev) => {
-      const currentValue =
-        prev[country]?.[`audience-${audienceIndex}`]?.value ?? "";
-      const currentIsBEMax =
-        prev[country]?.[`audience-${audienceIndex}`]?.isBEMax || false;
+      const currentValue = prev[country]?.[`audience-${audienceIndex}`]?.value ?? "";
+      const currentIsBEMax = prev[country]?.[`audience-${audienceIndex}`]?.isBEMax || false;
 
-      console.log(
-        `Previous value: ${currentValue}, Previous isBEMax: ${currentIsBEMax}`,
-      );
-
-      const newDistribution = {
+      return {
         ...prev,
         [country]: {
           ...prev[country],
           [`audience-${audienceIndex}`]: {
-            value: isBEMax ? "" : value === "" ? "" : parseInt(value) || "",
-            isBEMax: isBEMax,
-          },
-        },
+            value: isBEMax ? "" : (value === "" ? "" : parseInt(value) || ""),
+            isBEMax: isBEMax
+          }
+        }
       };
-
-      console.log(`New distribution for ${country}:`, newDistribution[country]);
-      return newDistribution;
     });
   };
 
@@ -632,17 +577,18 @@ function BasicDetails() {
 
     formData.target_audiences.forEach((audience, index) => {
       // Check if all countries have either a numeric value or BE/Max selected
-      const hasEmptyCountries = formData.countries.some((country) => {
-        const distribution = sampleDistribution[country]?.[`audience-${index}`];
-        return (
-          !distribution || (distribution.value === "" && !distribution.isBEMax)
-        );
-      });
+      const hasEmptyCountries = formData.countries.some(
+        (country) => {
+          const distribution = sampleDistribution[country]?.[`audience-${index}`];
+          return !distribution || 
+                 (distribution.value === "" && !distribution.isBEMax);
+        }
+      );
 
       if (hasEmptyCountries) {
         isValid = false;
         errors.push(
-          `${audience.name}: All countries must have either a numeric value or BE/Max selected`,
+          `${audience.name}: All countries must have either a numeric value or BE/Max selected`
         );
         return;
       }
@@ -654,14 +600,14 @@ function BasicDetails() {
             const value = country[`audience-${index}`]?.value;
             return sum + (value || 0);
           },
-          0,
+          0
         );
         const required = parseInt(audience.sample_required);
 
         if (total !== required) {
           isValid = false;
           errors.push(
-            `${audience.name}: Total (${total}) does not match required samples (${required})`,
+            `${audience.name}: Total (${total}) does not match required samples (${required})`
           );
         }
       }
@@ -681,75 +627,19 @@ function BasicDetails() {
         return;
       }
 
-      console.log("=== SUBMIT DEBUG - START ===");
-      console.log(
-        "Original formData.target_audiences:",
-        formData.target_audiences.map((a) => ({
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId,
-          originalIndex: formData.target_audiences.indexOf(a),
-        })),
-      );
-
-      // Sort audiences by ID first to ensure consistent database order
-      const sortedAudiences = [...formData.target_audiences].sort((a, b) => {
-        if (a.id && b.id) return a.id - b.id;
-        if (a.id && !b.id) return -1;
-        if (!a.id && b.id) return 1;
-        return 0;
-      });
-
-      console.log(
-        "After sorting by ID:",
-        sortedAudiences.map((a) => ({
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId,
-          sortedIndex: sortedAudiences.indexOf(a),
-        })),
-      );
-
-      // Renumber audiences sequentially based on their sorted database ID order
-      const relabeledAudiences = sortedAudiences.map((audience, index) => ({
-        ...audience,
-        name: `Audience - ${index + 1}`,
-        uniqueId: `audience-${index}`,
-      }));
-
-      console.log(
-        "After relabeling:",
-        relabeledAudiences.map((a) => ({
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId,
-          finalIndex: relabeledAudiences.indexOf(a),
-        })),
-      );
-
       // Initialize sample distribution with existing data in edit mode
       const initialDistribution = {};
       formData.countries.forEach((country) => {
         initialDistribution[country] = {};
-        relabeledAudiences.forEach((audience, index) => {
+        formData.target_audiences.forEach((audience, index) => {
           const existingSample = audience.country_samples?.[country];
           initialDistribution[country][`audience-${index}`] = {
-            value: existingSample?.is_best_efforts
-              ? ""
-              : existingSample?.sample_size || "",
-            isBEMax: existingSample?.is_best_efforts || false,
+            value: existingSample?.is_best_efforts ? "" : (existingSample?.sample_size || ""),
+            isBEMax: existingSample?.is_best_efforts || false
           };
-          console.log(`Distribution setup for ${country}, audience-${index}:`, {
-            audienceId: audience.id,
-            audienceName: audience.name,
-            existingSample,
-            distributionValue:
-              initialDistribution[country][`audience-${index}`],
-          });
         });
       });
 
-      console.log("Final initialDistribution:", initialDistribution);
       setSampleDistribution(initialDistribution);
       setDistributionModalOpen(true);
     } catch (error) {
@@ -800,9 +690,7 @@ function BasicDetails() {
     // Validate each target audience
     for (const audience of formData.target_audiences) {
       if (!audience.is_best_efforts && !audience.sample_required) {
-        alert(
-          "Please enter sample required or check Best Efforts/Maximum Possible",
-        );
+        alert("Please enter sample required or check Best Efforts/Maximum Possible");
         return false;
       }
     }
@@ -819,26 +707,21 @@ function BasicDetails() {
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
         ...formData,
-        deleted_audience_ids: deletedAudienceIds, // Include deleted audience IDs
         target_audiences: formData.target_audiences.map((audience, index) => ({
           ...audience,
-          sample_required: audience.is_best_efforts
-            ? 0
-            : parseInt(audience.sample_required) || 0,
+          sample_required: audience.is_best_efforts ? 0 : (parseInt(audience.sample_required) || 0),
           ir: parseInt(audience.ir) || 0,
           country_samples: Object.fromEntries(
             formData.countries.map((country) => {
-              const distribution = sampleDistribution[country]?.[
-                `audience-${index}`
-              ] || { value: 0, isBEMax: false };
+              const distribution = sampleDistribution[country]?.[`audience-${index}`] || { value: 0, isBEMax: false };
               return [
                 country,
                 {
                   sample_size: distribution.value || 0,
-                  is_best_efforts: distribution.isBEMax,
-                },
+                  is_best_efforts: distribution.isBEMax
+                }
               ];
-            }),
+            })
           ),
         })),
       };
@@ -846,22 +729,16 @@ function BasicDetails() {
       console.log("Sending updated form data:", updatedFormData);
 
       if (isEditMode) {
-        await axios.put(`/api/bids/${bidId}`, updatedFormData, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        // Clear deleted audience IDs after successful update
-        setDeletedAudienceIds([]);
+        await axios.put(`/api/bids/${bidId}`, updatedFormData);
         navigate(`/bids/partner/${bidId}`);
       } else {
         // Add user information for new bids
         const bidDataWithUser = {
           ...updatedFormData,
           created_by: currentUser?.id,
-          team: currentUser?.team,
+          team: currentUser?.team
         };
-
+        
         const response = await axios.post("/api/bids", bidDataWithUser);
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
@@ -875,15 +752,17 @@ function BasicDetails() {
     } catch (error) {
       console.error("Error saving distribution:", error);
       if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
-        alert(
-          `Failed to save sample distribution: ${error.response.data.error || error.message}`,
-        );
+        alert(`Failed to save sample distribution: ${error.response.data.error || error.message}`);
       } else if (error.request) {
+        // The request was made but no response was received
         console.error("Error request:", error.request);
         alert("Failed to save sample distribution: No response from server");
       } else {
+        // Something happened in setting up the request that triggered an Error
         console.error("Error message:", error.message);
         alert(`Failed to save sample distribution: ${error.message}`);
       }
@@ -896,14 +775,16 @@ function BasicDetails() {
       // Update the name for the new copy
       audienceToCopy.name = `Audience - ${prev.target_audiences.length + 1}`;
       // Keep all other fields except sample_required (which might need adjustment)
-      audienceToCopy.sample_required = audienceToCopy.is_best_efforts ? "" : "";
-
+      audienceToCopy.sample_required = audienceToCopy.is_best_efforts ? '' : '';
+      
       return {
         ...prev,
         target_audiences: [...prev.target_audiences, audienceToCopy],
       };
     });
   };
+
+
 
   return (
     <div className="bid-form-container">
@@ -923,13 +804,9 @@ function BasicDetails() {
                 label="Bid Number"
                 name="bid_number"
                 value={formData.bid_number}
-                onChange={handleInputChange}
                 InputProps={{
-                  readOnly: false,
+                  readOnly: true,
                 }}
-                helperText={
-                  !isEditMode ? "Enter a unique bid number manually" : ""
-                }
               />
               <TextField
                 required
@@ -1070,27 +947,15 @@ function BasicDetails() {
             <h3 className="section-title">Target Audiences</h3>
             {Array.isArray(formData.target_audiences) &&
               formData.target_audiences.map((audience, index) => (
-                <Paper
-                  key={index}
-                  elevation={3}
-                  className="audience-paper"
-                  style={{ padding: "20px", marginBottom: "20px" }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginBottom: "20px",
-                    }}
-                  >
+                <Paper key={index} elevation={3} className="audience-paper" style={{ padding: '20px', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                     <h3 style={{ margin: 0 }}>Audience - {index + 1}</h3>
                     <div>
                       <Button
                         variant="outlined"
                         color="primary"
                         onClick={() => copyTargetAudience(index)}
-                        style={{ marginRight: "10px" }}
+                        style={{ marginRight: '10px' }}
                       >
                         Copy
                       </Button>
@@ -1165,11 +1030,7 @@ function BasicDetails() {
                       <Select
                         value={audience.mode || ""}
                         onChange={(e) =>
-                          handleTargetAudienceChange(
-                            index,
-                            "mode",
-                            e.target.value,
-                          )
+                          handleTargetAudienceChange(index, "mode", e.target.value)
                         }
                         fullWidth
                         margin="normal"
@@ -1192,18 +1053,11 @@ function BasicDetails() {
                       inputProps={{
                         min: 0,
                         max: 100,
-                        step: 1,
+                        step: 1
                       }}
                     />
 
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "20px",
-                        width: "100%",
-                      }}
-                    >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', width: '100%' }}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -1212,7 +1066,7 @@ function BasicDetails() {
                               handleTargetAudienceChange(
                                 index,
                                 "is_best_efforts",
-                                e.target.checked,
+                                e.target.checked
                               )
                             }
                           />
@@ -1230,7 +1084,7 @@ function BasicDetails() {
                             handleTargetAudienceChange(
                               index,
                               "sample_required",
-                              e.target.value,
+                              e.target.value
                             )
                           }
                         />
@@ -1293,9 +1147,7 @@ function BasicDetails() {
                     <TableCell key={index} align="center">
                       {audience.name}
                       <br />
-                      {audience.is_best_efforts
-                        ? "(Best Efforts)"
-                        : `(Required: ${audience.sample_required})`}
+                      {audience.is_best_efforts ? "(Best Efforts)" : `(Required: ${audience.sample_required})`}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -1306,55 +1158,25 @@ function BasicDetails() {
                     <TableCell>{country}</TableCell>
                     {formData?.target_audiences?.map((audience, index) => (
                       <TableCell key={index} align="center">
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            justifyContent: "center",
-                          }}
-                        >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
                           <TextField
                             type="number"
                             size="small"
                             value={
-                              sampleDistribution[country]?.[`audience-${index}`]
-                                ?.isBEMax
-                                ? ""
-                                : (sampleDistribution[country]?.[
-                                    `audience-${index}`
-                                  ]?.value ?? "")
+                              sampleDistribution[country]?.[`audience-${index}`]?.isBEMax 
+                                ? "" 
+                                : (sampleDistribution[country]?.[`audience-${index}`]?.value ?? "")
                             }
-                            onChange={(e) =>
-                              handleDistributionChange(
-                                country,
-                                index,
-                                e.target.value,
-                              )
-                            }
-                            disabled={
-                              sampleDistribution[country]?.[`audience-${index}`]
-                                ?.isBEMax
-                            }
+                            onChange={(e) => handleDistributionChange(country, index, e.target.value)}
+                            disabled={sampleDistribution[country]?.[`audience-${index}`]?.isBEMax}
                             inputProps={{ min: 0 }}
-                            style={{ width: "100px" }}
+                            style={{ width: '100px' }}
                           />
                           <FormControlLabel
                             control={
                               <Checkbox
-                                checked={
-                                  sampleDistribution[country]?.[
-                                    `audience-${index}`
-                                  ]?.isBEMax || false
-                                }
-                                onChange={(e) =>
-                                  handleDistributionChange(
-                                    country,
-                                    index,
-                                    "",
-                                    e.target.checked,
-                                  )
-                                }
+                                checked={sampleDistribution[country]?.[`audience-${index}`]?.isBEMax || false}
+                                onChange={(e) => handleDistributionChange(country, index, "", e.target.checked)}
                               />
                             }
                             label="BE/Max"
@@ -1369,17 +1191,12 @@ function BasicDetails() {
           </TableContainer>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDistributionModalOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={() => setDistributionModalOpen(false)}>Cancel</Button>
           <Button
             onClick={handleSaveDistribution}
             variant="contained"
             color="primary"
-            disabled={
-              !formData?.target_audiences?.length ||
-              !formData?.countries?.length
-            }
+            disabled={!formData?.target_audiences?.length || !formData?.countries?.length}
           >
             Save & Continue
           </Button>

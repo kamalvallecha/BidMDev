@@ -1,16 +1,19 @@
 import axios from 'axios';
 
-// Use local backend URL
+// Use the Replit URL for the backend when available, fallback to localhost
 const getBaseURL = () => {
-  // Force use of local backend on port 5002
-  console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
-  const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-  console.log('Using baseURL:', baseURL);
-  return baseURL;
+  // Check if we're in Replit environment
+  const replitUrl = window.location.origin.replace(':3000', ':5000');
+  if (replitUrl.includes('replit.dev') || replitUrl.includes('repl.co')) {
+    return replitUrl;
+  }
+  
+  // Fallback to environment variable or localhost
+  return import.meta.env.VITE_API_URL || 'http://localhost:5000';
 };
 
 const instance = axios.create({
-  baseURL: 'http://localhost:5000',
+  baseURL: getBaseURL(),
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -24,8 +27,6 @@ instance.interceptors.request.use(
     
     // Get user data from localStorage
     const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
     if (userData) {
       try {
         const user = JSON.parse(userData);
@@ -33,23 +34,10 @@ instance.interceptors.request.use(
         config.headers['X-User-Team'] = user.team;
         config.headers['X-User-Role'] = user.role;
         config.headers['X-User-Name'] = user.name;
-        console.log('Added user headers:', {
-          'X-User-Id': user.id,
-          'X-User-Team': user.team,
-          'X-User-Role': user.role,
-          'X-User-Name': user.name
-        });
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
     }
-    
-    // Add token to Authorization header if available
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-      console.log('Added Authorization header with token');
-    }
-    
     return config;
   },
   (error) => {
@@ -64,15 +52,6 @@ instance.interceptors.response.use(
     if (error.code === 'ERR_NETWORK') {
       console.error('Network error - backend server may not be running');
     }
-    
-    // Handle authentication errors
-    if (error.response && error.response.status === 401) {
-      console.error('Authentication error - redirecting to login');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
-    }
-    
     return Promise.reject(error);
   }
 );
