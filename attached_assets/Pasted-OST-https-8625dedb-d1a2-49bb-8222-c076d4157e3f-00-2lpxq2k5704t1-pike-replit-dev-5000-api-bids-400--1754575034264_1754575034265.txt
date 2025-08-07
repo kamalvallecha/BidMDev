@@ -1,0 +1,63 @@
+OST https://8625dedb-d1a2-49bb-8222-c076d4157e3f-00-2lpxq2k5704t1.pike.replit.dev:5000/api/bids 400 (Bad Request)
+(anonymous) @ index-CAUd00zP.js:552
+xhr @ index-CAUd00zP.js:552
+Zq @ index-CAUd00zP.js:554
+Promise.then
+_request @ index-CAUd00zP.js:555
+request @ index-CAUd00zP.js:554
+(anonymous) @ index-CAUd00zP.js:555
+(anonymous) @ index-CAUd00zP.js:550
+q @ index-CAUd00zP.js:556
+S_e @ index-CAUd00zP.js:37
+O_e @ index-CAUd00zP.js:37
+E_e @ index-CAUd00zP.js:37
+OH @ index-CAUd00zP.js:37
+hte @ index-CAUd00zP.js:37
+(anonymous) @ index-CAUd00zP.js:37
+v4 @ index-CAUd00zP.js:40
+Dee @ index-CAUd00zP.js:37
+QR @ index-CAUd00zP.js:37
+V5 @ index-CAUd00zP.js:37
+z_e @ index-CAUd00zP.js:37Understand this error
+index-CAUd00zP.js:556 Error saving distribution: Un {message: 'Request failed with status code 400', name: 'AxiosError', code: 'ERR_BAD_REQUEST', config: {…}, request: XMLHttpRequest, …}
+q @ index-CAUd00zP.js:556
+await in q
+S_e @ index-CAUd00zP.js:37
+O_e @ index-CAUd00zP.js:37
+E_e @ index-CAUd00zP.js:37
+OH @ index-CAUd00zP.js:37
+hte @ index-CAUd00zP.js:37
+(anonymous) @ index-CAUd00zP.js:37
+v4 @ index-CAUd00zP.js:40
+Dee @ index-CAUd00zP.js:37
+QR @ index-CAUd00zP.js:37
+V5 @ index-CAUd00zP.js:37
+z_e @ index-CAUd00zP.js:37Understand this error
+index-CAUd00zP.js:556 Error response data: {error: 'Missing user ID or team in headers'}
+q @ index-CAUd00zP.js:556
+await in q
+S_e @ index-CAUd00zP.js:37
+O_e @ index-CAUd00zP.js:37
+E_e @ index-CAUd00zP.js:37
+OH @ index-CAUd00zP.js:37
+hte @ index-CAUd00zP.js:37
+(anonymous) @ index-CAUd00zP.js:37
+v4 @ index-CAUd00zP.js:40
+Dee @ index-CAUd00zP.js:37
+QR @ index-CAUd00zP.js:37
+V5 @ index-CAUd00zP.js:37
+z_e @ index-CAUd00zP.js:37Understand this error
+index-CAUd00zP.js:556 Error response status: 400
+q @ index-CAUd00zP.js:556
+await in q
+S_e @ index-CAUd00zP.js:37
+O_e @ index-CAUd00zP.js:37
+E_e @ index-CAUd00zP.js:37
+OH @ index-CAUd00zP.js:37
+hte @ index-CAUd00zP.js:37
+(anonymous) @ index-CAUd00zP.js:37
+v4 @ index-CAUd00zP.js:40
+Dee @ index-CAUd00zP.js:37
+QR @ index-CAUd00zP.js:37
+V5 @ index-CAUd00zP.js:37
+z_e @ index-CAUd00zP.js:37Understand this error
