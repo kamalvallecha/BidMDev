@@ -1189,9 +1189,18 @@ def create_bid():
         print(f"DEBUG: Received headers - User-Id: '{user_id}', User-Team: '{user_team}'")
         print(f"DEBUG: All request headers: {dict(request.headers)}")
         
-        if not user_id or not user_team or user_id == '' or user_team == '':
+        if not user_id or not user_team:
             return jsonify({'error':
                             'Missing user ID or team in headers'}), 400
+        
+        # Convert to proper types and validate
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid user ID format'}), 400
+        
+        if not user_team.strip():
+            return jsonify({'error': 'Team cannot be empty'}), 400
         # Use only backend-determined values
         data['created_by'] = user_id
         data['team'] = user_team
