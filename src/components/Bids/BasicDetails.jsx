@@ -739,6 +739,10 @@ function BasicDetails() {
   // Update the handleSaveDistribution function
   const handleSaveDistribution = async () => {
     try {
+      alert(
+        "handleSaveDistribution called - User ID: " +
+          (currentUser?.id || "undefined"),
+      );
       console.log("handleSaveDistribution called");
       console.log("Current user at save time:", currentUser);
 
