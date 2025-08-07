@@ -23,7 +23,9 @@ const instance = axios.create({
 // Add request interceptor to include user headers
 instance.interceptors.request.use(
   (config) => {
+    console.log('=== AXIOS INTERCEPTOR DEBUG ===');
     console.log('Making request to:', config.baseURL + config.url);
+    console.log('Request method:', config.method);
     
     // Get user data from localStorage
     const userData = localStorage.getItem('user');
@@ -53,6 +55,7 @@ instance.interceptors.request.use(
         }
         
         console.log('Final request headers:', config.headers);
+        console.log('All headers keys:', Object.keys(config.headers));
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
