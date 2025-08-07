@@ -1191,10 +1191,10 @@ def create_bid():
         
         # More lenient validation - check if headers exist and are not empty
         if not user_id or str(user_id).strip() in ['', '0', 'null', 'undefined']:
-            return jsonify({'error': 'Missing or invalid user ID in headers. Please log in again.'}), 400
+            return jsonify({'error': 'Missing user ID or team in headers'}), 400
         
         if not user_team or str(user_team).strip() in ['', 'Unknown', 'null', 'undefined']:
-            return jsonify({'error': 'Missing or invalid user team in headers. Please contact administrator.'}), 400
+            return jsonify({'error': 'Missing user ID or team in headers'}), 400
         
         # Convert to proper types and validate
         try:
