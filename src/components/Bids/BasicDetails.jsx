@@ -42,13 +42,33 @@ function BasicDetails() {
     "bidId:",
     bidId,
   );
-  
+
   // Debug authentication state
   console.log("Current user in BasicDetails:", currentUser);
   console.log("User ID:", currentUser?.id);
   console.log("User Team:", currentUser?.team);
   console.log("User Role:", currentUser?.role);
   console.log("User Name:", currentUser?.name);
+
+  // Test axios instance
+  console.log("Axios instance baseURL:", axios.defaults.baseURL);
+  console.log(
+    "Axios instance interceptors count:",
+    axios.interceptors.request.handlers.length,
+  );
+
+  // Test axios interceptor with a simple request
+  useEffect(() => {
+    const testAxios = async () => {
+      try {
+        console.log("Testing axios interceptor...");
+        await axios.get("/api/test-endpoint");
+      } catch (error) {
+        console.log("Expected error for test endpoint:", error.message);
+      }
+    };
+    testAxios();
+  }, []);
 
   const [salesContacts, setSalesContacts] = useState([]);
   const [vmContacts, setVmContacts] = useState([]);
@@ -721,44 +741,10 @@ function BasicDetails() {
     try {
       console.log("handleSaveDistribution called");
       console.log("Current user at save time:", currentUser);
-      
+
       if (!validateDistribution()) {
         return;
       }
-
-      // Verify user authentication before proceeding
-      if (!currentUser || !currentUser.id || !currentUser.team) {
-        alert("Authentication error. Please log in again.");
-        navigate("/login");
-        return;
-      }
-
-      const storedUser = localStorage.getItem("user");
-      const token = localStorage.getItem("token");
-
-      if (!storedUser || !token) {
-        alert("Authentication error. Please log in again.");
-        navigate("/login");
-        return;
-      }
-
-      let user;
-      try {
-        user = JSON.parse(storedUser);
-      } catch (e) {
-        alert("Authentication error. Please log in again.");
-        navigate("/login");
-        return;
-      }
-
-      if (!user.id || !user.team) {
-        alert("User data incomplete. Please log in again.");
-        navigate("/login");
-        return;
-      }
-
-      console.log("Pre-API call validation - Current user:", currentUser);
-      console.log("Pre-API call validation - Stored user:", user);
 
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
@@ -792,7 +778,7 @@ function BasicDetails() {
         await axios.put(`/api/bids/${bidId}`, updatedFormData);
         navigate(`/bids/partner/${bidId}`);
       } else {
-        // Add user information for new bids - use the verified user data
+        // Add user information for new bids
         const bidDataWithUser = {
           ...updatedFormData,
           created_by: currentUser?.id,
