@@ -1,107 +1,82 @@
-
-import axios from 'axios';
+import axios from "axios";
 
 // Use the Replit URL for the backend when available, fallback to localhost
 const getBaseURL = () => {
   // Check if we're in Replit environment
-  const replitUrl = window.location.origin.replace(':3000', ':5000');
-  if (replitUrl.includes('replit.dev') || replitUrl.includes('repl.co')) {
+  const replitUrl = window.location.origin.replace(":3000", ":5000");
+  if (replitUrl.includes("replit.dev") || replitUrl.includes("repl.co")) {
     return replitUrl;
   }
-  
+
   // Fallback to environment variable or localhost
-  return import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  return import.meta.env.VITE_API_URL || "http://localhost:5000";
 };
 
 const instance = axios.create({
   baseURL: getBaseURL(),
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Add request interceptor to include user headers
 instance.interceptors.request.use(
   (config) => {
-    console.log('Making request to:', config.baseURL + config.url);
-    
-    // Get user data and token from localStorage
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    console.log('Axios interceptor - Raw localStorage data:', {
-      token: token ? 'exists' : 'missing',
-      userStr: userStr ? 'exists' : 'missing'
-    });
+    console.log("Making request to:", config.baseURL + config.url);
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // Get user data from localStorage
+    const userData = localStorage.getItem("user");
+    console.log("User data from localStorage:", userData);
 
-    // Always try to add user headers if user data exists
-    if (userStr) {
+    if (userData) {
       try {
-        const user = JSON.parse(userStr);
-        console.log('Axios interceptor - Parsed user:', user);
-        
-        if (user && user.id && user.team) {
-          config.headers['X-User-Id'] = String(user.id);
-          config.headers['X-User-Team'] = String(user.team);
-          config.headers['X-User-Role'] = String(user.role || '');
-          config.headers['X-User-Name'] = String(user.name || '');
-          console.log('Axios interceptor - Successfully added user headers:', {
-            'X-User-Id': config.headers['X-User-Id'],
-            'X-User-Team': config.headers['X-User-Team'],
-            'X-User-Role': config.headers['X-User-Role'],
-            'X-User-Name': config.headers['X-User-Name'],
-            url: config.url,
-            method: config.method
-          });
-        } else {
-          console.warn('Axios interceptor - User data incomplete:', user);
-          // For API calls that require authentication, show error but don't redirect
-          if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
-            console.error('Axios interceptor - Missing user authentication for API call:', { 
-              url: config.url,
-              user: user 
-            });
-          }
+        const user = JSON.parse(userData);
+        console.log("Parsed user object:", user);
+
+        // Set headers only if user has the required fields
+        if (user.id) {
+          config.headers["X-User-Id"] = user.id;
+          console.log("Set X-User-Id header:", user.id);
         }
-      } catch (e) {
-        console.error('Axios interceptor - Failed to parse user data:', e);
-        // Only redirect on authentication-required endpoints
-        if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/login';
-          return Promise.reject(new Error('Invalid user data'));
+        if (user.team) {
+          config.headers["X-User-Team"] = user.team;
+          console.log("Set X-User-Team header:", user.team);
         }
+        if (user.role) {
+          config.headers["X-User-Role"] = user.role;
+          console.log("Set X-User-Role header:", user.role);
+        }
+        if (user.name) {
+          config.headers["X-User-Name"] = user.name;
+          console.log("Set X-User-Name header:", user.name);
+        }
+
+        console.log("Final request headers:", config.headers);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
       }
     } else {
-      // No user data found
-      if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
-        console.error('Axios interceptor - No user data found for API call:', config.url);
-      }
+      console.warn("No user data found in localStorage");
     }
 
     return config;
   },
   (error) => {
-    console.error('Axios interceptor error:', error);
+    console.error("Axios interceptor error:", error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add response interceptor for better error handling
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.code === 'ERR_NETWORK') {
-      console.error('Network error - backend server may not be running');
+    if (error.code === "ERR_NETWORK") {
+      console.error("Network error - backend server may not be running");
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default instance;

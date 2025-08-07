@@ -42,6 +42,13 @@ function BasicDetails() {
     "bidId:",
     bidId,
   );
+  
+  // Debug authentication state
+  console.log("Current user in BasicDetails:", currentUser);
+  console.log("User ID:", currentUser?.id);
+  console.log("User Team:", currentUser?.team);
+  console.log("User Role:", currentUser?.role);
+  console.log("User Name:", currentUser?.name);
 
   const [salesContacts, setSalesContacts] = useState([]);
   const [vmContacts, setVmContacts] = useState([]);
@@ -712,6 +719,9 @@ function BasicDetails() {
   // Update the handleSaveDistribution function
   const handleSaveDistribution = async () => {
     try {
+      console.log("handleSaveDistribution called");
+      console.log("Current user at save time:", currentUser);
+      
       if (!validateDistribution()) {
         return;
       }
