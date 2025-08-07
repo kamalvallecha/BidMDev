@@ -777,13 +777,16 @@ function BasicDetails() {
       // Add authentication headers manually
       const headers = {
         "Content-Type": "application/json",
-        "X-User-Id": currentUser?.id,
-        "X-User-Team": currentUser?.team,
-        "X-User-Role": currentUser?.role,
-        "X-User-Name": currentUser?.name,
+        "X-User-Id": currentUser?.id || "",
+        "X-User-Team": currentUser?.team || "",
+        "X-User-Role": currentUser?.role || "",
+        "X-User-Name": currentUser?.name || "",
       };
 
+      console.log("Current user:", currentUser);
       console.log("Request headers:", headers);
+      console.log("User ID being sent:", currentUser?.id);
+      console.log("User Team being sent:", currentUser?.team);
 
       if (isEditMode) {
         await axios.put(`/api/bids/${bidId}`, updatedFormData, { headers });
