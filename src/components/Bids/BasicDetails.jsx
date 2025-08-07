@@ -774,8 +774,19 @@ function BasicDetails() {
 
       console.log("Sending updated form data:", updatedFormData);
 
+      // Add authentication headers manually
+      const headers = {
+        "Content-Type": "application/json",
+        "X-User-Id": currentUser?.id,
+        "X-User-Team": currentUser?.team,
+        "X-User-Role": currentUser?.role,
+        "X-User-Name": currentUser?.name,
+      };
+
+      console.log("Request headers:", headers);
+
       if (isEditMode) {
-        await axios.put(`/api/bids/${bidId}`, updatedFormData);
+        await axios.put(`/api/bids/${bidId}`, updatedFormData, { headers });
         navigate(`/bids/partner/${bidId}`);
       } else {
         // Add user information for new bids
@@ -785,7 +796,9 @@ function BasicDetails() {
           team: currentUser?.team,
         };
 
-        const response = await axios.post("/api/bids", bidDataWithUser);
+        const response = await axios.post("/api/bids", bidDataWithUser, {
+          headers,
+        });
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
