@@ -34,6 +34,11 @@ instance.interceptors.request.use((config) => {
       console.log('Axios interceptor - Parsed user:', user);
     } catch (e) {
       console.error('Axios interceptor - Failed to parse user:', e);
+      // If user data is corrupted, redirect to login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      return Promise.reject(new Error('Invalid user data'));
     }
   }
 
@@ -41,23 +46,39 @@ instance.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  // Always try to add user headers if we have user data
+  // Check if we have valid user data before making API calls
   if (user && user.id && user.team) {
     config.headers['X-User-Id'] = String(user.id);
     config.headers['X-User-Team'] = String(user.team);
+    config.headers['X-User-Role'] = String(user.role || '');
+    config.headers['X-User-Name'] = String(user.name || '');
     console.log('Axios interceptor - Successfully added user headers:', {
       'X-User-Id': config.headers['X-User-Id'],
       'X-User-Team': config.headers['X-User-Team'],
+      'X-User-Role': config.headers['X-User-Role'],
+      'X-User-Name': config.headers['X-User-Name'],
       url: config.url,
       method: config.method
     });
   } else {
-    console.error('Axios interceptor - Cannot add user headers:', { 
-      hasUser: !!user, 
-      hasUserId: !!(user && user.id), 
-      hasUserTeam: !!(user && user.team),
-      user: user 
-    });
+    // For API calls that require authentication, reject if no user data
+    if (config.url && config.url.startsWith('/api/') && !config.url.includes('/login')) {
+      console.error('Axios interceptor - Missing user authentication for API call:', { 
+        url: config.url,
+        hasUser: !!user, 
+        hasUserId: !!(user && user.id), 
+        hasUserTeam: !!(user && user.team),
+        user: user 
+      });
+      
+      // Redirect to login if not already there
+      if (!window.location.pathname.includes('/login')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+      return Promise.reject(new Error('Missing user authentication'));
+    }
   }
 
   return config;

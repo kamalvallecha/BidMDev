@@ -816,6 +816,31 @@ function BasicDetails() {
         return;
       }
 
+      // Verify user authentication before proceeding
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+      
+      if (!storedUser || !token) {
+        alert("Authentication error. Please log in again.");
+        navigate('/login');
+        return;
+      }
+
+      let user;
+      try {
+        user = JSON.parse(storedUser);
+      } catch (e) {
+        alert("Authentication error. Please log in again.");
+        navigate('/login');
+        return;
+      }
+
+      if (!user.id || !user.team) {
+        alert("User data incomplete. Please log in again.");
+        navigate('/login');
+        return;
+      }
+
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
         ...formData,
@@ -855,29 +880,19 @@ function BasicDetails() {
         setDeletedAudienceIds([]);
         navigate(`/bids/partner/${bidId}`);
       } else {
-        // Add user information for new bids
+        // Add user information for new bids - use the verified user data
         const bidDataWithUser = {
           ...updatedFormData,
-          created_by: currentUser?.id,
-          team: currentUser?.team,
+          created_by: user.id,
+          team: user.team,
         };
 
-        console.log("Creating bid with user data:", {
-          user_id: currentUser?.id,
-          team: currentUser?.team,
-          userData: localStorage.getItem('user')
+        console.log("Creating bid with verified user data:", {
+          user_id: user.id,
+          team: user.team,
+          role: user.role,
+          name: user.name
         });
-
-        // Let the axios interceptor handle the headers
-        console.log("Creating bid - Current user object:", currentUser);
-        console.log("Creating bid - LocalStorage user:", localStorage.getItem('user'));
-        console.log("Creating bid - LocalStorage token:", localStorage.getItem('token'));
-
-        // Verify user data before making request
-        if (!currentUser?.id || !currentUser?.team) {
-          alert("User authentication error. Please refresh the page and try again.");
-          return;
-        }
 
         const response = await axios.post("/api/bids", bidDataWithUser);
         // Associate partners and LOIs with the new bid
@@ -894,6 +909,16 @@ function BasicDetails() {
       if (error.response) {
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
+        
+        // Handle authentication errors specifically
+        if (error.response.status === 400 && error.response.data.error?.includes('Missing user ID or team')) {
+          alert("Authentication error. Please log out and log in again.");
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/login');
+          return;
+        }
+        
         alert(
           `Failed to save sample distribution: ${error.response.data.error || error.message}`,
         );
