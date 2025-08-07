@@ -36,23 +36,18 @@ instance.interceptors.request.use(
         const user = JSON.parse(userData);
         console.log("Parsed user object:", user);
 
-        // Set headers only if user has the required fields
-        if (user.id) {
-          config.headers["X-User-Id"] = user.id;
-          console.log("Set X-User-Id header:", user.id);
-        }
-        if (user.team) {
-          config.headers["X-User-Team"] = user.team;
-          console.log("Set X-User-Team header:", user.team);
-        }
-        if (user.role) {
-          config.headers["X-User-Role"] = user.role;
-          console.log("Set X-User-Role header:", user.role);
-        }
-        if (user.name) {
-          config.headers["X-User-Name"] = user.name;
-          console.log("Set X-User-Name header:", user.name);
-        }
+        // Always set headers, converting to string and providing defaults
+        config.headers["X-User-Id"] = String(user.id || "");
+        config.headers["X-User-Team"] = String(user.team || "");
+        config.headers["X-User-Role"] = String(user.role || "");
+        config.headers["X-User-Name"] = String(user.name || "");
+        
+        console.log("Set headers:", {
+          "X-User-Id": config.headers["X-User-Id"],
+          "X-User-Team": config.headers["X-User-Team"], 
+          "X-User-Role": config.headers["X-User-Role"],
+          "X-User-Name": config.headers["X-User-Name"]
+        });
 
         console.log("Final request headers:", config.headers);
         console.log("All headers keys:", Object.keys(config.headers));
