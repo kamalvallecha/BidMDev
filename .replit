@@ -10,7 +10,7 @@ run = ["sh", "-c", "cd backend && python main.py"]
 build = ["sh", "-c", "npm run build && cd backend && pip install -r requirements.txt"]
 
 [workflows]
-runButton = "Backend Only"
+runButton = "Full Stack Development"
 
 [[workflows.workflow]]
 name = "Frontend Dev"
@@ -92,6 +92,19 @@ args = "cd backend && pip install -r requirements.txt && python main.py"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Full Stack Development"
+author = 38348679
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && python -m pip install --upgrade pip && pip install -r requirements.txt && python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install && npm run dev -- --host 0.0.0.0 --port 3000"
 
 [[ports]]
 localPort = 3000
