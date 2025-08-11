@@ -5018,14 +5018,7 @@ def save_invoice_data(bid_number):
             conn.close()
 
 
-@app.route('/api/bids/next-number', methods=['GET'])
-def get_next_bid_number():
-    try:
-        # Return empty string to indicate manual entry is required
-        return jsonify({"next_bid_number": ""})
-    except Exception as e:
-        print(f"Error getting next bid number: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/api/bids/<bid_id>/status', methods=['POST'])
