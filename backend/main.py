@@ -230,7 +230,7 @@ def send_daily_access_request_digest():
                     <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Bid Owner</th>
                 </tr>
             '''
-            
+
             for req in pending_requests:
                 table_html += f'''
                 <tr style="{'background-color: #f8f9fa;' if pending_requests.index(req) % 2 == 0 else ''}">
@@ -242,17 +242,16 @@ def send_daily_access_request_digest():
                     <td style="padding: 10px; border: 1px solid #ddd;">{req['owner_name'] or 'Unknown'}<br><small>{req['owner_email'] or 'No email'}</small></td>
                 </tr>
                 '''
-            
+
             table_html += '</table>'
 
             # Send digest email
             base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
-            
+
             msg = Message(
                 f'📊 Daily Digest: {len(pending_requests)} Pending Bid Access Requests',
                 sender=app.config['MAIL_DEFAULT_SENDER'],
-                recipients=recipients
-            )
+                recipients=recipients)
 
             msg.body = f"""
 Daily Bid Access Request Digest
@@ -299,7 +298,9 @@ Bid Management System
             """
 
             mail.send(msg)
-            print(f"Daily digest sent to {len(recipients)} recipients for {len(pending_requests)} pending requests")
+            print(
+                f"Daily digest sent to {len(recipients)} recipients for {len(pending_requests)} pending requests"
+            )
 
             cur.close()
             conn.close()
@@ -1185,17 +1186,25 @@ def create_bid():
         # Always enforce team and created_by from headers
         user_id = request.headers.get('X-User-Id')
         user_team = request.headers.get('X-User-Team')
-        
-        print(f"DEBUG: Received headers - User-Id: '{user_id}', User-Team: '{user_team}'")
+
+        print(
+            f"DEBUG: Received headers - User-Id: '{user_id}', User-Team: '{user_team}'"
+        )
         print(f"DEBUG: All request headers: {dict(request.headers)}")
-        
+
         # More lenient validation - check if headers exist and are not empty
-        if not user_id or str(user_id).strip() in ['', '0', 'null', 'undefined']:
-            return jsonify({'error': 'Missing user ID or team in headers'}), 400
-        
-        if not user_team or str(user_team).strip() in ['', 'Unknown', 'null', 'undefined']:
-            return jsonify({'error': 'Missing user ID or team in headers'}), 400
-        
+        if not user_id or str(user_id).strip() in [
+                '', '0', 'null', 'undefined'
+        ]:
+            return jsonify({'error':
+                            'Missing user ID or team in headers'}), 400
+
+        if not user_team or str(user_team).strip() in [
+                '', 'Unknown', 'null', 'undefined'
+        ]:
+            return jsonify({'error':
+                            'Missing user ID or team in headers'}), 400
+
         # Convert to proper types and validate
         try:
             user_id = int(user_id)
@@ -1203,7 +1212,7 @@ def create_bid():
                 return jsonify({'error': 'Invalid user ID'}), 400
         except (ValueError, TypeError):
             return jsonify({'error': 'Invalid user ID format'}), 400
-        
+
         user_team = str(user_team).strip()
         if not user_team or user_team == 'Unknown':
             return jsonify({'error': 'Team cannot be empty or unknown'}), 400
@@ -1561,25 +1570,29 @@ def update_bid(bid_id):
         if deleted_audience_ids:
             print(f"Deleting audiences with IDs: {deleted_audience_ids}")
             # Delete partner audience responses first (foreign key constraint)
-            cur.execute("""
+            cur.execute(
+                """
                 DELETE FROM partner_audience_responses 
                 WHERE audience_id = ANY(%s) AND bid_id = %s
             """, (deleted_audience_ids, bid_id))
-            
+
             # Delete audience countries
-            cur.execute("""
+            cur.execute(
+                """
                 DELETE FROM bid_audience_countries 
                 WHERE audience_id = ANY(%s)
-            """, (deleted_audience_ids,))
-            
+            """, (deleted_audience_ids, ))
+
             # Delete the audiences themselves
-            cur.execute("""
+            cur.execute(
+                """
                 DELETE FROM bid_target_audiences 
                 WHERE id = ANY(%s) AND bid_id = %s
             """, (deleted_audience_ids, bid_id))
 
         # 4. Update or insert target audiences
-        updated_audience_ids = set()  # Track which audience IDs have been updated
+        updated_audience_ids = set(
+        )  # Track which audience IDs have been updated
         for idx, audience in enumerate(data['target_audiences']):
             print(f"Processing audience {idx}: {audience}")
             if idx < len(existing_audience_ids):
@@ -3695,9 +3708,10 @@ def get_dashboard_data():
 
         # Process each bid to calculate client metrics
         for bid in bids_data:
-            client_id = str(bid.get('client', '')) if bid.get('client') else 'unknown'
+            client_id = str(bid.get('client',
+                                    '')) if bid.get('client') else 'unknown'
             status = bid.get('status', 'draft').lower()
-            
+
             if client_id not in client_metrics:
                 client_metrics[client_id] = {
                     'total_bids': 0,
@@ -3708,9 +3722,9 @@ def get_dashboard_data():
                     'total_amount': 0,
                     'closed_bids': 0  # For conversion rate calculation
                 }
-            
+
             client_metrics[client_id]['total_bids'] += 1
-            
+
             # Count by status
             if status == 'infield':
                 client_metrics[client_id]['bids_in_field'] += 1
@@ -3733,32 +3747,43 @@ def get_dashboard_data():
             WHERE pr.invoice_amount IS NOT NULL AND pr.invoice_amount > 0
             GROUP BY b.client
         """)
-        
+
         invoice_amounts = {}
         for row in cur.fetchall():
             if row['client']:
-                invoice_amounts[str(row['client'])] = float(row['total_amount'] or 0)
+                invoice_amounts[str(row['client'])] = float(row['total_amount']
+                                                            or 0)
 
         # Build final client summary
         for client_id, metrics in client_metrics.items():
             client_name = 'Unknown Client'
             if client_id in clients_data:
-                client_name = clients_data[client_id].get('client_name', 'Unknown Client')
-            
+                client_name = clients_data[client_id].get(
+                    'client_name', 'Unknown Client')
+
             # Calculate conversion rate
             conversion_rate = 0
             if metrics['total_bids'] > 0:
-                conversion_rate = round((metrics['closed_bids'] / metrics['total_bids']) * 100, 2)
-            
+                conversion_rate = round(
+                    (metrics['closed_bids'] / metrics['total_bids']) * 100, 2)
+
             client_summary.append({
-                'client_name': client_name,
-                'total_bids': metrics['total_bids'],
-                'bids_in_field': metrics['bids_in_field'],
-                'bid_closed': metrics['bid_closed'],
-                'bid_invoiced': metrics['bid_invoiced'],
-                'bids_rejected': metrics['bids_rejected'],
-                'total_amount': invoice_amounts.get(client_id, 0),
-                'conversion_rate': conversion_rate
+                'client_name':
+                client_name,
+                'total_bids':
+                metrics['total_bids'],
+                'bids_in_field':
+                metrics['bids_in_field'],
+                'bid_closed':
+                metrics['bid_closed'],
+                'bid_invoiced':
+                metrics['bid_invoiced'],
+                'bids_rejected':
+                metrics['bids_rejected'],
+                'total_amount':
+                invoice_amounts.get(client_id, 0),
+                'conversion_rate':
+                conversion_rate
             })
 
         # Sort by total_bids descending
@@ -3770,9 +3795,10 @@ def get_dashboard_data():
 
         # Process each bid to calculate team metrics
         for bid in bids_data:
-            team = bid.get('team', 'Unknown Team') if bid.get('team') else 'Unknown Team'
+            team = bid.get(
+                'team', 'Unknown Team') if bid.get('team') else 'Unknown Team'
             status = bid.get('status', 'draft').lower()
-            
+
             if team not in team_metrics:
                 team_metrics[team] = {
                     'total_bids': 0,
@@ -3780,9 +3806,9 @@ def get_dashboard_data():
                     'bids_closed': 0,
                     'bids_invoiced': 0
                 }
-            
+
             team_metrics[team]['total_bids'] += 1
-            
+
             # Count by status
             if status == 'infield':
                 team_metrics[team]['bids_in_field'] += 1
@@ -3928,11 +3954,13 @@ def update_closure(bid_id):
             n_delivered_values = {}
             quality_rejects_values = {}
             total_quality_rejects = 0
-            
+
             for country in audience.get('countries', []):
                 n_delivered_values[country['name']] = country['delivered']
-                quality_rejects_values[country['name']] = country.get('qualityRejects', 0)
-                total_quality_rejects += int(country.get('qualityRejects', 0) or 0)
+                quality_rejects_values[country['name']] = country.get(
+                    'qualityRejects', 0)
+                total_quality_rejects += int(
+                    country.get('qualityRejects', 0) or 0)
 
             print(f"N delivered values: {n_delivered_values}")
             print(f"Quality rejects values: {quality_rejects_values}")
@@ -3992,14 +4020,16 @@ def update_closure(bid_id):
                     print(
                         f"Updated metrics, n_delivered, and quality_rejects for audience {audience['id']}, country {country}"
                     )
-                
+
             else:
                 print(f"No record found for audience {audience['id']}")
 
         # Calculate total quality rejects for this partner and LOI across all audiences
         # This should be done after all individual country updates are complete
-        print(f"Calculating total quality rejects for partner {data['partner']}, LOI {data['loi']}, bid {bid_id}")
-        
+        print(
+            f"Calculating total quality rejects for partner {data['partner']}, LOI {data['loi']}, bid {bid_id}"
+        )
+
         cur.execute(
             """
             SELECT SUM(par.quality_rejects) as total_quality_rejects
@@ -4011,13 +4041,18 @@ def update_closure(bid_id):
             AND pr.loi = %s
             AND par.allocation > 0
             """, (bid_id, data['partner'], data['loi']))
-        
+
         result = cur.fetchone()
-        total_quality_rejects_for_partner = result[0] if result and result[0] else 0
-        print(f"Calculated total quality rejects: {total_quality_rejects_for_partner}")
-        
+        total_quality_rejects_for_partner = result[
+            0] if result and result[0] else 0
+        print(
+            f"Calculated total quality rejects: {total_quality_rejects_for_partner}"
+        )
+
         # Update the partner_responses table with the sum of quality rejects
-        print(f"Updating partner_responses with quality_rejects = {total_quality_rejects_for_partner}")
+        print(
+            f"Updating partner_responses with quality_rejects = {total_quality_rejects_for_partner}"
+        )
         cur.execute(
             """
             UPDATE partner_responses pr
@@ -4027,11 +4062,14 @@ def update_closure(bid_id):
             AND pr.bid_id = %s
             AND p.partner_name = %s
             AND pr.loi = %s
-            """, (total_quality_rejects_for_partner, bid_id, data['partner'], data['loi']))
-        
+            """, (total_quality_rejects_for_partner, bid_id, data['partner'],
+                  data['loi']))
+
         # Check how many rows were affected
         rows_affected = cur.rowcount
-        print(f"Updated {rows_affected} rows in partner_responses for partner {data['partner']}, LOI {data['loi']}: {total_quality_rejects_for_partner}")
+        print(
+            f"Updated {rows_affected} rows in partner_responses for partner {data['partner']}, LOI {data['loi']}: {total_quality_rejects_for_partner}"
+        )
 
         # Also update bid_target_audiences with the sum for each audience
         for audience in data['audienceData']:
@@ -4048,10 +4086,11 @@ def update_closure(bid_id):
                 AND pr.loi = %s
                 AND par.allocation > 0
                 """, (bid_id, audience['id'], data['partner'], data['loi']))
-            
+
             result = cur.fetchone()
-            audience_quality_rejects_sum = result[0] if result and result[0] else 0
-            
+            audience_quality_rejects_sum = result[
+                0] if result and result[0] else 0
+
             # Update bid_target_audiences
             cur.execute(
                 """
@@ -4059,7 +4098,9 @@ def update_closure(bid_id):
                 SET quality_rejects_sum = %s
                 WHERE bid_id = %s AND id = %s
                 """, (audience_quality_rejects_sum, bid_id, audience['id']))
-            print(f"Updated quality_rejects_sum for audience {audience['id']}: {audience_quality_rejects_sum}")
+            print(
+                f"Updated quality_rejects_sum for audience {audience['id']}: {audience_quality_rejects_sum}"
+            )
 
         conn.commit()
         return jsonify({"message": "Closure data updated successfully"})
@@ -4568,11 +4609,12 @@ def update_partner_responses(bid_id):
         # Start transaction
         cur.execute("BEGIN")
 
-        print(f"Processing {len(responses)} partner responses for bid {bid_id}")
+        print(
+            f"Processing {len(responses)} partner responses for bid {bid_id}")
 
         # Batch process partner responses
         partner_response_ids = {}
-        
+
         # First pass: Create or update all partner_responses
         for key, response_data in responses.items():
             partner_id = response_data.get('partner_id')
@@ -4593,10 +4635,9 @@ def update_partner_responses(bid_id):
                     currency = EXCLUDED.currency,
                     updated_at = CURRENT_TIMESTAMP
                 RETURNING id
-            """, (bid_id, partner_id, loi,
-                  response_data.get('currency', 'USD'), 
-                  response_data.get('pmf', 0)))
-            
+            """, (bid_id, partner_id, loi, response_data.get(
+                    'currency', 'USD'), response_data.get('pmf', 0)))
+
             partner_response_id = cur.fetchone()['id']
             partner_response_ids[key] = partner_response_id
 
@@ -4613,9 +4654,13 @@ def update_partner_responses(bid_id):
             for audience_key, audience_data in audiences.items():
                 # Parse audience ID
                 try:
-                    if isinstance(audience_key, int) or (isinstance(audience_key, str) and audience_key.isdigit()):
+                    if isinstance(audience_key,
+                                  int) or (isinstance(audience_key, str)
+                                           and audience_key.isdigit()):
                         audience_id = int(audience_key)
-                    elif isinstance(audience_key, str) and audience_key.startswith('audience-'):
+                    elif isinstance(
+                            audience_key,
+                            str) and audience_key.startswith('audience-'):
                         audience_id = int(audience_key.split('-')[1])
                     else:
                         continue
@@ -4632,10 +4677,11 @@ def update_partner_responses(bid_id):
 
                     commitment = country_data.get('commitment', 0)
                     cpi = country_data.get('cpi', 0)
-                    commitment_type = country_data.get('commitment_type', 'fixed')
+                    commitment_type = country_data.get('commitment_type',
+                                                       'fixed')
                     is_best_efforts = commitment_type == 'be_max'
                     pass_country = country_data.get('pass', False)
-                    
+
                     # Convert empty strings to None for integer fields
                     if commitment == '':
                         commitment = None
@@ -4645,19 +4691,19 @@ def update_partner_responses(bid_id):
                         timeline = None
 
                     # Prepare data for batch processing
-                    audience_data_tuple = (
-                        bid_id, partner_response_id, audience_id, country,
-                        commitment, cpi, timeline, comments, 
-                        commitment_type, is_best_efforts, pass_country
-                    )
-                    
+                    audience_data_tuple = (bid_id, partner_response_id,
+                                           audience_id, country, commitment,
+                                           cpi, timeline, comments,
+                                           commitment_type, is_best_efforts,
+                                           pass_country)
+
                     # Check if exists first
                     cur.execute(
                         """
                         SELECT id FROM partner_audience_responses
                         WHERE partner_response_id = %s AND audience_id = %s AND country = %s
                     """, (partner_response_id, audience_id, country))
-                    
+
                     if cur.fetchone():
                         audience_updates.append(audience_data_tuple)
                     else:
@@ -4670,12 +4716,16 @@ def update_partner_responses(bid_id):
                 commitment = update_data[4] if update_data[4] != '' else None
                 cpi = update_data[5] if update_data[5] != '' else None
                 timeline_days = update_data[6] if update_data[6] != '' else None
-                
-                print(f"UPDATE Debug - Original values: commitment='{update_data[4]}', cpi='{update_data[5]}', timeline='{update_data[6]}'")
-                print(f"UPDATE Debug - Converted values: commitment={commitment}, cpi={cpi}, timeline_days={timeline_days}")
-                
+
+                print(
+                    f"UPDATE Debug - Original values: commitment='{update_data[4]}', cpi='{update_data[5]}', timeline='{update_data[6]}'"
+                )
+                print(
+                    f"UPDATE Debug - Converted values: commitment={commitment}, cpi={cpi}, timeline_days={timeline_days}"
+                )
+
                 cur.execute(
-                        """
+                    """
                         UPDATE partner_audience_responses 
                         SET commitment = %s,
                             cpi = %s,
@@ -4687,16 +4737,19 @@ def update_partner_responses(bid_id):
                             updated_at = CURRENT_TIMESTAMP
                         WHERE bid_id = %s AND partner_response_id = %s 
                         AND audience_id = %s AND country = %s
-                    """, (commitment, cpi, timeline_days, 
-                          update_data[7], update_data[8], update_data[9], update_data[10],
-                          update_data[0], update_data[1], update_data[2], update_data[3]))
+                    """, (commitment, cpi, timeline_days, update_data[7],
+                          update_data[8], update_data[9], update_data[10],
+                          update_data[0], update_data[1], update_data[2],
+                          update_data[3]))
 
         # Batch insert new audience responses
         if audience_inserts:
             # Convert empty strings to None for integer fields in insert data
             converted_inserts = []
             for insert_data in audience_inserts:
-                print(f"INSERT Debug - Original values: commitment='{insert_data[4]}', cpi='{insert_data[5]}', timeline='{insert_data[6]}'")
+                print(
+                    f"INSERT Debug - Original values: commitment='{insert_data[4]}', cpi='{insert_data[5]}', timeline='{insert_data[6]}'"
+                )
                 # Convert empty strings to None for integer fields (indices 4, 5, 6)
                 converted_data = list(insert_data)
                 if converted_data[4] == '':  # commitment
@@ -4705,9 +4758,11 @@ def update_partner_responses(bid_id):
                     converted_data[5] = None
                 if converted_data[6] == '':  # timeline_days
                     converted_data[6] = None
-                print(f"INSERT Debug - Converted values: commitment={converted_data[4]}, cpi={converted_data[5]}, timeline={converted_data[6]}")
+                print(
+                    f"INSERT Debug - Converted values: commitment={converted_data[4]}, cpi={converted_data[5]}, timeline={converted_data[6]}"
+                )
                 converted_inserts.append(tuple(converted_data))
-            
+
             cur.executemany(
                 """
                 INSERT INTO partner_audience_responses 
@@ -4717,8 +4772,11 @@ def update_partner_responses(bid_id):
             """, converted_inserts)
 
         conn.commit()
-        print(f"Successfully updated {len(responses)} partner responses, {len(audience_updates)} audience updates, {len(audience_inserts)} audience inserts")
-        return jsonify({"message": "Partner responses updated successfully"}), 200
+        print(
+            f"Successfully updated {len(responses)} partner responses, {len(audience_updates)} audience updates, {len(audience_inserts)} audience inserts"
+        )
+        return jsonify({"message":
+                        "Partner responses updated successfully"}), 200
 
     except Exception as e:
         if 'conn' in locals():
@@ -5418,9 +5476,9 @@ def submit_partner_link_response(token):
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                         ON CONFLICT (bid_id, partner_response_id, audience_id, country)
                         DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, pass = EXCLUDED.pass, updated_at = CURRENT_TIMESTAMP
-                    """,
-                        (bid_id, partner_response_id, audience_id, country,
-                         commitment_type, commitment, cpi, timeline, comments, pass_country))
+                    """, (bid_id, partner_response_id, audience_id, country,
+                          commitment_type, commitment, cpi, timeline, comments,
+                          pass_country))
         conn.commit()
 
         # Send admin notification email
@@ -5979,7 +6037,8 @@ def request_access():
         # Look up user_id by email
         user_id = None
         if user_email:
-            cur.execute('SELECT id FROM users WHERE email = %s', (user_email,))
+            cur.execute('SELECT id FROM users WHERE email = %s',
+                        (user_email, ))
             user_row = cur.fetchone()
             if user_row:
                 user_id = user_row[0]
@@ -5996,12 +6055,16 @@ def request_access():
 
         if existing_request:
             if existing_request[0] == 'pending':
-                print(f"Access request already pending for bid {bid_id}, user {user_id}, team {user_team}")
+                print(
+                    f"Access request already pending for bid {bid_id}, user {user_id}, team {user_team}"
+                )
                 # Request already exists and is pending, no action needed
                 request_created_or_updated = False
             elif existing_request[0] == 'denied':
                 # Update the denied request to pending (allow re-request)
-                print(f"Updating denied request to pending for bid {bid_id}, user {user_id}, team {user_team}")
+                print(
+                    f"Updating denied request to pending for bid {bid_id}, user {user_id}, team {user_team}"
+                )
                 cur.execute(
                     '''
                     UPDATE bid_access_requests 
@@ -6010,12 +6073,16 @@ def request_access():
                 ''', (bid_id, user_id, user_team))
                 request_created_or_updated = True
             elif existing_request[0] == 'granted':
-                print(f"Access already granted for bid {bid_id}, user {user_id}, team {user_team}")
+                print(
+                    f"Access already granted for bid {bid_id}, user {user_id}, team {user_team}"
+                )
                 # Request already granted, no action needed
                 request_created_or_updated = False
         else:
             # Insert new access request
-            print(f"Creating new access request for bid {bid_id}, user {user_id}, team {user_team}")
+            print(
+                f"Creating new access request for bid {bid_id}, user {user_id}, team {user_team}"
+            )
             cur.execute(
                 '''
                 INSERT INTO bid_access_requests (bid_id, user_id, team, status)
@@ -6039,13 +6106,16 @@ def request_access():
                     FROM bids b 
                     JOIN users u ON b.created_by = u.id 
                     WHERE b.id = %s
-                ''', (bid_id,))
+                ''', (bid_id, ))
                 bid_owner = cur_email.fetchone()
 
                 # Send notification only to bid creator
                 if bid_owner and bid_owner['email']:
-                    base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
-                    if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
+                    base_url = os.getenv('FRONTEND_BASE_URL',
+                                         'http://localhost:3000')
+                    if hasattr(request,
+                               'host') and ('replit.dev' in request.host
+                                            or 'repl.co' in request.host):
                         base_url = f"https://{request.host.split(':')[0]}"
 
                     msg = Message('🔔 Bid Access Request - Action Required',
@@ -6132,10 +6202,13 @@ This is an automated notification. Please do not reply to this email."""
                     """
 
                     mail.send(msg)
-                    print(f"Access request email sent to bid creator: {bid_owner['email']}")
+                    print(
+                        f"Access request email sent to bid creator: {bid_owner['email']}"
+                    )
 
             except Exception as email_error:
-                print(f"Error sending access request email: {str(email_error)}")
+                print(
+                    f"Error sending access request email: {str(email_error)}")
                 import traceback
                 print(f"Email error traceback: {traceback.format_exc()}")
             finally:
@@ -6144,7 +6217,8 @@ This is an automated notification. Please do not reply to this email."""
                 if conn_email:
                     conn_email.close()
 
-        return jsonify({'message': 'Access request submitted successfully'}), 200
+        return jsonify({'message':
+                        'Access request submitted successfully'}), 200
 
     except Exception as e:
         print(f"Error in request_access: {str(e)}")
@@ -6155,6 +6229,7 @@ This is an automated notification. Please do not reply to this email."""
         if conn:
             conn.close()
 
+
 @app.route('/api/notifications/count', methods=['GET'])
 def get_notification_count():
     """Get notification count for current user"""
@@ -6162,31 +6237,32 @@ def get_notification_count():
         user_id = request.headers.get('X-User-Id')
         user_role = (request.headers.get('X-User-Role') or '').lower()
         user_name = (request.headers.get('X-User-Name') or '').lower()
-        
+
         if not user_id:
             return jsonify({'count': 0}), 200
-            
+
         conn = get_db_connection()
         cur = conn.cursor()
-        
+
         notification_count = 0
-        
+
         # Count pending requests only for bids they created
-        cur.execute('''
+        cur.execute(
+            '''
             SELECT COUNT(*)
             FROM bid_access_requests bar
             JOIN bids b ON bar.bid_id = b.id
             WHERE bar.status = 'pending'
             AND b.created_by = %s
-        ''', (user_id,))
+        ''', (user_id, ))
         result = cur.fetchone()
         notification_count = result[0] if result else 0
-        
+
         cur.close()
         conn.close()
-        
+
         return jsonify({'count': notification_count}), 200
-        
+
     except Exception as e:
         print(f"Error getting notification count: {str(e)}")
         return jsonify({'count': 0}), 500
@@ -6204,15 +6280,16 @@ def get_notifications():
         user_id = request.headers.get('X-User-Id')
         user_role = (request.headers.get('X-User-Role') or '').lower()
         user_name = (request.headers.get('X-User-Name') or '').lower()
-        
+
         if not user_id:
             return jsonify({'notifications': []}), 200
-            
+
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
+
         # Get pending requests only for bids they created
-        cur.execute('''
+        cur.execute(
+            '''
             SELECT 
                 bar.id,
                 bar.bid_id,
@@ -6229,15 +6306,15 @@ def get_notifications():
             WHERE bar.status = 'pending'
             AND b.created_by = %s
             ORDER BY bar.requested_on DESC
-        ''', (user_id,))
-        
+        ''', (user_id, ))
+
         notifications = cur.fetchall()
-        
+
         cur.close()
         conn.close()
-        
+
         return jsonify({'notifications': notifications}), 200
-        
+
     except Exception as e:
         print(f"Error getting notifications: {str(e)}")
         return jsonify({'notifications': []}), 500
@@ -6246,6 +6323,7 @@ def get_notifications():
             cur.close()
         if 'conn' in locals():
             conn.close()
+
 
 @app.route('/api/bids/<int:bid_id>/copy', methods=['POST'])
 def copy_bid(bid_id):
@@ -6540,8 +6618,10 @@ def grant_access_request(bid_id, request_id):
             cur.close()
             conn.close()
             return jsonify({'error': 'Request not found'}), 404
-        
-        user_id, team, user_email, user_name, bid_number, study_name = req['user_id'], req['team'], req['email'], req['name'], req['bid_number'], req['study_name']
+
+        user_id, team, user_email, user_name, bid_number, study_name = req[
+            'user_id'], req['team'], req['email'], req['name'], req[
+                'bid_number'], req['study_name']
 
         print(
             f"DEBUG: Granting access for bid_id={bid_id}, user_id={user_id}, team={team}"
@@ -6570,13 +6650,16 @@ def grant_access_request(bid_id, request_id):
         # Send email notification to the user who requested access
         try:
             if user_email:
-                base_url = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
-                if hasattr(request, 'host') and ('replit.dev' in request.host or 'repl.co' in request.host):
+                base_url = os.getenv('FRONTEND_BASE_URL',
+                                     'http://localhost:3000')
+                if hasattr(request, 'host') and ('replit.dev' in request.host
+                                                 or 'repl.co' in request.host):
                     base_url = f"https://{request.host.split(':')[0]}"
 
-                msg = Message('✅ Bid Access Granted - You Can Now Access the Bid',
-                              sender=app.config['MAIL_DEFAULT_SENDER'],
-                              recipients=[user_email])
+                msg = Message(
+                    '✅ Bid Access Granted - You Can Now Access the Bid',
+                    sender=app.config['MAIL_DEFAULT_SENDER'],
+                    recipients=[user_email])
 
                 msg.body = f"""Good news! Your bid access request has been approved.
 
@@ -6944,11 +7027,15 @@ if __name__ == '__main__':
         standardize_invoice_status()
         print("Database initialization completed")
 
-        port = int(os.environ.get('PORT', 5000))
+        port = int(os.environ.get('PORT', 3000))
         print(f"Starting server on port {port}...")
 
         # Use Flask in production mode
-        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False, threaded=True)
+        app.run(host='0.0.0.0',
+                port=port,
+                debug=False,
+                use_reloader=False,
+                threaded=True)
 
     except Exception as e:
         print(f"Error starting server: {str(e)}")
