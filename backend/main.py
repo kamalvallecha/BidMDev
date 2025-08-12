@@ -929,7 +929,7 @@ def delete_client(client_id):
 def get_bids():
     try:
         page = int(request.args.get('page', 1))
-        page_size = int(request    .args.get('page_size', 20))
+        page_size = int(request.args.get('page_size', 20))
         offset = (page - 1) * page_size
         search = request.args.get('search', '').strip().lower()
 
@@ -1425,7 +1425,8 @@ def get_bid(bid_id):
             if row['id'] not in audience_ids_found:
                 audience_ids_found.append(row['id'])
                 print(
-                    f"Found audience ID {row['id']} with name '{row['audience_name']}'")
+                    f"Found audience ID {row['id']} with name '{row['audience_name']}'"
+                )
 
         # Format target audiences with their sample sizes
         target_audiences = {}
@@ -1659,7 +1660,8 @@ def update_bid(bid_id):
                 )
 
                 # Then insert new country samples
-                for country, sample_data in audience['country_samples'].items():
+                for country, sample_data in audience['country_samples'].items(
+                ):
                     try:
                         print(
                             f"Inserting country {country} with sample data {sample_data}"
@@ -1698,7 +1700,8 @@ def update_bid(bid_id):
                         else:
                             # Insert new record
                             print(
-                                f"Country record does not exist, inserting: {country}")
+                                f"Country record does not exist, inserting: {country}"
+                            )
                             cur.execute(
                                 """
                                 INSERT INTO bid_audience_countries (
@@ -2111,8 +2114,10 @@ def update_field_allocation(bid_id):
                 updated_id = cur.fetchone()[0]
                 conn.commit()
                 return jsonify({
-                    'id': updated_id,
-                    'message': 'Allocation and pass status updated successfully'
+                    'id':
+                    updated_id,
+                    'message':
+                    'Allocation and pass status updated successfully'
                 })
             else:
                 return jsonify({"error": "Partner response not found"}), 404
@@ -2644,8 +2649,8 @@ def get_closure_data(bid_id):
             if country not in closure_data[audience_key]['countries']:
                 closure_data[audience_key]['countries'][country] = {
                     'required':
-                    'BE/Max' if row['commitment_type'] == 'be_max' else
-                    row['required'],
+                    'BE/Max'
+                    if row['commitment_type'] == 'be_max' else row['required'],
                     'allocation':
                     row['allocation'],
                     'delivered':
@@ -2856,7 +2861,8 @@ def get_partner_loi_data(bid_id):
 
         results = cur.fetchall()
         if not results:
-            return jsonify({"error": "No partner data found for this bid"}), 404
+            return jsonify({"error":
+                            "No partner data found for this bid"}), 404
 
         # Group deliverables by partner and LOI
         deliverables_by_partner = {}
@@ -3875,107 +3881,6 @@ def update_closure(bid_id):
             cur.close()
         if 'conn' in locals():
             conn.close()
-
-
-@app.route('/api/bids/<bid_id>/closure-data', methods=['GET'])
-def get_closure_data(bid_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get metrics data with LOI-specific information
-        cur.execute(
-            """
-            WITH audience_metrics AS (
-                SELECT 
-                    par.audience_id,
-                    pr.partner_id,
-                    pr.loi,
-                    par.n_delivered,
-                    par.final_loi,
-                    par.final_ir,
-                    par.final_timeline,
-                    par.quality_rejects,
-                    par.communication as communication,
-                    par.engagement as engagement,
-                    par.problem_solving as problem_solving,
-                    par.additional_feedback
-                FROM partner_audience_responses par
-                JOIN partner_responses pr ON par.partner_response_id = pr.id
-                WHERE pr.bid_id = %s
-            )
-            SELECT 
-                am.*,
-                p.partner_name,
-                bta.audience_name,
-                bta.ta_category,
-                bc.country,
-                bc.required,
-                par.allocation
-            FROM audience_metrics am
-            JOIN partners p ON am.partner_id = p.id
-            JOIN bid_target_audiences bta ON am.audience_id = bta.id
-            JOIN bid_audience_countries bc ON bta.id = bc.audience_id
-            LEFT JOIN partner_audience_responses par ON 
-                am.audience_id = par.audience_id AND
-                am.partner_id = par.partner_id AND
-                bc.country = par.country
-            WHERE par.allocation > 0
-            ORDER BY am.audience_id, p.partner_name, am.loi, bc.country
-        """, (bid_id, bid_id))
-
-        rows = cur.fetchall()
-
-        # Organize the data
-        closure_data = {}
-        for row in rows:
-            audience_key = str(row['audience_id'])
-            partner_key = f"{row['partner_name']}_{row['loi']}"
-            country = row['country']
-
-            # Initialize audience if not exists
-            if audience_key not in closure_data:
-                closure_data[audience_key] = {
-                    'name': row['audience_name'],
-                    'category': row['ta_category'],
-                    'countries': {},
-                    'metrics': {}
-                }
-
-            # Add country data
-            if country not in closure_data[audience_key]['countries']:
-                closure_data[audience_key]['countries'][country] = {
-                    'required':
-                    'BE/Max' if row['commitment_type'] == 'be_max' else
-                    row['required'],
-                    'allocation':
-                    row['allocation'],
-                    'delivered':
-                    row['n_delivered']
-                    if row['n_delivered'] is not None else ''
-                }
-
-            # Add metrics data
-            if partner_key not in closure_data[audience_key]['metrics']:
-                closure_data[audience_key]['metrics'][partner_key] = {
-                    'finalLOI': row['final_loi'],
-                    'finalIR': row['final_ir'],
-                    'finalTimeline': row['final_timeline'],
-                    'qualityRejects': row['quality_rejects'],
-                    'communication': row['communication'],
-                    'engagement': row['engagement'],
-                    'problemSolving': row['problem_solving'],
-                    'additionalFeedback': row['additional_feedback']
-                }
-
-        cur.close()
-        conn.close()
-
-        return jsonify(closure_data)
-
-    except Exception as e:
-        print(f"Error fetching closure data: {str(e)}")
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/invoice/<int:bid_id>/submit', methods=['POST', 'OPTIONS'])
@@ -5359,13 +5264,20 @@ def debug_access_requests(bid_id):
             ORDER BY r.requested_on
         ''', (bid_id, ))
         requests = [{
-            'id': row[0],
-            'user_id': row[1],
-            'email': row[2],
-            'name': row[3],
-            'team': row[4],
-            'requested_on': row[5].strftime('%Y-%m-%d %H:%M:%S') if row[5] else None,
-            'status': row[6]
+            'id':
+            row[0],
+            'user_id':
+            row[1],
+            'email':
+            row[2],
+            'name':
+            row[3],
+            'team':
+            row[4],
+            'requested_on':
+            row[5].strftime('%Y-%m-%d %H:%M:%S') if row[5] else None,
+            'status':
+            row[6]
         } for row in cur.fetchall()]
         cur.close()
         conn.close()

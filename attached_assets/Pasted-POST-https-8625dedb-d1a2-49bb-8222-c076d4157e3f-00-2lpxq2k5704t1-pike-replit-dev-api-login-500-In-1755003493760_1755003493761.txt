@@ -1,0 +1,63 @@
+POST https://8625dedb-d1a2-49bb-8222-c076d4157e3f-00-2lpxq2k5704t1.pike.replit.dev/api/login 500 (Internal Server Error)
+dispatchXhrRequest @ axios.js?v=96b55418:1648
+xhr @ axios.js?v=96b55418:1528
+dispatchRequest @ axios.js?v=96b55418:2003
+Promise.then
+_request @ axios.js?v=96b55418:2206
+request @ axios.js?v=96b55418:2115
+httpMethod @ axios.js?v=96b55418:2253
+wrap @ axios.js?v=96b55418:8
+login @ AuthContext.jsx:42
+handleSubmit @ Login.jsx:33
+callCallback2 @ chunk-WRD5HZVH.js?v=96b55418:3674
+invokeGuardedCallbackDev @ chunk-WRD5HZVH.js?v=96b55418:3699
+invokeGuardedCallback @ chunk-WRD5HZVH.js?v=96b55418:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WRD5HZVH.js?v=96b55418:3736
+executeDispatch @ chunk-WRD5HZVH.js?v=96b55418:7014
+processDispatchQueueItemsInOrder @ chunk-WRD5HZVH.js?v=96b55418:7034
+processDispatchQueue @ chunk-WRD5HZVH.js?v=96b55418:7043
+dispatchEventsForPlugins @ chunk-WRD5HZVH.js?v=96b55418:7051
+(anonymous) @ chunk-WRD5HZVH.js?v=96b55418:7174
+batchedUpdates$1 @ chunk-WRD5HZVH.js?v=96b55418:18913
+batchedUpdates @ chunk-WRD5HZVH.js?v=96b55418:3579
+dispatchEventForPluginEventSystem @ chunk-WRD5HZVH.js?v=96b55418:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WRD5HZVH.js?v=96b55418:5478
+dispatchEvent @ chunk-WRD5HZVH.js?v=96b55418:5472
+dispatchDiscreteEvent @ chunk-WRD5HZVH.js?v=96b55418:5449Understand this error
+AuthContext.jsx:56 Login error: AxiosError {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
+login @ AuthContext.jsx:56
+await in login
+handleSubmit @ Login.jsx:33
+callCallback2 @ chunk-WRD5HZVH.js?v=96b55418:3674
+invokeGuardedCallbackDev @ chunk-WRD5HZVH.js?v=96b55418:3699
+invokeGuardedCallback @ chunk-WRD5HZVH.js?v=96b55418:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WRD5HZVH.js?v=96b55418:3736
+executeDispatch @ chunk-WRD5HZVH.js?v=96b55418:7014
+processDispatchQueueItemsInOrder @ chunk-WRD5HZVH.js?v=96b55418:7034
+processDispatchQueue @ chunk-WRD5HZVH.js?v=96b55418:7043
+dispatchEventsForPlugins @ chunk-WRD5HZVH.js?v=96b55418:7051
+(anonymous) @ chunk-WRD5HZVH.js?v=96b55418:7174
+batchedUpdates$1 @ chunk-WRD5HZVH.js?v=96b55418:18913
+batchedUpdates @ chunk-WRD5HZVH.js?v=96b55418:3579
+dispatchEventForPluginEventSystem @ chunk-WRD5HZVH.js?v=96b55418:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WRD5HZVH.js?v=96b55418:5478
+dispatchEvent @ chunk-WRD5HZVH.js?v=96b55418:5472
+dispatchDiscreteEvent @ chunk-WRD5HZVH.js?v=96b55418:5449Understand this error
+Login.jsx:44 Login error details: AxiosError {message: 'Request failed with status code 500', name: 'AxiosError', code: 'ERR_BAD_RESPONSE', config: {…}, request: XMLHttpRequest, …}
+handleSubmit @ Login.jsx:44
+await in handleSubmit
+callCallback2 @ chunk-WRD5HZVH.js?v=96b55418:3674
+invokeGuardedCallbackDev @ chunk-WRD5HZVH.js?v=96b55418:3699
+invokeGuardedCallback @ chunk-WRD5HZVH.js?v=96b55418:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-WRD5HZVH.js?v=96b55418:3736
+executeDispatch @ chunk-WRD5HZVH.js?v=96b55418:7014
+processDispatchQueueItemsInOrder @ chunk-WRD5HZVH.js?v=96b55418:7034
+processDispatchQueue @ chunk-WRD5HZVH.js?v=96b55418:7043
+dispatchEventsForPlugins @ chunk-WRD5HZVH.js?v=96b55418:7051
+(anonymous) @ chunk-WRD5HZVH.js?v=96b55418:7174
+batchedUpdates$1 @ chunk-WRD5HZVH.js?v=96b55418:18913
+batchedUpdates @ chunk-WRD5HZVH.js?v=96b55418:3579
+dispatchEventForPluginEventSystem @ chunk-WRD5HZVH.js?v=96b55418:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-WRD5HZVH.js?v=96b55418:5478
+dispatchEvent @ chunk-WRD5HZVH.js?v=96b55418:5472
+dispatchDiscreteEvent @ chunk-WRD5HZVH.js?v=96b55418:5449Understand this error
