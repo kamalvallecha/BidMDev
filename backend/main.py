@@ -122,18 +122,18 @@ def check_expiring_links():
                     link_url = f"{base_url}/partner-response/{link['token']}"
 
                     msg.body = f"""
-                    Dear {link['partner_name']},
+Dear {link['partner_name']},
 
-                    Your access link for bid {link['bid_number']} ({link['study_name']}) will expire in 3 days.
+Your access link for bid {link['bid_number']} ({link['study_name']}) will expire in 3 days.
 
-                    Current Link: {link_url}
-                    Expiry Date: {link['expires_at'].strftime('%Y-%m-%d %H:%M:%S')}
+Current Link: {link_url}
+Expiry Date: {link['expires_at'].strftime('%Y-%m-%d %H:%M:%S')}
 
-                    Please complete your response before the link expires. If you need more time, please contact the bid manager.
+Please complete your response before the link expires. If you need more time, please contact the bid manager.
 
-                    Best regards,
-                    Bid Management Team
-                    """
+Best regards,
+Bid Management Team
+"""
 
                     #mail.send(msg)
 
@@ -1587,9 +1587,8 @@ def update_bid(bid_id):
                      audience['broader_category'],
                      audience['exact_ta_definition'], audience['mode'],
                      audience['sample_required'], audience['ir'],
-                     audience.get(
-                         'comments', ''), audience.get(
-                             'is_best_efforts', False), audience_id, bid_id))
+                     audience.get('comments', ''),
+                     audience.get('is_best_efforts', False), audience_id, bid_id))
                 print(f"Updated audience ID: {audience_id}")
                 updated_audience_ids.add(audience_id)
             else:
@@ -1907,9 +1906,8 @@ def get_partner_responses(bid_id):
                         row['comments'] or '',
                     }
 
-                country = row['country']
-                if country:
-                    responses[key]['audiences'][audience_id][country] = {
+                if row['country']:
+                    responses[key]['audiences'][audience_id][row['country']] = {
                         'commitment':
                         float(row['commitment'])
                         if row['commitment'] is not None else 0,
@@ -1954,7 +1952,7 @@ def get_partner_responses(bid_id):
             conn.close()
 
 
-@app.route('/api/bids/<bid_id>/field-data', methods=['GET'])
+@app.route('/api/bids/<int:bid_id>/field-data', methods=['GET'])
 def get_field_data(bid_id):
     try:
         print(f"Fetching field data for bid: {bid_id}")  # Debug log
@@ -1994,7 +1992,7 @@ def get_field_data(bid_id):
                 bta.broader_category,
                 bta.mode,
                 bta.ir,
-                bta.is_best_efforts as audience_is_best_efforts,
+                bta.is_best_efforts,
                 bac.country,
                 bac.sample_size,
                 bac.is_best_efforts as country_is_best_efforts,
@@ -2077,7 +2075,7 @@ def get_field_data(bid_id):
                     'allocation':
                     row['allocation'] or 0,
                     'pass':
-                    row['pass'] if 'pass' in row else False
+                    row['pass'] or False
                 })
 
         result = {
@@ -2099,7 +2097,7 @@ def get_field_data(bid_id):
             conn.close()
 
 
-@app.route('/api/bids/<bid_id>/field-allocations', methods=['GET', 'POST'])
+@app.route('/api/bids/<int:bid_id>/field-allocations', methods=['GET', 'POST'])
 def update_field_allocation(bid_id):
     if request.method == 'GET':
         try:
@@ -2544,7 +2542,7 @@ def get_bid_audiences(bid_id):
                     'delivered':
                     row['delivered'],
                     'quality_rejects':
-                    row['qualityRejects'],
+                    row['quality_rejects'],
                     'pass':
                     row['pass']
                 })
@@ -2567,13 +2565,13 @@ def get_bid_audiences(bid_id):
             conn.close()
 
 
-@app.route('/api/bids/<bid_id>/closure', methods=['POST'])
+@app.route('/api/bids/<int:bid_id>/closure', methods=['POST'])
 def save_closure_data(bid_id):
     try:
         data = request.json
         partner = data.get('partner')
         loi = data.get('loi')
-        form_data = data.get('data')
+        audienceData = data.get('audienceData')
 
         conn = get_db_connection()
         cur = conn.cursor()
@@ -2590,264 +2588,6 @@ def save_closure_data(bid_id):
         partner_response_id = cur.fetchone()[0]
 
         # Update partner_audience_responses table
-        for key, value in form_data.items():
-            if key.startswith('metrics_'):
-                # Parse the metrics key format: metrics_audienceId_partner_loi
-                parts = key.split('_')
-                if len(parts) >= 4 and parts[2] == partner and int(
-                        parts[3]) == int(loi):
-                    audience_id = parts[1]
-                    metrics = value
-
-                    # Convert empty strings to None for numeric fields
-                    final_loi = int(metrics.get('finalLOI')) if metrics.get(
-                        'finalLOI') not in ['', None] else None
-                    final_ir = float(metrics.get('finalIR')) if metrics.get(
-                        'finalIR') not in ['', None] else None
-                    final_timeline = int(
-                        metrics.get('finalTimeline')) if metrics.get(
-                            'finalTimeline') not in ['', None] else None
-                    quality_rejects = int(
-                        metrics.get('qualityRejects')) if metrics.get(
-                            'qualityRejects') not in ['', None] else None
-                    communication = int(
-                        metrics.get('communication')) if metrics.get(
-                            'communication') not in ['', None] else None
-                    engagement = int(metrics.get('engagement')) if metrics.get(
-                        'engagement') not in ['', None] else None
-                    problem_solving = int(
-                        metrics.get('problemSolving')) if metrics.get(
-                            'problemSolving') not in ['', None] else None
-
-                    cur.execute(
-                        """
-                        UPDATE partner_audience_responses par
-                        SET 
-                            final_loi = %s,
-                            final_ir = %s,
-                            final_timeline = %s,
-                            quality_rejects = %s,
-                            communication = %s,
-                            engagement = %s,
-                            problem_solving = %s,
-                            additional_feedback = %s
-                        WHERE partner_response_id = %s 
-                        AND audience_id = %s
-                        AND allocation > 0
-                    """, (final_loi, final_ir, final_timeline, quality_rejects,
-                          communication, engagement, problem_solving,
-                          metrics.get('additionalFeedback'),
-                          partner_response_id, audience_id))
-            else:
-                # Handle delivered numbers for this partner/LOI
-                audience_id, country = key.split('_')
-                delivered = value.get('delivered')
-
-                # Convert empty string to None for n_delivered
-                n_delivered = int(delivered) if delivered not in ['', None
-                                                                  ] else None
-
-                cur.execute(
-                    """
-                    UPDATE partner_audience_responses par
-                    SET n_delivered = %s
-                    WHERE partner_response_id = %s 
-                    AND audience_id = %s 
-                    AND country = %s
-                    AND allocation > 0
-                """, (n_delivered, partner_response_id, audience_id, country))
-
-        conn.commit()
-        return jsonify({"message": "Closure data saved successfully"}), 200
-
-    except Exception as e:
-        print(f"Error saving closure data: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/bids/<bid_id>/closure-data', methods=['GET'])
-def get_closure_data(bid_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get metrics data with LOI-specific information
-        cur.execute(
-            """
-            WITH audience_metrics AS (
-                SELECT 
-                    par.audience_id,
-                    pr.partner_id,
-                    pr.loi,
-                    par.n_delivered,
-                    par.final_loi,
-                    par.final_ir,
-                    par.final_timeline,
-                    par.quality_rejects,
-                    par.communication as communication,
-                    par.engagement as engagement,
-                    par.problem_solving as problem_solving,
-                    par.additional_feedback
-                FROM partner_audience_responses par
-                JOIN partner_responses pr ON par.partner_response_id = pr.id
-                WHERE pr.bid_id = %s
-            )
-            SELECT 
-                am.*,
-                p.partner_name,
-                bta.audience_name,
-                bta.ta_category,
-                bc.country,
-                bc.sample_size as required,
-                par.allocation
-            FROM audience_metrics am
-            JOIN partners p ON am.partner_id = p.id
-            JOIN bid_target_audiences bta ON am.audience_id = bta.id
-            JOIN bid_audience_countries bc ON bta.id = bc.audience_id
-            LEFT JOIN partner_audience_responses par ON 
-                am.audience_id = par.audience_id AND
-                am.partner_id = par.partner_id AND
-                bc.country = par.country
-            WHERE par.allocation > 0
-            ORDER BY am.audience_id, p.partner_name, am.loi, bc.country
-        """, (bid_id, ))
-
-        rows = cur.fetchall()
-
-        # Organize the data
-        closure_data = {}
-        for row in rows:
-            audience_key = str(row['audience_id'])
-            partner_key = f"{row['partner_name']}_{row['loi']}"
-            country = row['country']
-
-            # Initialize audience if not exists
-            if audience_key not in closure_data:
-                closure_data[audience_key] = {
-                    'name': row['audience_name'],
-                    'category': row['ta_category'],
-                    'countries': {},
-                    'metrics': {}
-                }
-
-            # Add country data
-            if country not in closure_data[audience_key]['countries']:
-                closure_data[audience_key]['countries'][country] = {
-                    'required':
-                    row['required'],
-                    'allocation':
-                    row['allocation'],
-                    'delivered':
-                    row['n_delivered']
-                    if row['n_delivered'] is not None else ''
-                }
-
-            # Add metrics data
-            if partner_key not in closure_data[audience_key]['metrics']:
-                closure_data[audience_key]['metrics'][partner_key] = {
-                    'finalLOI': row['final_loi'],
-                    'finalIR': row['final_ir'],
-                    'finalTimeline': row['final_timeline'],
-                    'qualityRejects': row['quality_rejects'],
-                    'communication': row['communication'],
-                    'engagement': row['engagement'],
-                    'problemSolving': row['problem_solving'],
-                    'additionalFeedback': row['additional_feedback']
-                }
-
-        cur.close()
-        conn.close()
-
-        return jsonify(closure_data)
-
-    except Exception as e:
-        print(f"Error fetching closure data: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/ready-for-invoice', methods=['GET'])
-def get_ready_for_invoice():
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        cur.execute("""
-            WITH partner_loi_stats AS (
-                SELECT 
-                    pr.partner_id,
-                    p.partner_name AS audience_Partner,
-                    pr.loi,  -- Changed from par.loi to pr.loi
-                    par.country,
-                    par.commitment,
-                    par.cpi,
-                    par.timeline_days,
-                    par.comments,
-                    par.allocation,
-                    par.n_delivered
-                FROM partner_audience_responses par
-                JOIN partner_responses pr ON par.partner_response_id = pr.id
-                JOIN partners p ON pr.partner_id = p.id
-            )
-            SELECT 
-                pls.*,
-                CASE 
-                    WHEN pls.n_delivered = 0  -- Changed condition to only check n_delivered
-                    THEN 'No respondents delivered for this LOI'
-                    ELSE NULL 
-                END as message
-            FROM partner_loi_stats pls
-            ORDER BY pls.audience_Partner, pls.loi;
-        """)
-
-        results = cur.fetchall()
-        return jsonify(results)
-
-    except Exception as e:
-        print(f"Error in get_ready_for_invoice: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-# Add this at the beginning of your main.py, after the imports
-def init_db():
-    try:
-        print("Starting PostgreSQL database initialization...")
-
-        # Initialize PostgreSQL database
-        init_postgresql_db()
-
-        print("PostgreSQL database initialization completed successfully")
-
-    except Exception as e:
-        print(f"Error initializing PostgreSQL database: {str(e)}")
-        raise e
-
-
-@app.route('/api/bids/<int:bid_id>/closure', methods=['PUT'])
-def update_closure(bid_id):
-    try:
-        data = request.json
-        partner = data.get('partner')
-        loi = data.get('loi')
-        audienceData = data.get('audienceData')
-
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        print(
-            f"Updating closure data for bid {bid_id}, partner {partner}, LOI {loi}"
-        )
-
-        # Update field close date and metrics for each audience per partner
         for audience in audienceData:
             metrics = audience.get('metrics', {})
             field_close_date = audience.get('field_close_date')
@@ -2997,10 +2737,10 @@ def update_closure(bid_id):
             )
 
         conn.commit()
-        return jsonify({"message": "Closure data updated successfully"})
+        return jsonify({"message": "Closure data saved successfully"})
 
     except Exception as e:
-        print(f"Error updating closure: {str(e)}")
+        print(f"Error saving closure data: {str(e)}")
         return jsonify({"error": str(e)}), 500
     finally:
         if 'cur' in locals():
@@ -3009,7 +2749,167 @@ def update_closure(bid_id):
             conn.close()
 
 
-@app.route('/api/bids/<bid_id>/invoice-data', methods=['GET'])
+@app.route('/api/bids/<int:bid_id>/closure-data', methods=['GET'])
+def get_closure_data(bid_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Get metrics data with LOI-specific information
+        cur.execute(
+            """
+            WITH audience_metrics AS (
+                SELECT 
+                    par.audience_id,
+                    pr.partner_id,
+                    pr.loi,
+                    par.n_delivered,
+                    par.final_loi,
+                    par.final_ir,
+                    par.final_timeline,
+                    par.quality_rejects,
+                    par.communication as communication,
+                    par.engagement as engagement,
+                    par.problem_solving as problem_solving,
+                    par.additional_feedback
+                FROM partner_audience_responses par
+                JOIN partner_responses pr ON par.partner_response_id = pr.id
+                WHERE pr.bid_id = %s
+            )
+            SELECT 
+                am.*,
+                p.partner_name,
+                bta.audience_name,
+                bta.ta_category,
+                bc.country,
+                bc.sample_size as required,
+                par.allocation
+            FROM audience_metrics am
+            JOIN partners p ON am.partner_id = p.id
+            JOIN bid_target_audiences bta ON am.audience_id = bta.id
+            JOIN bid_audience_countries bc ON bta.id = bc.audience_id
+            LEFT JOIN partner_audience_responses par ON 
+                am.audience_id = par.audience_id AND
+                am.partner_id = par.partner_id AND
+                bc.country = par.country
+            WHERE par.allocation > 0
+            ORDER BY am.audience_id, p.partner_name, am.loi, bc.country
+        """, (bid_id, ))
+
+        rows = cur.fetchall()
+
+        # Organize the data
+        closure_data = {}
+        for row in rows:
+            audience_key = str(row['audience_id'])
+            partner_key = f"{row['partner_name']}_{row['loi']}"
+            country = row['country']
+
+            # Initialize audience if not exists
+            if audience_key not in closure_data:
+                closure_data[audience_key] = {
+                    'name': row['audience_name'],
+                    'category': row['ta_category'],
+                    'countries': {},
+                    'metrics': {}
+                }
+
+            # Add country data
+            if country not in closure_data[audience_key]['countries']:
+                closure_data[audience_key]['countries'][country] = {
+                    'required':
+                    row['required'],
+                    'allocation':
+                    row['allocation'],
+                    'delivered':
+                    row['n_delivered']
+                    if row['n_delivered'] is not None else ''
+                }
+
+            # Add metrics data
+            if partner_key not in closure_data[audience_key]['metrics']:
+                closure_data[audience_key]['metrics'][partner_key] = {
+                    'finalLOI': row['final_loi'],
+                    'finalIR': row['final_ir'],
+                    'finalTimeline': row['final_timeline'],
+                    'qualityRejects': row['quality_rejects'],
+                    'communication': row['communication'],
+                    'engagement': row['engagement'],
+                    'problemSolving': row['problem_solving'],
+                    'additionalFeedback': row['additional_feedback']
+                }
+
+        cur.close()
+        conn.close()
+
+        return jsonify(closure_data)
+
+    except Exception as e:
+        print(f"Error fetching closure data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/ready-for-invoice', methods=['GET'])
+def get_ready_for_invoice():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            WITH partner_loi_stats AS (
+                SELECT 
+                    pr.partner_id,
+                    p.partner_name AS audience_Partner,
+                    pr.loi,  -- Changed from par.loi to pr.loi
+                    par.country,
+                    par.commitment,
+                    par.cpi,
+                    par.timeline_days,
+                    par.comments,
+                    par.allocation,
+                    par.n_delivered
+                FROM partner_audience_responses par
+                JOIN partner_responses pr ON par.partner_response_id = pr.id
+                JOIN partners p ON pr.partner_id = p.id
+            )
+            SELECT 
+                pls.*,
+                CASE 
+                    WHEN pls.n_delivered = 0  -- Changed condition to only check n_delivered
+                    THEN 'No respondents delivered for this LOI'
+                    ELSE NULL 
+                END as message
+            FROM partner_loi_stats pls
+            ORDER BY pls.audience_Partner, pls.loi;
+        """)
+
+        results = cur.fetchall()
+        return jsonify(results)
+
+    except Exception as e:
+        print(f"Error in get_ready_for_invoice: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
+
+
+# Add a global OPTIONS route handler
+@app.route('/<path:path>', methods=['OPTIONS'])
+def options_handler(path):
+    response = app.make_default_options_response()
+    response.headers.add('Access-Control-Allow-Origin',
+                         'http://localhost:5173')
+    response.headers.add('Access-Control-Allow-Headers',
+                         'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods',
+                         'GET,POST,PUT,DELETE,OPTIONS')
+    return response
+
+
+@app.route('/api/bids/<int:bid_id>/invoice-data', methods=['GET'])
 def get_invoice_data(bid_id):
     try:
         conn = get_db_connection()
@@ -3171,8 +3071,8 @@ def get_invoice_data(bid_id):
             conn.close()
 
 
-@app.route('/api/invoice/<int:bid_id>/submit', methods=['POST', 'OPTIONS'])
-def submit_invoice(bid_id):
+@app.route('/api/bids/<bid_id>/submit', methods=['POST', 'OPTIONS'])
+def submit_bid_response(bid_id):
     # Handle OPTIONS request for CORS preflight
     if request.method == 'OPTIONS':
         response = jsonify({})
@@ -3187,255 +3087,152 @@ def submit_invoice(bid_id):
     conn = None
     cur = None
     try:
+        data = request.json
+        partner_id = data.get('partner_id')
+        loi = data.get('loi')
+        audience_responses = data.get('audience_responses')
+
+        if not all([partner_id, bid_id, loi, audience_responses]):
+            return jsonify({'error': 'Missing required fields'}), 400
+
         conn = get_db_connection()
         cur = conn.cursor()
-
-        # First, get the actual bid_id from the bid_number
-        cur.execute("SELECT id FROM bids WHERE bid_number = %s",
-                    (str(bid_id), ))
-        bid_row = cur.fetchone()
-        if not bid_row:
-            raise Exception(f"Bid with number {bid_id} not found")
-
-        actual_bid_id = bid_row[0]
-
-        # Update bid status to 'invoiced'
-        cur.execute(
-            """
-            UPDATE bids 
-            SET status = 'invoiced',
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """, (actual_bid_id, ))
-
-        conn.commit()
-        response = jsonify({"message": "Invoice submitted successfully"})
-        response.headers.add('Access-Control-Allow-Origin',
-                             'http://localhost:5173')
-        return response, 200
-
-    except Exception as e:
-        if conn:
-            conn.rollback()
-        print(f"Error submitting invoice: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-
-
-# These functions are not needed for Replit DB (key-value store)
-def add_field_close_date_column():
-    print("Skipping field_close_date column addition - using Replit DB")
-
-
-def standardize_invoice_status():
-    print("Skipping invoice status standardization - using Replit DB")
-
-
-# Add a global OPTIONS route handler
-@app.route('/<path:path>', methods=['OPTIONS'])
-def options_handler(path):
-    response = app.make_default_options_response()
-    response.headers.add('Access-Control-Allow-Origin',
-                         'http://localhost:5173')
-    response.headers.add('Access-Control-Allow-Headers',
-                         'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods',
-                         'GET,POST,PUT,DELETE,OPTIONS')
-    return response
-
-
-@app.route('/api/bids/<bid_id>/partner-responses', methods=['PUT'])
-def update_partner_responses(bid_id):
-    try:
-        data = request.json
-        responses = data.get('responses', {})
-
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Start transaction
         cur.execute("BEGIN")
 
-        print(
-            f"Processing {len(responses)} partner responses for bid {bid_id}")
+        # Upsert partner_responses row
+        cur.execute(
+            """
+            INSERT INTO partner_responses (bid_id, partner_id, loi, status, updated_at)
+            VALUES (%s, %s, %s, 'pending', CURRENT_TIMESTAMP)
+            ON CONFLICT (bid_id, partner_id, loi)
+            DO UPDATE SET status = 'pending', updated_at = CURRENT_TIMESTAMP
+            RETURNING id
+        """, (bid_id, partner_id, loi))
+        partner_response_id = cur.fetchone()[0]
 
-        # Batch process partner responses
-        partner_response_ids = {}
+        # Process audience responses
+        for audience_id_str, aud_data in audience_responses.items():
+            audience_id = int(audience_id_str.split('-')[1])
+            for country, country_data in aud_data.get('countries', {}).items():
+                commitment = country_data.get('commitment')
+                cpi = country_data.get('cpi')
+                timeline = aud_data.get('timeline')
+                comments = aud_data.get('comments')
+                pass_country = country_data.get('pass', False)
 
-        # First pass: Create or update all partner_responses
-        for key, response_data in responses.items():
-            partner_id = response_data.get('partner_id')
-            loi = response_data.get('loi')
+                # Convert empty strings to None for numeric fields
+                if commitment == '':
+                    commitment = None
+                if cpi == '':
+                    cpi = None
+                if timeline == '':
+                    timeline = None
 
-            if not partner_id or not loi:
-                continue
-
-            # Use ON CONFLICT to handle updates more efficiently
-            cur.execute(
-                """
-                INSERT INTO partner_responses 
-                (bid_id, partner_id, loi, status, currency, pmf, created_at, updated_at)
-                VALUES (%s, %s, %s, 'draft', %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                ON CONFLICT (bid_id, partner_id, loi) 
-                DO UPDATE SET 
-                    pmf = EXCLUDED.pmf,
-                    currency = EXCLUDED.currency,
-                    updated_at = CURRENT_TIMESTAMP
-                RETURNING id
-            """, (bid_id, partner_id, loi, response_data.get(
-                    'currency', 'USD'), response_data.get('pmf', 0)))
-
-            partner_response_id = cur.fetchone()['id']
-            partner_response_ids[key] = partner_response_id
-
-        # Second pass: Process audience responses in batches
-        audience_updates = []
-        audience_inserts = []
-
-        for key, response_data in responses.items():
-            partner_response_id = partner_response_ids.get(key)
-            if not partner_response_id:
-                continue
-
-            audiences = response_data.get('audiences', {})
-            for audience_key, audience_data in audiences.items():
-                # Parse audience ID
-                try:
-                    if isinstance(audience_key,
-                                  int) or (isinstance(audience_key, str)
-                                           and audience_key.isdigit()):
-                        audience_id = int(audience_key)
-                    elif isinstance(
-                            audience_key,
-                            str) and audience_key.startswith('audience-'):
-                        audience_id = int(audience_key.split('-')[1])
-                    else:
-                        continue
-                except (IndexError, ValueError):
-                    continue
-
-                timeline = audience_data.get('timeline', 0)
-                comments = audience_data.get('comments', '')
-
-                # Process countries
-                for country, country_data in audience_data.items():
-                    if country in ('timeline', 'comments'):
-                        continue
-
-                    commitment = country_data.get('commitment', 0)
-                    cpi = country_data.get('cpi', 0)
-                    commitment_type = country_data.get('commitment_type',
-                                                       'fixed')
-                    is_best_efforts = commitment_type == 'be_max'
-                    pass_country = country_data.get('pass', False)
-
-                    # Convert empty strings to None for numeric fields
-                    if commitment == '':
-                        commitment = None
-                    if cpi == '':
-                        cpi = None
-                    if timeline == '':
-                        timeline = None
-
-                    # Prepare data for batch processing
-                    audience_data_tuple = (bid_id, partner_response_id,
-                                           audience_id, country, commitment,
-                                           cpi, timeline, comments,
-                                           commitment_type, is_best_efforts,
-                                           pass_country)
-
-                    # Check if exists first
-                    cur.execute(
-                        """
-                        SELECT id FROM partner_audience_responses
-                        WHERE partner_response_id = %s AND audience_id = %s AND country = %s
-                    """, (partner_response_id, audience_id, country))
-
-                    if cur.fetchone():
-                        audience_updates.append(audience_data_tuple)
-                    else:
-                        audience_inserts.append(audience_data_tuple)
-
-        # Batch update existing audience responses
-        if audience_updates:
-            for update_data in audience_updates:
-                # Convert empty strings to None for integer fields in update data
-                commitment = update_data[4] if update_data[4] != '' else None
-                cpi = update_data[5] if update_data[5] != '' else None
-                timeline_days = update_data[6] if update_data[6] != '' else None
-
-                print(
-                    f"UPDATE Debug - Original values: commitment='{update_data[4]}', cpi='{update_data[5]}', timeline='{update_data[6]}'"
-                )
-                print(
-                    f"UPDATE Debug - Converted values: commitment={commitment}, cpi={cpi}, timeline_days={timeline_days}"
-                )
-
+                # Upsert into partner_audience_responses
                 cur.execute(
                     """
-                        UPDATE partner_audience_responses 
-                        SET commitment = %s,
-                            cpi = %s,
-                            timeline_days = %s,
-                            comments = %s,
-                            commitment_type = %s,
-                            is_best_efforts = %s,
-                            pass = %s,
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE bid_id = %s AND partner_response_id = %s 
-                        AND audience_id = %s AND country = %s
-                    """, (commitment, cpi, timeline_days, update_data[7],
-                          update_data[8], update_data[9], update_data[10],
-                          update_data[0], update_data[1], update_data[2],
-                          update_data[3]))
-
-        # Batch insert new audience responses
-        if audience_inserts:
-            # Convert empty strings to None for integer fields in insert data
-            converted_inserts = []
-            for insert_data in audience_inserts:
-                print(
-                    f"INSERT Debug - Original values: commitment='{insert_data[4]}', cpi='{insert_data[5]}', timeline='{insert_data[6]}'"
-                )
-                # Convert empty strings to None for integer fields (indices 4, 5, 6)
-                converted_data = list(insert_data)
-                if converted_data[4] == '':  # commitment
-                    converted_data[4] = None
-                if converted_data[5] == '':  # cpi
-                    converted_data[5] = None
-                if converted_data[6] == '':  # timeline_days
-                    converted_data[6] = None
-                print(
-                    f"INSERT Debug - Converted values: commitment={converted_data[4]}, cpi={converted_data[5]}, timeline={converted_data[6]}"
-                )
-                converted_inserts.append(tuple(converted_data))
-
-            cur.executemany(
-                """
-                INSERT INTO partner_audience_responses 
-                (bid_id, partner_response_id, audience_id, country, 
-                 commitment, cpi, timeline_days, comments, commitment_type, is_best_efforts, pass, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-            """, converted_inserts)
-
+                    INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, pass, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (bid_id, partner_response_id, audience_id, country)
+                    DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, pass = EXCLUDED.pass, updated_at = CURRENT_TIMESTAMP
+                """, (bid_id, partner_response_id, audience_id, country,
+                      country_data.get('commitment_type'), commitment, cpi, timeline,
+                      comments, pass_country))
         conn.commit()
-        print(
-            f"Successfully updated {len(responses)} partner responses, {len(audience_updates)} audience updates, {len(audience_inserts)} audience inserts"
-        )
-        return jsonify({"message":
-                        "Partner responses updated successfully"}), 200
 
+        # Send admin notification email
+        if ADMIN_NOTIFICATION_EMAIL:
+            try:
+                # Fetch additional details for the email
+                cur.execute("SELECT partner_name FROM partners WHERE id = %s",
+                            (partner_id, ))
+                partner_name = cur.fetchone()[0]
+
+                cur.execute(
+                    "SELECT bid_number, study_name FROM bids WHERE id = %s",
+                    (bid_id, ))
+                bid_info = cur.fetchone()
+                bid_number = bid_info[0]
+                study_name = bid_info[1]
+
+                # Map audience IDs to full details
+                cur.execute(
+                    "SELECT id, audience_name, ta_category, broader_category, mode, ir FROM bid_target_audiences WHERE bid_id = %s",
+                    (bid_id, ))
+                aud_map = {}
+                for row in cur.fetchall():
+                    aud_map[str(row[0])] = {
+                        'audience_name': row[1],
+                        'ta_category': row['ta_category'],
+                        'broader_category': row[3],
+                        'mode': row[4],
+                        'ir': row[5]
+                    }
+
+                # Build HTML table
+                table_html = '''<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;">
+<tr><th>LOI</th><th>Audience</th><th>Country</th><th>Commitment Type</th><th>Commitment</th><th>CPI</th><th>Timeline</th><th>Comments</th><th>Pass</th></tr>
+'''
+                for loi_val, audiences_data in data.get('form', {}).items():
+                    for aud_id, aud_data in audiences_data.items():
+                        aud_info = aud_map.get(str(aud_id), {})
+                        aud_label = f"{aud_info.get('audience_name', f'Audience {aud_id}')}: {aud_info.get('ta_category','')} - {aud_info.get('broader_category','')} - {aud_info.get('mode','')} - IR {aud_info.get('ir','')}%"
+                        timeline = aud_data.get('timeline', '')
+                        comments = aud_data.get('comments', '')
+                        for country, cdata in aud_data.get('countries',
+                                                           {}).items():
+                            table_html += f"<tr>"
+                            table_html += f"<td>{loi_val}</td>"
+                            table_html += f"<td>{aud_label}</td>"
+                            table_html += f"<td>{country}</td>"
+                            table_html += f"<td>{cdata.get('commitment_type','')}</td>"
+                            table_html += f"<td>{cdata.get('commitment','')}</td>"
+                            table_html += f"<td>{cdata.get('cpi','')}</td>"
+                            table_html += f"<td>{timeline}</td>"
+                            table_html += f"<td>{comments.replace('<','&lt;').replace('>','&gt;').replace('\n',' ')}</td>"
+                            table_html += f"<td>{cdata.get('pass', False)}</td>"
+                            table_html += f"</tr>"
+                table_html += "</table>"
+                if table_html.count('<tr>') == 1:
+                    table_html = "No audience/country data submitted."
+
+                msg = Message(
+                    f'Response Submitted: {partner_name} for Bid {bid_number}',
+                    sender=app.config['MAIL_DEFAULT_SENDER'],
+                    recipients=[ADMIN_NOTIFICATION_EMAIL])
+                msg.body = f"""
+A partner has submitted their response.
+
+Partner Name: {partner_name}
+Bid Number: {bid_number}
+Study Name: {study_name}
+
+See the HTML version of this email for a detailed table.
+"""
+                base_url = os.getenv('FRONTEND_BASE_URL',
+                                     'http://localhost:3000')
+                if hasattr(request, 'host') and ('replit.dev' in request.host
+                                                 or 'repl.co' in request.host):
+                    base_url = f"https://{request.host.split(':')[0]}"
+
+                msg.html = f"""
+<p>A partner has submitted their response.</p>
+<p><b>Partner Name:</b> {partner_name}<br>
+<b>Bid Number:</b> {bid_number}<br>
+<b>Study Name:</b> {study_name}</p>
+<p><b>Submitted Details:</b><br>{table_html}</p>
+"""
+                #mail.send(msg)
+            except Exception as e:
+                print(f"Error sending admin notification: {str(e)}")
+        return jsonify({'success': True})
     except Exception as e:
-        if 'conn' in locals():
+        print(f"Error in submit_bid_response: {str(e)}")
+        if conn:
             conn.rollback()
-        print(f"Error updating partner responses: {str(e)}")
-        import traceback
-        print(f"Full traceback: {traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({'error': str(e)}), 500
     finally:
         if 'cur' in locals():
             cur.close()
@@ -3443,1092 +3240,7 @@ def update_partner_responses(bid_id):
             conn.close()
 
 
-@app.route('/api/partners/<int:partner_id>', methods=['PUT'])
-def update_partner(partner_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        data = request.json
-        print(f"Updating partner {partner_id} with data: {data}")
-
-        # Update partner information
-        cur.execute(
-            """
-            UPDATE partners
-            SET partner_name = %s,
-                contact_person = %s,
-                contact_email = %s,
-                contact_phone = %s,
-                website = %s,
-                company_address = %s,
-                specialized = %s,
-                geographic_coverage = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-            RETURNING id, partner_id, partner_name, contact_person, contact_email, 
-                     contact_phone, website, company_address, specialized, 
-                     geographic_coverage, created_at, updated_at
-        """, (data.get('partner_name'), data.get('contact_person'),
-              data.get('contact_email'), data.get('contact_phone'),
-              data.get('website'), data.get('company_address'),
-              data.get('specialized'), data.get('geographic_coverage'),
-              partner_id))
-
-        updated_partner = cur.fetchone()
-        conn.commit()
-
-        if not updated_partner:
-            return jsonify(
-                {"error": f"Partner with ID {partner_id} not found"}), 404
-
-        return jsonify(updated_partner)
-
-    except Exception as e:
-        print(f"Error updating partner: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/partners/<int:partner_id>', methods=['DELETE'])
-def delete_partner(partner_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        # First check if partner exists
-        cur.execute("SELECT id FROM partners WHERE id = %s", (partner_id, ))
-        if not cur.fetchone():
-            return jsonify(
-                {"error": f"Partner with ID {partner_id} not found"}), 404
-
-        # Delete the partner
-        cur.execute("DELETE FROM partners WHERE id = %s", (partner_id, ))
-        conn.commit()
-
-        return jsonify({"message": "Partner deleted successfully"})
-
-    except Exception as e:
-        print(f"Error deleting partner: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/vms/<int:vm_id>', methods=['PUT'])
-def update_vm(vm_id):
-    try:
-        data = request.json
-        print(f"Updating VM {vm_id} with data: {data}")
-
-        # Get VMs from Replit DB
-        vms = db.get('vendor_managers', {})
-
-        # Find the VM to update
-        vm_key = str(vm_id)
-        if vm_key not in vms:
-            return jsonify({"error": f"VM with ID {vm_id} not found"}), 404
-
-        # Check if new vm_id already exists (if it's being changed)
-        if data.get('vm_id') and data.get('vm_id') != vms[vm_key].get('vm_id'):
-            for existing_vm in vms.values():
-                if existing_vm.get('vm_id') == data.get('vm_id'):
-                    return jsonify({"error": "VM ID already exists"}), 400
-
-        # Update VM data
-        vms[vm_key].update({
-            'vm_id': data.get('vm_id'),
-            'vm_name': data.get('vm_name'),
-            'contact_person': data.get('contact_person'),
-            'reporting_manager': data.get('reporting_manager'),
-            'team': data.get('team'),
-            'updated_at': datetime.now().isoformat()
-        })
-
-        # Save back to Replit DB
-        db['vendor_managers'] = vms
-
-        return jsonify(vms[vm_key])
-
-    except Exception as e:
-        print(f"Error updating VM: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/vms/<int:vm_id>', methods=['DELETE'])
-def delete_vm(vm_id):
-    try:
-        # Get VMs from Replit DB
-        vms = db.get('vendor_managers', {})
-
-        # Check if VM exists
-        vm_key = str(vm_id)
-        if vm_key not in vms:
-            return jsonify({"error": f"VM with ID {vm_id} not found"}), 404
-
-        # Delete the VM
-        del vms[vm_key]
-        db['vendor_managers'] = vms
-
-        return jsonify({"message": "VM deleted successfully"})
-
-    except Exception as e:
-        print(f"Error deleting VM: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/sales/<int:sales_id>', methods=['PUT'])
-def update_sales(sales_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        data = request.json
-        print(f"Updating sales {sales_id} with data: {data}")
-
-        # Update sales information
-        cur.execute(
-            """
-            UPDATE sales
-            SET sales_id = %s,
-                sales_person = %s,
-                contact_person = %s,
-                reporting_manager = %s,
-                region = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-            RETURNING id, sales_id, sales_person, contact_person, reporting_manager, region, created_at, updated_at
-        """, (data.get('sales_id'), data.get('sales_person'),
-              data.get('contact_person'), data.get('reporting_manager'),
-              data.get('region'), sales_id))
-
-        updated_sales = cur.fetchone()
-        conn.commit()
-
-        if not updated_sales:
-            return jsonify({"error":
-                            f"Sales with ID {sales_id} not found"}), 404
-
-        return jsonify(updated_sales)
-
-    except Exception as e:
-        print(f"Error updating sales: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/sales/<int:sales_id>', methods=['DELETE'])
-def delete_sales(sales_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        # First check if sales exists
-        cur.execute("SELECT id FROM sales WHERE id = %s", (sales_id, ))
-        if not cur.fetchone():
-            return jsonify({"error":
-                            f"Sales with ID {sales_id} not found"}), 404
-
-        # Delete the sales
-        cur.execute("DELETE FROM sales WHERE id = %s", (sales_id, ))
-        conn.commit()
-
-        return jsonify({"message": "Sales deleted successfully"})
-
-    except Exception as e:
-        print(f"Error deleting sales: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico',
-                               mimetype='image/vnd.microsoft.icon')
-
-
-# Serve React App
-
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    try:
-        data = request.json
-        email = data.get('email')
-        password = data.get('password')
-
-        print(f"Login attempt with email: {email}")
-
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Find user by email
-        cur.execute('SELECT * FROM users WHERE email = %s', (email, ))
-        user = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if not user:
-            print(f"User not found: {email}")
-            return jsonify({'error': 'Invalid email or password'}), 401
-
-        password_hash = user['password_hash']
-        print(f"Input password: {password}")
-
-        is_authenticated = False
-
-        try:
-            # Try Werkzeug's check_password_hash first
-            is_authenticated = check_password_hash(password_hash, password)
-            print(f"Password verification result: {is_authenticated}")
-        except Exception as e:
-            print(f"Password verification error: {str(e)}")
-            # Fallback: try direct password comparison for admin or regenerate hash
-            is_authenticated = False
-
-            # For admin user with default password, update hash and authenticate
-            if email == 'admin@example.com' and password == 'admin':
-                try:
-                    new_password_hash = generate_password_hash(
-                        password, method='pbkdf2:sha256')
-                    conn_update = get_db_connection()
-                    cur_update = conn_update.cursor()
-                    cur_update.execute(
-                        "UPDATE users SET password_hash = %s WHERE email = %s",
-                        (new_password_hash, email))
-                    conn_update.commit()
-                    cur_update.close()
-                    conn_update.close()
-                    is_authenticated = True
-                    print(
-                        "Updated admin password hash and authenticated successfully"
-                    )
-                except Exception as fallback_error:
-                    print(
-                        f"Fallback authentication failed: {str(fallback_error)}"
-                    )
-                    # Last resort: check if password matches plain text (for migration)
-                    if password_hash == password:
-                        new_password_hash = generate_password_hash(
-                            password, method='pbkdf2:sha256')
-                        try:
-                            conn_update = get_db_connection()
-                            cur_update = conn_update.cursor()
-                            cur_update.execute(
-                                "UPDATE users SET password_hash = %s WHERE email = %s",
-                                (new_password_hash, email))
-                            conn_update.commit()
-                            cur_update.close()
-                            conn_update.close()
-                            is_authenticated = True
-                            print(
-                                "Migrated plain text password to hash and authenticated"
-                            )
-                        except Exception as migration_error:
-                            print(f"Migration failed: {str(migration_error)}")
-                            is_authenticated = False
-
-        if is_authenticated:
-            # Get permissions for the user's role
-            permissions = ROLES_AND_PERMISSIONS.get(user['role'], {})
-
-            user_data = {
-                'id': user['id'],
-                'email': user['email'],
-                'name': user['name'],
-                'role': user['role'],
-                'team': user['team'],
-                'permissions': permissions
-            }
-            print(f"Login successful for {email}")
-            return jsonify({'token': 'sample-jwt-token', 'user': user_data})
-
-        print(
-            f"Login failed for email: {email} - password verification failed")
-        return jsonify({'error': 'Invalid email or password'}), 401
-
-    except Exception as e:
-        print(f"Login error: {str(e)}")
-        return jsonify({'error': 'An error occurred during login'}), 500
-
-
-def get_public_host_url():
-    # In a development environment, the frontend runs on a separate server.
-    # We detect this by checking if the request host is a local address.
-    host = request.host.split(':')[0]
-
-    # Check if we're in Replit environment
-    if 'replit.dev' in request.host or 'repl.co' in request.host:
-        # Use the current request host but ensure it's https
-        return f"https://{request.host.split(':')[0]}"
-
-    if host in ('localhost', '127.0.0.1', '0.0.0.0'):
-        # Always use http://localhost:3000 for local development links.
-        return 'http://localhost:3000'
-
-    # For production, use the forwarded host if behind a proxy.
-    forwarded_host = request.headers.get('X-Forwarded-Host')
-    if forwarded_host:
-        scheme = request.headers.get('X-Forwarded-Proto', 'https')
-        return f"{scheme}://{forwarded_host}"
-
-    # Otherwise, return the default request host URL.
-    return request.host_url.rstrip('/')
-
-
-@app.route('/api/bids/<int:bid_id>/partners/<int:partner_id>/generate-link',
-           methods=['POST'])
-def generate_partner_link(bid_id, partner_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Check if a valid link already exists
-        cur.execute(
-            """
-            SELECT id, token, expires_at 
-            FROM partner_links 
-            WHERE bid_id = %s AND partner_id = %s AND expires_at > NOW()
-            ORDER BY updated_at DESC 
-            LIMIT 1
-        """, (bid_id, partner_id))
-        existing_link = cur.fetchone()
-
-        if existing_link:
-            base_url = get_public_host_url().replace('5000',
-                                                     '3000').rstrip('/')
-            return jsonify({
-                'link':
-                f"{base_url}/partner-response/{existing_link['token']}",
-                'expires_at':
-                existing_link['expires_at'].isoformat()
-            })
-
-        # Generate new token and set expiry to 30 days
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.now() + timedelta(days=30)
-
-        cur.execute(
-            """
-            INSERT INTO partner_links (bid_id, partner_id, token, expires_at)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id, token, expires_at
-        """, (bid_id, partner_id, token, expires_at))
-
-        new_link = cur.fetchone()
-        conn.commit()
-
-        base_url = get_public_host_url().replace('5000', '3000').rstrip('/')
-        return jsonify({
-            'link': f"{base_url}/partner-response/{new_link['token']}",
-            'expires_at': new_link['expires_at'].isoformat()
-        })
-    except Exception as e:
-        print(f"Error generating link: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/partner-response/<token>', methods=['GET'])
-def partner_response_form(token):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT bid_id, partner_id, expires_at FROM partner_links WHERE token = %s
-            """, (token, ))
-        row = cur.fetchone()
-        if not row:
-            return "Invalid or expired link.", 404
-        bid_id, partner_id, expires_at = row
-        # Make expires_at timezone-aware if it's naive
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
-            return "This link has expired.", 410
-        return f"Valid link! Bid ID: {bid_id}, Partner ID: {partner_id}"
-    except Exception as e:
-        print(f"Error in partner_response_form: {str(e)}")
-        return "An error occurred.", 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/partner-link/<token>', methods=['GET'])
-def get_partner_link_data(token):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute(
-            "SELECT bid_id, partner_id, expires_at FROM partner_links WHERE token = %s",
-            (token, ))
-        row = cur.fetchone()
-        if not row:
-            return jsonify({"error": "Invalid or expired link."}), 404
-        bid_id, partner_id, expires_at = row['bid_id'], row['partner_id'], row[
-            'expires_at']
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        from datetime import datetime, timezone
-        if expires_at < datetime.now(timezone.utc):
-            return jsonify({"error": "This link has expired."}), 403
-
-        # Fetch all the same data as PartnerResponse page, but for this partner and bid
-        # Get bid details
-        cur.execute(
-            """
-            SELECT * FROM bids WHERE id = %s
-            """, (bid_id, ))
-        bid_data = cur.fetchone()
-        if not bid_data:
-            return jsonify({"error": "Bid not found."}), 404
-
-        # Get partner details
-        cur.execute(
-            """
-            SELECT * FROM partners WHERE id = %s
-            """, (partner_id, ))
-        partner_data = cur.fetchone()
-        if not partner_data:
-            return jsonify({"error": "Partner not found."}), 404
-
-        # Get LOIs for this partner in this bid
-        cur.execute(
-            """
-            SELECT loi FROM partner_responses WHERE bid_id = %s AND partner_id = %s
-            """, (bid_id, partner_id))
-        lois = [row['loi'] for row in cur.fetchall()]
-
-        # Get target audiences for this bid
-        cur.execute(
-            """
-            SELECT * FROM bid_target_audiences WHERE bid_id = %s
-            """, (bid_id, ))
-        audiences = cur.fetchall()
-
-        # Get country samples for each audience
-        cur.execute(
-            """
-            SELECT * FROM bid_audience_countries WHERE bid_id = %s
-            """, (bid_id, ))
-        country_samples = cur.fetchall()
-
-        # Get partner responses (all LOIs)
-        cur.execute(
-            """
-            SELECT * FROM partner_responses WHERE bid_id = %s AND partner_id = %s
-            """, (bid_id, partner_id))
-        partner_responses = cur.fetchall()
-
-        # Get partner audience responses (all LOIs)
-        cur.execute(
-            """
-            SELECT * FROM partner_audience_responses WHERE bid_id = %s AND partner_response_id IN (
-                SELECT id FROM partner_responses WHERE bid_id = %s AND partner_id = %s
-            )
-            """, (bid_id, bid_id, partner_id))
-        partner_audience_responses = cur.fetchall()
-
-        return jsonify({
-            "bid": bid_data,
-            "partner": partner_data,
-            "lois": lois,
-            "audiences": audiences,
-            "country_samples": country_samples,
-            "partner_responses": partner_responses,
-            "partner_audience_responses": partner_audience_responses,
-            "expires_at": expires_at.isoformat(),
-        })
-    except Exception as e:
-        print(f"Error in get_partner_link_data: {str(e)}")
-        return jsonify({"error": "An error occurred."}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/partner-link/<token>', methods=['POST'])
-def submit_partner_link_response(token):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        # Look up token
-        cur.execute(
-            "SELECT bid_id, partner_id, expires_at FROM partner_links WHERE token = %s",
-            (token, ))
-        row = cur.fetchone()
-        if not row:
-            return jsonify({"error": "Invalid or expired link."}), 404
-        bid_id, partner_id, expires_at = row
-        if expires_at.tzinfo is None:
-            from datetime import timezone
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        from datetime import datetime, timezone
-        if expires_at < datetime.now(timezone.utc):
-            return jsonify({"error": "This link has expired."}), 403
-        data = request.get_json()
-        pmf = data.get('pmf')
-        currency = data.get('currency')
-        for loi, audiences in data.get('form', {}).items():
-            # Upsert main partner_responses row for this LOI, now with pmf and currency
-            cur.execute(
-                """
-                INSERT INTO partner_responses (bid_id, partner_id, loi, status, pmf, currency, updated_at)
-                VALUES (%s, %s, %s, 'pending', %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT (bid_id, partner_id, loi)
-                DO UPDATE SET pmf = EXCLUDED.pmf, currency = EXCLUDED.currency, updated_at = CURRENT_TIMESTAMP
-                RETURNING id
-            """, (bid_id, partner_id, loi, pmf, currency))
-            partner_response_id = cur.fetchone()[0]
-            for audience_id, aud_data in audiences.items():
-                timeline = aud_data.get('timeline')
-                comments = aud_data.get('comments')
-                for country, country_data in aud_data.get('countries',
-                                                          {}).items():
-                    commitment_type = country_data.get('commitment_type')
-                    commitment = country_data.get('commitment')
-                    cpi = country_data.get('cpi')
-                    pass_country = country_data.get('pass', False)
-                    # Convert empty string to None for numeric fields
-                    if commitment == '':
-                        commitment = None
-                    if cpi == '':
-                        cpi = None
-                    if timeline == '':
-                        timeline = None
-                    # Upsert into partner_audience_responses
-                    cur.execute(
-                        """
-                        INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, pass, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                        ON CONFLICT (bid_id, partner_response_id, audience_id, country)
-                        DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, pass = EXCLUDED.pass, updated_at = CURRENT_TIMESTAMP
-                    """, (bid_id, partner_response_id, audience_id, country,
-                          commitment_type, commitment, cpi, timeline, comments,
-                          pass_country))
-        conn.commit()
-
-        # Send admin notification email
-        if ADMIN_NOTIFICATION_EMAIL:
-            try:
-                # Fetch additional details for the email
-                cur.execute("SELECT partner_name FROM partners WHERE id = %s",
-                            (partner_id, ))
-                partner_name = cur.fetchone()[0]
-
-                cur.execute(
-                    "SELECT bid_number, study_name FROM bids WHERE id = %s",
-                    (bid_id, ))
-                bid_info = cur.fetchone()
-                bid_number = bid_info[0]
-                study_name = bid_info[1]
-
-                # Map audience IDs to full details
-                cur.execute(
-                    "SELECT id, audience_name, ta_category, broader_category, mode, ir FROM bid_target_audiences WHERE bid_id = %s",
-                    (bid_id, ))
-                aud_map = {}
-                for row in cur.fetchall():
-                    aud_map[str(row[0])] = {
-                        'audience_name': row[1],
-                        'ta_category': row[2],
-                        'broader_category': row[3],
-                        'mode': row[4],
-                        'ir': row[5]
-                    }
-
-                # Build HTML table
-                table_html = '''<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;">
-<tr><th>LOI</th><th>Audience</th><th>Country</th><th>Commitment Type</th><th>Commitment</th><th>CPI</th><th>Timeline</th><th>Comments</th><th>Updated On</th></tr>
-'''
-                for loi, audiences in data.get('form', {}).items():
-                    # Fetch updated_at for this LOI
-                    cur.execute(
-                        "SELECT updated_at FROM partner_responses WHERE bid_id = %s AND partner_id = %s AND loi = %s",
-                        (bid_id, partner_id, loi))
-                    updated_at_result = cur.fetchone()
-                    updated_at_str = updated_at_result[0].strftime(
-                        '%Y-%m-%d %H:%M:%S') if updated_at_result else 'N/A'
-
-                    for aud_id, aud_data in audiences.items():
-                        aud_info = aud_map.get(str(aud_id), {})
-                        aud_label = f"{aud_info.get('audience_name', f'Audience {aud_id}')}: {aud_info.get('ta_category','')} - {aud_info.get('broader_category','')} - {aud_info.get('mode','')} - IR {aud_info.get('ir','')}%"
-                        timeline = aud_data.get('timeline', '')
-                        comments = aud_data.get('comments', '')
-                        for country, cdata in aud_data.get('countries',
-                                                           {}).items():
-                            table_html += f"<tr>"
-                            table_html += f"<td>{loi}</td>"
-                            table_html += f"<td>{aud_label}</td>"
-                            table_html += f"<td>{country}</td>"
-                            table_html += f"<td>{cdata.get('commitment_type','')}</td>"
-                            table_html += f"<td>{cdata.get('commitment','')}</td>"
-                            table_html += f"<td>{cdata.get('cpi','')}</td>"
-                            table_html += f"<td>{timeline}</td>"
-                            table_html += f"<td>{comments.replace('<','&lt;').replace('>','&gt;').replace('\n',' ')}</td>"
-                            table_html += f"<td>{updated_at_str}</td>"
-                            table_html += f"</tr>"
-                table_html += "</table>"
-                if table_html.count('<tr>') == 1:
-                    table_html = "No audience/country data submitted."
-
-                msg = Message(
-                    f'Response Submitted: {partner_name} for Bid {bid_number}',
-                    sender=app.config['MAIL_DEFAULT_SENDER'],
-                    recipients=[ADMIN_NOTIFICATION_EMAIL])
-                msg.body = f"""
-A partner has submitted or updated their response.
-
-Partner Name: {partner_name}
-Bid Number: {bid_number}
-Study Name: {study_name}
-
-See the HTML version of this email for a detailed table.
-
-You can view the full response by clicking the link below:
-Link: {base_url}/partner-response/{token}
-"""
-                base_url = os.getenv('FRONTEND_BASE_URL',
-                                     'http://localhost:3000')
-                if hasattr(request, 'host') and ('replit.dev' in request.host
-                                                 or 'repl.co' in request.host):
-                    base_url = f"https://{request.host.split(':')[0]}"
-
-                msg.html = f"""
-<p>A partner has submitted or updated their response.</p>
-<p><b>Partner Name:</b> {partner_name}<br>
-<b>Bid Number:</b> {bid_number}<br>
-<b>Study Name:</b> {study_name}</p>
-<p><b>Submitted Details:</b><br>{table_html}</p>
-<p>You can view the full response by clicking the link below:<br>
-<a href='{base_url}/partner-response/{token}'>Link: {base_url}/partner-response/{token}</a></p>
-                """
-                #mail.send(msg)
-            except Exception as e:
-                print(f"Error sending admin notification: {str(e)}")
-        return jsonify({"success": True})
-    except Exception as e:
-        print("Error in submit_partner_link_response:", e)
-        return jsonify({"error": str(e)}), 500
-
-
-
-
-
-@app.route('/api/bids/<int:bid_id>/partners/<int:partner_id>/extend-link',
-           methods=['POST'])
-def extend_partner_link(bid_id, partner_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get the most recent link (even if expired)
-        cur.execute(
-            """
-            SELECT id, token, expires_at 
-            FROM partner_links 
-            WHERE bid_id = %s AND partner_id = %s
-            ORDER BY updated_at DESC 
-            LIMIT 1
-        """, (bid_id, partner_id))
-        existing_link = cur.fetchone()
-
-        if not existing_link:
-            return jsonify({"error": "No link found to extend"}), 404
-
-        # Extend expiry by 30 days from now
-        new_expires_at = datetime.now() + timedelta(days=30)
-
-        cur.execute(
-            """
-            UPDATE partner_links 
-            SET expires_at = %s 
-            WHERE id = %s
-            RETURNING id, token, expires_at
-        """, (new_expires_at, existing_link['id']))
-
-        updated_link = cur.fetchone()
-        conn.commit()
-
-        # Send email notification about extended link
-        # try:
-        #     cur.execute("""
-        #         SELECT p.contact_email, p.partner_name, b.bid_number, b.study_name
-        #         FROM partners p
-        #         JOIN bids b ON b.id = %s
-        #         WHERE p.id = %s
-        #     """, (bid_id, partner_id))
-        #     partner_info = cur.fetchone()
-
-        #     if partner_info and partner_info['contact_email']:
-        #         send_link_extension_email(
-        #             partner_info['contact_email'],
-        #             partner_info['partner_name'],
-        #             partner_info['bid_number'],
-        #             partner_info['study_name'],
-        #             f"http://localhost:3001/partner-response/{updated_link['token']}",
-        #             updated_link['expires_at']
-        #         )
-        # except Exception as email_error:
-        #     print(f"Error sending extension email: {str(email_error)}")
-
-        base_url = get_public_host_url().replace('5000', '3000').rstrip('/')
-        return jsonify({
-            'link': f"{base_url}/partner-response/{updated_link['token']}",
-            'expires_at': updated_link['expires_at'].isoformat()
-        })
-    except Exception as e:
-        print(f"Error extending link: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-def send_link_extension_email(email, partner_name, bid_number, study_name,
-                              link, expires_at):
-    try:
-        msg = Message('Your Partner Response Link Has Been Extended',
-                      sender=app.config['MAIL_DEFAULT_SENDER'],
-                      recipients=[email])
-
-        msg.body = f"""
-        Dear {partner_name},
-
-        Your access link for bid {bid_number} ({study_name}) has been extended.
-
-        New Link: {link}
-        New Expiry Date: {expires_at.strftime('%Y-%m-%d %H:%M:%S')}
-
-        You can use this link to view and edit your response.
-
-        Best regards,
-        Bid Management Team
-        """
-
-        #mail.send(msg)
-    except Exception as e:
-        print(f"Error sending email: {str(e)}")
-
-
-@app.route('/partner-response/<token>', methods=['GET'])
-def partner_response_form(token):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT bid_id, partner_id, expires_at FROM partner_links WHERE token = %s
-            """, (token, ))
-        row = cur.fetchone()
-        if not row:
-            return "Invalid or expired link.", 404
-        bid_id, partner_id, expires_at = row
-        # Make expires_at timezone-aware if it's naive
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if expires_at < datetime.now(timezone.utc):
-            return "This link has expired.", 410
-        return f"Valid link! Bid ID: {bid_id}, Partner ID: {partner_id}"
-    except Exception as e:
-        print(f"Error in partner_response_form: {str(e)}")
-        return "An error occurred.", 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/partner-link/<token>', methods=['GET'])
-def get_partner_link_data(token):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute(
-            "SELECT bid_id, partner_id, expires_at FROM partner_links WHERE token = %s",
-            (token, ))
-        row = cur.fetchone()
-        if not row:
-            return jsonify({"error": "Invalid or expired link."}), 404
-        bid_id, partner_id, expires_at = row['bid_id'], row['partner_id'], row[
-            'expires_at']
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        from datetime import datetime, timezone
-        if expires_at < datetime.now(timezone.utc):
-            return jsonify({"error": "This link has expired."}), 403
-
-        # Fetch all the same data as PartnerResponse page, but for this partner and bid
-        # Get bid details
-        cur.execute(
-            """
-            SELECT * FROM bids WHERE id = %s
-            """, (bid_id, ))
-        bid_data = cur.fetchone()
-        if not bid_data:
-            return jsonify({"error": "Bid not found."}), 404
-
-        # Get partner details
-        cur.execute(
-            """
-            SELECT * FROM partners WHERE id = %s
-            """, (partner_id, ))
-        partner_data = cur.fetchone()
-        if not partner_data:
-            return jsonify({"error": "Partner not found."}), 404
-
-        # Get LOIs for this partner in this bid
-        cur.execute(
-            """
-            SELECT loi FROM partner_responses WHERE bid_id = %s AND partner_id = %s
-            """, (bid_id, partner_id))
-        lois = [row['loi'] for row in cur.fetchall()]
-
-        # Get target audiences for this bid
-        cur.execute(
-            """
-            SELECT * FROM bid_target_audiences WHERE bid_id = %s
-            """, (bid_id, ))
-        audiences = cur.fetchall()
-
-        # Get country samples for each audience
-        cur.execute(
-            """
-            SELECT * FROM bid_audience_countries WHERE bid_id = %s
-            """, (bid_id, ))
-        country_samples = cur.fetchall()
-
-        # Get partner responses (all LOIs)
-        cur.execute(
-            """
-            SELECT * FROM partner_responses WHERE bid_id = %s AND partner_id = %s
-            """, (bid_id, partner_id))
-        partner_responses = cur.fetchall()
-
-        # Get partner audience responses (all LOIs)
-        cur.execute(
-            """
-            SELECT * FROM partner_audience_responses WHERE bid_id = %s AND partner_response_id IN (
-                SELECT id FROM partner_responses WHERE bid_id = %s AND partner_id = %s
-            )
-            """, (bid_id, bid_id, partner_id))
-        partner_audience_responses = cur.fetchall()
-
-        return jsonify({
-            "bid": bid_data,
-            "partner": partner_data,
-            "lois": lois,
-            "audiences": audiences,
-            "country_samples": country_samples,
-            "partner_responses": partner_responses,
-            "partner_audience_responses": partner_audience_responses,
-            "expires_at": expires_at.isoformat(),
-        })
-    except Exception as e:
-        print(f"Error in get_partner_link_data: {str(e)}")
-        return jsonify({"error": "An error occurred."}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/partner-link/<token>', methods=['POST'])
-def submit_partner_link_response(token):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        # Look up token
-        cur.execute(
-            "SELECT bid_id, partner_id, expires_at FROM partner_links WHERE token = %s",
-            (token, ))
-        row = cur.fetchone()
-        if not row:
-            return jsonify({"error": "Invalid or expired link."}), 404
-        bid_id, partner_id, expires_at = row
-        if expires_at.tzinfo is None:
-            from datetime import timezone
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        from datetime import datetime, timezone
-        if expires_at < datetime.now(timezone.utc):
-            return jsonify({"error": "This link has expired."}), 403
-        data = request.get_json()
-        pmf = data.get('pmf')
-        currency = data.get('currency')
-        for loi, audiences in data.get('form', {}).items():
-            # Upsert main partner_responses row for this LOI, now with pmf and currency
-            cur.execute(
-                """
-                INSERT INTO partner_responses (bid_id, partner_id, loi, status, pmf, currency, updated_at)
-                VALUES (%s, %s, %s, 'pending', %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT (bid_id, partner_id, loi)
-                DO UPDATE SET pmf = EXCLUDED.pmf, currency = EXCLUDED.currency, updated_at = CURRENT_TIMESTAMP
-                RETURNING id
-            """, (bid_id, partner_id, loi, pmf, currency))
-            partner_response_id = cur.fetchone()[0]
-            for audience_id, aud_data in audiences.items():
-                timeline = aud_data.get('timeline')
-                comments = aud_data.get('comments')
-                for country, country_data in aud_data.get('countries',
-                                                          {}).items():
-                    commitment_type = country_data.get('commitment_type')
-                    commitment = country_data.get('commitment')
-                    cpi = country_data.get('cpi')
-                    pass_country = country_data.get('pass', False)
-                    # Convert empty string to None for numeric fields
-                    if commitment == '':
-                        commitment = None
-                    if cpi == '':
-                        cpi = None
-                    if timeline == '':
-                        timeline = None
-                    # Upsert into partner_audience_responses
-                    cur.execute(
-                        """
-                        INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, pass, created_at, updated_at)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                        ON CONFLICT (bid_id, partner_response_id, audience_id, country)
-                        DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, pass = EXCLUDED.pass, updated_at = CURRENT_TIMESTAMP
-                    """, (bid_id, partner_response_id, audience_id, country,
-                          commitment_type, commitment, cpi, timeline, comments,
-                          pass_country))
-        conn.commit()
-
-        # Send admin notification email
-        if ADMIN_NOTIFICATION_EMAIL:
-            try:
-                # Fetch additional details for the email
-                cur.execute("SELECT partner_name FROM partners WHERE id = %s",
-                            (partner_id, ))
-                partner_name = cur.fetchone()[0]
-
-                cur.execute(
-                    "SELECT bid_number, study_name FROM bids WHERE id = %s",
-                    (bid_id, ))
-                bid_info = cur.fetchone()
-                bid_number = bid_info[0]
-                study_name = bid_info[1]
-
-                # Map audience IDs to full details
-                cur.execute(
-                    "SELECT id, audience_name, ta_category, broader_category, mode, ir FROM bid_target_audiences WHERE bid_id = %s",
-                    (bid_id, ))
-                aud_map = {}
-                for row in cur.fetchall():
-                    aud_map[str(row[0])] = {
-                        'audience_name': row[1],
-                        'ta_category': row[2],
-                        'broader_category': row[3],
-                        'mode': row[4],
-                        'ir': row[5]
-                    }
-
-                # Build HTML table
-                table_html = '''<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;">
-<tr><th>LOI</th><th>Audience</th><th>Country</th><th>Commitment Type</th><th>Commitment</th><th>CPI</th><th>Timeline</th><th>Comments</th><th>Updated On</th></tr>
-'''
-                for loi, audiences in data.get('form', {}).items():
-                    # Fetch updated_at for this LOI
-                    cur.execute(
-                        "SELECT updated_at FROM partner_responses WHERE bid_id = %s AND partner_id = %s AND loi = %s",
-                        (bid_id, partner_id, loi))
-                    updated_at_result = cur.fetchone()
-                    updated_at_str = updated_at_result[0].strftime(
-                        '%Y-%m-%d %H:%M:%S') if updated_at_result else 'N/A'
-
-                    for aud_id, aud_data in audiences.items():
-                        aud_info = aud_map.get(str(aud_id), {})
-                        aud_label = f"{aud_info.get('audience_name', f'Audience {aud_id}')}: {aud_info.get('ta_category','')} - {aud_info.get('broader_category','')} - {aud_info.get('mode','')} - IR {aud_info.get('ir','')}%"
-                        timeline = aud_data.get('timeline', '')
-                        comments = aud_data.get('comments', '')
-                        for country, cdata in aud_data.get('countries',
-                                                           {}).items():
-                            table_html += f"<tr>"
-                            table_html += f"<td>{loi}</td>"
-                            table_html += f"<td>{aud_label}</td>"
-                            table_html += f"<td>{country}</td>"
-                            table_html += f"<td>{cdata.get('commitment_type','')}</td>"
-                            table_html += f"<td>{cdata.get('commitment','')}</td>"
-                            table_html += f"<td>{cdata.get('cpi','')}</td>"
-                            table_html += f"<td>{timeline}</td>"
-                            table_html += f"<td>{comments.replace('<','&lt;').replace('>','&gt;').replace('\n',' ')}</td>"
-                            table_html += f"<td>{updated_at_str}</td>"
-                            table_html += f"</tr>"
-                table_html += "</table>"
-                if table_html.count('<tr>') == 1:
-                    table_html = "No audience/country data submitted."
-
-                msg = Message(
-                    f'Response Submitted: {partner_name} for Bid {bid_number}',
-                    sender=app.config['MAIL_DEFAULT_SENDER'],
-                    recipients=[ADMIN_NOTIFICATION_EMAIL])
-                msg.body = f"""
-A partner has submitted or updated their response.
-
-Partner Name: {partner_name}
-Bid Number: {bid_number}
-Study Name: {study_name}
-
-See the HTML version of this email for a detailed table.
-
-You can view the full response by clicking the link below:
-Link: {base_url}/partner-response/{token}
-"""
-                base_url = os.getenv('FRONTEND_BASE_URL',
-                                     'http://localhost:3000')
-                if hasattr(request, 'host') and ('replit.dev' in request.host
-                                                 or 'repl.co' in request.host):
-                    base_url = f"https://{request.host.split(':')[0]}"
-
-                msg.html = f"""
-<p>A partner has submitted or updated their response.</p>
-<p><b>Partner Name:</b> {partner_name}<br>
-<b>Bid Number:</b> {bid_number}<br>
-<b>Study Name:</b> {study_name}</p>
-<p><b>Submitted Details:</b><br>{table_html}</p>
-<p>You can view the full response by clicking the link below:<br>
-<a href='{base_url}/partner-response/{token}'>Link: {base_url}/partner-response/{token}</a></p>
-                """
-                #mail.send(msg)
-            except Exception as e:
-                print(f"Error sending admin notification: {str(e)}")
-        return jsonify({"success": True})
-    except Exception as e:
-        print("Error in submit_partner_link_response:", e)
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/bids/<bid_id>/partners', methods=['PUT'])
+@app.route('/api/bids/<int:bid_id>/partners', methods=['PUT'])
 def update_bid_partners(bid_id):
     try:
         if str(bid_id).startswith('temp_'):
@@ -5048,399 +3760,6 @@ def save_invoice_data(bid_number):
             conn.close()
 
 
-@app.route('/api/bids/next-number', methods=['GET'])
-def get_next_bid_number():
-    try:
-        # Return empty string to indicate manual entry is required
-        return jsonify({"next_bid_number": ""})
-    except Exception as e:
-        print(f"Error getting next bid number: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route('/api/bids/<bid_id>/status', methods=['POST'])
-def update_bid_status(bid_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        data = request.json
-        status = data.get('status')
-        po_number = data.get('po_number')
-        rejection_reason = data.get('rejection_reason')
-        rejection_comments = data.get('rejection_comments')
-
-        # Start transaction
-        cur.execute("BEGIN")
-
-        # Standardize status values
-        status_mapping = {
-            'infield': 'infield',
-            'in_field': 'infield',
-            'in-field': 'infield',
-            'draft': 'draft',
-            'completed': 'completed',
-            'invoiced': 'invoiced',
-            'rejected': 'rejected'
-        }
-
-        # Map the incoming status to standardized value
-        standardized_status = status_mapping.get(status.lower(), status)
-
-        # Update bid status and rejection fields if present
-        if standardized_status == 'rejected':
-            cur.execute(
-                """
-                UPDATE bids 
-                SET status = %s,
-                    rejection_reason = %s,
-                    rejection_comments = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                """, (standardized_status, rejection_reason,
-                      rejection_comments, bid_id))
-        else:
-            cur.execute(
-                """
-                UPDATE bids 
-                SET status = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                """, (standardized_status, bid_id))
-
-        # Insert or update PO number in bid_po_numbers table
-        if po_number:
-            cur.execute(
-                """
-                INSERT INTO bid_po_numbers (bid_id, po_number, created_at)
-                VALUES (%s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT (bid_id) DO UPDATE 
-                SET po_number = EXCLUDED.po_number,
-                    updated_at = CURRENT_TIMESTAMP
-                """, (bid_id, po_number))
-
-        conn.commit()
-        return jsonify({"message": "Bid status updated successfully"}), 200
-
-    except Exception as e:
-        if 'conn' in locals():
-            conn.rollback()
-        print(f"Error updating bid status: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/bids/<bid_id>/invoice-data', methods=['GET'])
-def get_invoice_data(bid_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # First get only valid partners and their LOIs where there's actual data
-        cur.execute(
-            """
-            WITH valid_combinations AS (
-                SELECT DISTINCT 
-                    p.id as partner_id,
-                    p.partner_name,
-                    pr.loi
-                FROM partners p
-                JOIN partner_responses pr ON p.id = pr.partner_id
-                JOIN partner_audience_responses par ON pr.id = par.partner_response_id
-                WHERE pr.bid_id = %s
-                AND (par.allocation > 0 OR par.n_delivered > 0)
-                GROUP BY p.id, p.partner_name, pr.loi
-                HAVING BOOL_OR(par.allocation > 0 OR par.n_delivered > 0)
-            )
-            SELECT 
-                partner_id,
-                partner_name,
-                array_agg(loi ORDER BY loi) as valid_lois
-            FROM valid_combinations
-            GROUP BY partner_id, partner_name
-            ORDER BY partner_name
-        """, (bid_id, ))
-
-        partner_data = cur.fetchall()
-
-        # Structure partners and their valid LOIs
-        partners = []
-        partner_lois = {}
-
-        for row in partner_data:
-            partners.append({
-                'id': row['partner_id'],
-                'partner_name': row['partner_name']
-            })
-            partner_lois[row['partner_id']] = row['valid_lois']
-
-        # Get bid details
-        cur.execute(
-            """
-            SELECT 
-                b.study_name,
-                b.status,
-                b.bid_number,
-                bpn.po_number
-            FROM bids b
-            LEFT JOIN bid_po_numbers bpn ON b.id = bpn.bid_id
-            WHERE b.id = %s
-        """, (bid_id, ))
-        bid_details = cur.fetchone()
-
-        # Get audience data only for valid combinations
-        if partners:  # Only get audience data if we have valid partners
-            cur.execute(
-                """
-                SELECT 
-                    bta.id as audience_id,
-                    bta.audience_name,
-                    bta.ta_category,
-                    pr.partner_id,
-                    pr.loi,
-                    par.country,
-                    par.allocation,
-                    par.n_delivered,
-                    par.cpi as initial_cpi,
-                    par.final_cpi,
-                    COALESCE(par.initial_cost, par.allocation * par.cpi) as initial_cost,
-                    COALESCE(par.final_cost, par.n_delivered * COALESCE(par.final_cpi, par.cpi)) as final_cost
-                FROM bid_target_audiences bta
-                JOIN partner_responses pr ON pr.bid_id = bta.bid_id
-                JOIN partner_audience_responses par ON (
-                    par.partner_response_id = pr.id 
-                    AND par.audience_id = bta.id
-                )
-                WHERE bta.bid_id = %s
-                AND (par.allocation > 0 OR par.n_delivered > 0)
-                AND EXISTS (
-                    SELECT 1 
-                    FROM unnest(%s::int[]) valid_partner_id 
-                    WHERE valid_partner_id = pr.partner_id
-                )
-                AND EXISTS (
-                    SELECT 1 
-                    FROM (
-                        SELECT DISTINCT partner_id, unnest(valid_lois) as loi 
-                        FROM valid_combinations
-                    ) vc 
-                    WHERE vc.partner_id = pr.partner_id 
-                    AND vc.loi = pr.loi
-                )
-                ORDER BY bta.id, pr.partner_id, pr.loi, par.country
-            """, (bid_id, [p['id'] for p in partners]))
-
-            rows = cur.fetchall()
-        else:
-            rows = []
-
-        # Group data by audience
-        audiences = []
-        current_audience = None
-
-        for row in rows:
-            if not current_audience or current_audience['id'] != row[
-                    'audience_id']:
-                current_audience = {
-                    'id': row['audience_id'],
-                    'name': row['audience_name'],
-                    'ta_category': row['ta_category'],
-                    'deliverables': []
-                }
-                audiences.append(current_audience)
-
-            current_audience['deliverables'].append({
-                'partner_id':
-                row['partner_id'],
-                'loi':
-                row['loi'],
-                'country':
-                row['country'],
-                'allocation':
-                row['allocation'] or 0,
-                'n_delivered':
-                row['n_delivered'] or 0,
-                'initial_cpi':
-                float(row['initial_cpi']) if row['initial_cpi'] else 0,
-                'final_cpi':
-                float(row['final_cpi']) if row['final_cpi'] else 0,
-                'initial_cost':
-                float(row['initial_cost']) if row['initial_cost'] else 0,
-                'final_cost':
-                float(row['final_cost']) if row['final_cost'] else 0
-            })
-
-        response = {
-            'partners': partners,
-            'partner_lois': partner_lois,
-            'bid_number': bid_details['bid_number'] if bid_details else None,
-            'po_number': bid_details['po_number'] if bid_details else None,
-            'status': bid_details['status'] if bid_details else None,
-            'study_name': bid_details['study_name'] if bid_details else None,
-            'audiences': audiences
-        }
-
-        return jsonify(response)
-
-    except Exception as e:
-        print(f"Error getting invoice data: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/bids/<bid_id>/partners-lois', methods=['GET'])
-def get_bid_partners_lois(bid_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Get partners and LOIs from the main bid table
-        cur.execute(
-            """
-            SELECT partners, loi
-            FROM bids
-            WHERE id = %s
-        """, (bid_id, ))
-
-        bid_data = cur.fetchone()
-        if not bid_data:
-            return jsonify({"error": "Bid not found"}), 404
-
-        # Get the full list of partners and LOIs from the bid
-        partners = bid_data.get('partners', [])
-        lois = bid_data.get('loi', [])
-
-        return jsonify({"partners": partners, "lois": lois})
-
-    except Exception as e:
-        print(f"Error fetching partners and LOIs: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
-@app.route('/api/bids/<bid_id>/responses', methods=['GET'])
-def get_bid_responses(bid_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # First get ordered list of audience IDs
-        cur.execute(
-            """
-            SELECT id 
-            FROM bid_target_audiences 
-            WHERE bid_id = %s 
-            ORDER BY id
-        """, (bid_id, ))
-
-        audience_ids = [row['id'] for row in cur.fetchall()]
-
-        # First get all partner responses (including those without audience responses)
-        # This ensures we get PMF values for all partner-LOI combinations
-        cur.execute(
-            """
-            SELECT 
-                pr.id,
-                pr.partner_id,
-                pr.loi,
-                pr.currency,
-                pr.pmf,
-                pr.status
-            FROM partner_responses pr
-            WHERE pr.bid_id = %s
-        """, (bid_id, ))
-
-        partner_responses = cur.fetchall()
-
-        # Initialize responses with basic data
-        responses = {}
-        settings = {}
-
-        for pr in partner_responses:
-            key = f"{pr['partner_id']}-{pr['loi']}"
-            responses[key] = {
-                'partner_id': pr['partner_id'],
-                'loi': pr['loi'],
-                'status': pr['status'] or 'draft',
-                'currency': pr['currency'] or 'USD',
-                'pmf': float(pr['pmf']) if pr['pmf'] is not None else 0,
-                'audiences': {}
-            }
-
-            if pr['partner_id'] not in settings:
-                settings[pr['partner_id']] = {
-                    'currency': pr['currency'] or 'USD',
-                    'pmf': float(pr['pmf']) if pr['pmf'] is not None else 0
-                }
-
-        # Now get audience responses
-        cur.execute(
-            """
-            SELECT 
-                pr.id,
-                pr.partner_id,
-                pr.loi,
-                par.audience_id,
-                par.country,
-                par.commitment,
-                par.cpi,
-                par.timeline_days,
-                par.comments,
-                bta.id as target_audience_id
-            FROM partner_responses pr
-            LEFT JOIN partner_audience_responses par ON pr.id = par.partner_response_id
-            LEFT JOIN bid_target_audiences bta ON par.audience_id = bta.id
-            WHERE pr.bid_id = %s
-            ORDER BY bta.id
-        """, (bid_id, ))
-
-        audience_rows = cur.fetchall()
-
-        # Add audience responses to the initialized structure
-        for row in audience_rows:
-            if row['target_audience_id']:
-                key = f"{row['partner_id']}-{row['loi']}"
-                audience_index = audience_ids.index(row['target_audience_id'])
-                audience_key = f"audience-{audience_index}"
-
-                if audience_key not in responses[key]['audiences']:
-                    responses[key]['audiences'][audience_key] = {
-                        'timeline': row['timeline_days'] or 0,
-                        'comments': row['comments'] or '',
-                    }
-
-                if row['country']:
-                    responses[key]['audiences'][audience_key][
-                        row['country']] = {
-                            'commitment': row['commitment'] or 0,
-                            'cpi':
-                            float(row['cpi']) if row['cpi'] is not None else 0
-                        }
-
-        return jsonify({'responses': responses, 'settings': settings})
-
-    except Exception as e:
-        print(f"Error getting bid responses: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
-
-
 @app.route('/api/bids/<bid_id>/submit', methods=['POST', 'OPTIONS'])
 def submit_bid_response(bid_id):
     # Handle OPTIONS request for CORS preflight
@@ -5500,17 +3819,16 @@ def submit_bid_response(bid_id):
                 if timeline == '':
                     timeline = None
 
-                # Upsert partner_audience_responses
+                # Upsert into partner_audience_responses
                 cur.execute(
                     """
-                    INSERT INTO partner_audience_responses 
-                    (bid_id, partner_response_id, audience_id, country, commitment, cpi, timeline_days, comments, pass, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    INSERT INTO partner_audience_responses (bid_id, partner_response_id, audience_id, country, commitment_type, commitment, cpi, timeline_days, comments, pass, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                     ON CONFLICT (bid_id, partner_response_id, audience_id, country)
-                    DO UPDATE SET commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, pass = EXCLUDED.pass, updated_at = CURRENT_TIMESTAMP
+                    DO UPDATE SET commitment_type = EXCLUDED.commitment_type, commitment = EXCLUDED.commitment, cpi = EXCLUDED.cpi, timeline_days = EXCLUDED.timeline_days, comments = EXCLUDED.comments, pass = EXCLUDED.pass, updated_at = CURRENT_TIMESTAMP
                 """, (bid_id, partner_response_id, audience_id, country,
-                      commitment, cpi, timeline, comments, pass_country))
-
+                      country_data.get('commitment_type'), commitment, cpi, timeline,
+                      comments, pass_country))
         conn.commit()
 
         # Send admin notification email
@@ -5600,7 +3918,7 @@ See the HTML version of this email for a detailed table.
                 print(f"Error sending admin notification: {str(e)}")
         return jsonify({'success': True})
     except Exception as e:
-        print(f"Error in submit_partner_response: {str(e)}")
+        print(f"Error in submit_bid_response: {str(e)}")
         if conn:
             conn.rollback()
         return jsonify({'error': str(e)}), 500
@@ -6502,20 +4820,13 @@ def debug_access_requests(bid_id):
             ORDER BY r.requested_on
         ''', (bid_id, ))
         requests = [{
-            'id':
-            row[0],
-            'user_id':
-            row[1],
-            'email':
-            row[2],
-            'name':
-            row[3],
-            'team':
-            row[4],
-            'requested_on':
-            row[5].strftime('%Y-%m-%d %H:%M:%S') if row[5] else None,
-            'status':
-            row[6]
+            'id': row[0],
+            'user_id': row[1],
+            'email': row[2],
+            'name': row[3],
+            'team': row[4],
+            'requested_on': row[5].strftime('%Y-%m-%d %H:%M:%S') if row[5] else None,
+            'status': row[6]
         } for row in cur.fetchall()]
         cur.close()
         conn.close()
