@@ -4236,61 +4236,7 @@ Link: {base_url}/partner-response/{token}
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/bids/<bid_id>/partners/<int:partner_id>/generate-link',
-           methods=['POST'])
-def generate_partner_link(bid_id, partner_id):
-    try:
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Check if a valid link already exists
-        cur.execute(
-            """
-            SELECT id, token, expires_at 
-            FROM partner_links 
-            WHERE bid_id = %s AND partner_id = %s AND expires_at > NOW()
-            ORDER BY updated_at DESC 
-            LIMIT 1
-        """, (bid_id, partner_id))
-        existing_link = cur.fetchone()
-
-        if existing_link:
-            base_url = get_public_host_url().replace('5000',
-                                                     '3000').rstrip('/')
-            return jsonify({
-                'link':
-                f"{base_url}/partner-response/{existing_link['token']}",
-                'expires_at':
-                existing_link['expires_at'].isoformat()
-            })
-
-        # Generate new token and set expiry to 30 days
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.now() + timedelta(days=30)
-
-        cur.execute(
-            """
-            INSERT INTO partner_links (bid_id, partner_id, token, expires_at)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id, token, expires_at
-        """, (bid_id, partner_id, token, expires_at))
-
-        new_link = cur.fetchone()
-        conn.commit()
-
-        base_url = get_public_host_url().replace('5000', '3000').rstrip('/')
-        return jsonify({
-            'link': f"{base_url}/partner-response/{new_link['token']}",
-            'expires_at': new_link['expires_at'].isoformat()
-        })
-    except Exception as e:
-        print(f"Error generating link: {str(e)}")
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'cur' in locals():
-            cur.close()
-        if 'conn' in locals():
-            conn.close()
 
 
 @app.route('/api/bids/<int:bid_id>/partners/<int:partner_id>/extend-link',
