@@ -43,6 +43,33 @@ function BasicDetails() {
     bidId,
   );
 
+  // Debug authentication state
+  console.log("Current user in BasicDetails:", currentUser);
+  console.log("User ID:", currentUser?.id);
+  console.log("User Team:", currentUser?.team);
+  console.log("User Role:", currentUser?.role);
+  console.log("User Name:", currentUser?.name);
+
+  // Test axios instance
+  console.log("Axios instance baseURL:", axios.defaults.baseURL);
+  console.log(
+    "Axios instance interceptors count:",
+    axios.interceptors.request.handlers.length,
+  );
+
+  // Test axios interceptor with a simple request
+  useEffect(() => {
+    const testAxios = async () => {
+      try {
+        console.log("Testing axios interceptor...");
+        await axios.get("/api/test-endpoint");
+      } catch (error) {
+        console.log("Expected error for test endpoint:", error.message);
+      }
+    };
+    testAxios();
+  }, []);
+
   const [salesContacts, setSalesContacts] = useState([]);
   const [vmContacts, setVmContacts] = useState([]);
   const [clients, setClients] = useState([]);
@@ -356,7 +383,6 @@ function BasicDetails() {
   const [distributionModalOpen, setDistributionModalOpen] = useState(false);
   const [sampleDistribution, setSampleDistribution] = useState({});
   const [loading, setLoading] = useState(true);
-  const [deletedAudienceIds, setDeletedAudienceIds] = useState([]);
 
   // Filter VM contacts to only show those from the current user's team
   const filteredVMContacts = vmContacts.filter(
@@ -378,17 +404,17 @@ function BasicDetails() {
         );
 
         // Get next bid number first if it's a new bid
-        // if (!isEditMode) {
-        //   try {
-        //     const bidNumberResponse = await axios.get("/api/bids/next-number");
-        //     setFormData({
-        //       ...defaultFormData,
-        //       bid_number: bidNumberResponse.data.next_bid_number,
-        //     });
-        //   } catch (error) {
-        //     console.error("Error getting next bid number:", error);
-        //   }
-        // }
+        if (!isEditMode) {
+          try {
+            const bidNumberResponse = await axios.get("/api/bids/next-number");
+            setFormData({
+              ...defaultFormData,
+              bid_number: bidNumberResponse.data.next_bid_number,
+            });
+          } catch (error) {
+            console.error("Error getting next bid number:", error);
+          }
+        }
 
         if (isEditMode && bidId) {
           console.log("Fetching bid data for ID:", bidId);
@@ -414,24 +440,6 @@ function BasicDetails() {
 
             console.log("Processed partners array:", partnersArray);
 
-            // Sort audiences by ID to maintain consistent database order, then renumber sequentially
-            const sortedAudiences = (bidData.target_audiences || []).sort(
-              (a, b) => (a.id || 0) - (b.id || 0),
-            );
-            // Renumber audiences sequentially based on their sorted database ID order
-            const processedAudiences = sortedAudiences.map(
-              (audience, index) => ({
-                ...audience,
-                name: `Audience - ${index + 1}`,
-                uniqueId: `audience-${index}`, // Ensure uniqueId matches the new index
-              }),
-            );
-
-            console.log(
-              "Loading audiences with IDs:",
-              processedAudiences.map((a) => ({ name: a.name, id: a.id })),
-            );
-
             setFormData((prevData) => ({
               ...prevData,
               ...bidData,
@@ -441,8 +449,6 @@ function BasicDetails() {
                 ? bidData.countries
                 : [],
             }));
-
-            console.log("FormData set in edit mode");
 
             // Set selected partners and LOIs
             setSelectedPartners(partnersArray);
@@ -482,10 +488,15 @@ function BasicDetails() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    console.log("handleInputChange called:", { name, value, event: e });
+    setFormData((prev) => {
+      const newData = {
+        ...prev,
+        [name]: value,
+      };
+      console.log("New form data:", newData);
+      return newData;
+    });
   };
 
   const handleTargetAudienceChange = (index, field, value) => {
@@ -527,31 +538,10 @@ function BasicDetails() {
   };
 
   const removeTargetAudience = (index) => {
-    const audienceToRemove = formData.target_audiences[index];
-
-    // If this audience has an ID (exists in database), track it for deletion
-    if (audienceToRemove.id && isEditMode) {
-      setDeletedAudienceIds((prevDeleted) => [
-        ...prevDeleted,
-        audienceToRemove.id,
-      ]);
-    }
-
-    setFormData((prev) => {
-      // Remove the audience from the array and renumber remaining audiences
-      const updatedAudiences = prev.target_audiences
-        .filter((_, i) => i !== index)
-        .map((audience, newIndex) => ({
-          ...audience,
-          name: `Audience - ${newIndex + 1}`,
-          uniqueId: `audience-${newIndex}`,
-        }));
-
-      return {
-        ...prev,
-        target_audiences: updatedAudiences,
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      target_audiences: prev.target_audiences.filter((_, i) => i !== index),
+    }));
   };
 
   const handleMultipleSelect = (e) => {
@@ -609,11 +599,7 @@ function BasicDetails() {
       const currentIsBEMax =
         prev[country]?.[`audience-${audienceIndex}`]?.isBEMax || false;
 
-      console.log(
-        `Previous value: ${currentValue}, Previous isBEMax: ${currentIsBEMax}`,
-      );
-
-      const newDistribution = {
+      return {
         ...prev,
         [country]: {
           ...prev[country],
@@ -623,9 +609,6 @@ function BasicDetails() {
           },
         },
       };
-
-      console.log(`New distribution for ${country}:`, newDistribution[country]);
-      return newDistribution;
     });
   };
 
@@ -684,57 +667,11 @@ function BasicDetails() {
         return;
       }
 
-      console.log("=== SUBMIT DEBUG - START ===");
-      console.log(
-        "Original formData.target_audiences:",
-        formData.target_audiences.map((a) => ({
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId,
-          originalIndex: formData.target_audiences.indexOf(a),
-        })),
-      );
-
-      // Sort audiences by ID first to ensure consistent database order
-      const sortedAudiences = [...formData.target_audiences].sort((a, b) => {
-        if (a.id && b.id) return a.id - b.id;
-        if (a.id && !b.id) return -1;
-        if (!a.id && b.id) return 1;
-        return 0;
-      });
-
-      console.log(
-        "After sorting by ID:",
-        sortedAudiences.map((a) => ({
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId,
-          sortedIndex: sortedAudiences.indexOf(a),
-        })),
-      );
-
-      // Renumber audiences sequentially based on their sorted database ID order
-      const relabeledAudiences = sortedAudiences.map((audience, index) => ({
-        ...audience,
-        name: `Audience - ${index + 1}`,
-        uniqueId: `audience-${index}`,
-      }));
-
-      console.log(
-        "After relabeling:",
-        relabeledAudiences.map((a) => ({
-          id: a.id,
-          name: a.name,
-          uniqueId: a.uniqueId,
-          finalIndex: relabeledAudiences.indexOf(a),
-        })),
-      );
-
       // Initialize sample distribution with existing data in edit mode
       const initialDistribution = {};
       formData.countries.forEach((country) => {
         initialDistribution[country] = {};
-        relabeledAudiences.forEach((audience, index) => {
+        formData.target_audiences.forEach((audience, index) => {
           const existingSample = audience.country_samples?.[country];
           initialDistribution[country][`audience-${index}`] = {
             value: existingSample?.is_best_efforts
@@ -742,17 +679,9 @@ function BasicDetails() {
               : existingSample?.sample_size || "",
             isBEMax: existingSample?.is_best_efforts || false,
           };
-          console.log(`Distribution setup for ${country}, audience-${index}:`, {
-            audienceId: audience.id,
-            audienceName: audience.name,
-            existingSample,
-            distributionValue:
-              initialDistribution[country][`audience-${index}`],
-          });
         });
       });
 
-      console.log("Final initialDistribution:", initialDistribution);
       setSampleDistribution(initialDistribution);
       setDistributionModalOpen(true);
     } catch (error) {
@@ -815,6 +744,13 @@ function BasicDetails() {
   // Update the handleSaveDistribution function
   const handleSaveDistribution = async () => {
     try {
+      alert(
+        "handleSaveDistribution called - User ID: " +
+          (currentUser?.id || "undefined"),
+      );
+      console.log("handleSaveDistribution called");
+      console.log("Current user at save time:", currentUser);
+
       if (!validateDistribution()) {
         return;
       }
@@ -822,7 +758,6 @@ function BasicDetails() {
       // Update formData with the new distribution while preserving other data
       const updatedFormData = {
         ...formData,
-        deleted_audience_ids: deletedAudienceIds, // Include deleted audience IDs
         target_audiences: formData.target_audiences.map((audience, index) => ({
           ...audience,
           sample_required: audience.is_best_efforts
@@ -848,14 +783,22 @@ function BasicDetails() {
 
       console.log("Sending updated form data:", updatedFormData);
 
+      // Add authentication headers manually
+      const headers = {
+        "Content-Type": "application/json",
+        "X-User-Id": currentUser?.id || "",
+        "X-User-Team": currentUser?.team || "",
+        "X-User-Role": currentUser?.role || "",
+        "X-User-Name": currentUser?.name || "",
+      };
+
+      console.log("Current user:", currentUser);
+      console.log("Request headers:", headers);
+      console.log("User ID being sent:", currentUser?.id);
+      console.log("User Team being sent:", currentUser?.team);
+
       if (isEditMode) {
-        await axios.put(`/api/bids/${bidId}`, updatedFormData, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        // Clear deleted audience IDs after successful update
-        setDeletedAudienceIds([]);
+        await axios.put(`/api/bids/${bidId}`, updatedFormData, { headers });
         navigate(`/bids/partner/${bidId}`);
       } else {
         // Add user information for new bids
@@ -865,7 +808,9 @@ function BasicDetails() {
           team: currentUser?.team,
         };
 
-        const response = await axios.post("/api/bids", bidDataWithUser);
+        const response = await axios.post("/api/bids", bidDataWithUser, {
+          headers,
+        });
         // Associate partners and LOIs with the new bid
         await axios.put(`/api/bids/${response.data.bid_id}/partners`, {
           partners: selectedPartners,
@@ -878,15 +823,19 @@ function BasicDetails() {
     } catch (error) {
       console.error("Error saving distribution:", error);
       if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
         alert(
           `Failed to save sample distribution: ${error.response.data.error || error.message}`,
         );
       } else if (error.request) {
+        // The request was made but no response was received
         console.error("Error request:", error.request);
         alert("Failed to save sample distribution: No response from server");
       } else {
+        // Something happened in setting up the request that triggered an Error
         console.error("Error message:", error.message);
         alert(`Failed to save sample distribution: ${error.message}`);
       }
@@ -927,12 +876,21 @@ function BasicDetails() {
                 name="bid_number"
                 value={formData.bid_number}
                 onChange={handleInputChange}
-                InputProps={{
-                  readOnly: false,
-                }}
-                helperText={
-                  !isEditMode ? "Enter a unique bid number manually" : ""
+                onFocus={() =>
+                  console.log(
+                    "Bid number field focused, current value:",
+                    formData.bid_number,
+                  )
                 }
+                onBlur={() =>
+                  console.log(
+                    "Bid number field blurred, current value:",
+                    formData.bid_number,
+                  )
+                }
+                inputProps={{
+                  "data-testid": "bid-number-input",
+                }}
               />
               <TextField
                 required
